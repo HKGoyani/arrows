@@ -1,0 +1,311 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'config.dart';
+
+TextStyle poppins(double size, FontWeight w, Color c, {double? ls, double? height}) =>
+    GoogleFonts.poppins(
+        fontSize: size, fontWeight: w, color: c, letterSpacing: ls, height: height);
+
+/// Faint dot-grid backdrop (echoes the game board) for menu screens.
+class DotGridPainter extends CustomPainter {
+  const DotGridPainter();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..color = AppColors.dot.withValues(alpha: 0.55);
+    const gap = 34.0;
+    for (double x = gap; x < size.width; x += gap) {
+      for (double y = gap; y < size.height; y += gap) {
+        canvas.drawCircle(Offset(x, y), 2.0, p);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Scales down briefly while pressed.
+class Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  const Pressable({super.key, required this.child, required this.onTap});
+  @override
+  State<Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<Pressable> {
+  double _s = 1;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _s = 0.95),
+      onTapCancel: () => setState(() => _s = 1),
+      onTapUp: (_) => setState(() => _s = 1),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _s,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class PrimaryButton extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final VoidCallback onTap;
+  final Color color;
+  final double width;
+  const PrimaryButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.color = AppColors.blue,
+    this.width = 240,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        width: width,
+        padding: const EdgeInsets.symmetric(vertical: 17),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color, Color.lerp(color, Colors.black, 0.16)!],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+                color: color.withValues(alpha: 0.38),
+                blurRadius: 22,
+                offset: const Offset(0, 10)),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: Colors.white, size: 22),
+              const SizedBox(width: 8),
+            ],
+            Text(label, style: poppins(18, FontWeight.w700, Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AppCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+  const AppCard({super.key, required this.child, this.padding = const EdgeInsets.all(8)});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0A111430), blurRadius: 18, offset: Offset(0, 8)),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class StatCard extends StatelessWidget {
+  final IconData icon;
+  final Color tint;
+  final String value;
+  final String label;
+  const StatCard(
+      {super.key,
+      required this.icon,
+      required this.tint,
+      required this.value,
+      required this.label});
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+      child: Column(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.14), shape: BoxShape.circle),
+            child: Icon(icon, color: tint, size: 24),
+          ),
+          const SizedBox(height: 10),
+          Text(value, style: poppins(22, FontWeight.w800, AppColors.ink)),
+          const SizedBox(height: 2),
+          Text(label, style: poppins(12, FontWeight.w500, AppColors.muted)),
+        ],
+      ),
+    );
+  }
+}
+
+class SectionLabel extends StatelessWidget {
+  final String text;
+  const SectionLabel(this.text, {super.key});
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
+        child: Text(text.toUpperCase(),
+            style: poppins(12, FontWeight.w700, AppColors.muted, ls: 1.2)),
+      );
+}
+
+class SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final Color tint;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  const SettingsTile({
+    super.key,
+    required this.icon,
+    required this.tint,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                  color: tint.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: tint, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: poppins(15.5, FontWeight.w600, AppColors.ink)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!, style: poppins(12.5, FontWeight.w500, AppColors.muted)),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) trailing!,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Custom rounded toggle in theme colors.
+class ThemeSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const ThemeSwitch({super.key, required this.value, required this.onChanged});
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        width: 52,
+        height: 30,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: value ? AppColors.blue : AppColors.heartEmpty,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: Color(0x22000000), blurRadius: 4, offset: Offset(0, 1)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AppBottomNav extends StatelessWidget {
+  final int index;
+  final ValueChanged<int> onTap;
+  const AppBottomNav({super.key, required this.index, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (Icons.home_rounded, 'Home'),
+      (Icons.local_fire_department_rounded, 'Streak'),
+      (Icons.settings_rounded, 'Settings'),
+    ];
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.navBg,
+        boxShadow: [BoxShadow(color: Color(0x0A111430), blurRadius: 14, offset: Offset(0, -4))],
+      ),
+      padding: EdgeInsets.fromLTRB(
+          12, 10, 12, 10 + MediaQuery.of(context).padding.bottom),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(items.length, (i) {
+          final active = i == index;
+          final color = active ? AppColors.navInk : AppColors.lock;
+          return Pressable(
+            onTap: () => onTap(i),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: active ? AppColors.navPill : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(items[i].$1, size: 22, color: color),
+                ),
+                const SizedBox(height: 5),
+                Text(items[i].$2, style: poppins(12, FontWeight.w600, color)),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
