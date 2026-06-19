@@ -66,25 +66,70 @@ class CircleButton extends StatelessWidget {
   }
 }
 
-class HeartsRow extends StatelessWidget {
+class HeartsRow extends StatefulWidget {
   final int hearts;
   const HeartsRow({super.key, required this.hearts});
   @override
+  State<HeartsRow> createState() => _HeartsRowState();
+}
+
+class _HeartsRowState extends State<HeartsRow> with SingleTickerProviderStateMixin {
+  late final AnimationController _bounceCtrl;
+  int _lastLost = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _bounceCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400));
+  }
+
+  @override
+  void didUpdateWidget(HeartsRow old) {
+    super.didUpdateWidget(old);
+    if (widget.hearts < old.hearts) {
+      _lastLost = widget.hearts;
+      _bounceCtrl.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _bounceCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (i) {
-        final filled = i < hearts;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.5),
-          child: AnimatedScale(
-            scale: filled ? 1 : 0.92,
-            duration: const Duration(milliseconds: 200),
-            child: Icon(Icons.favorite,
-                size: 24, color: filled ? AppColors.red : AppColors.heartEmpty),
-          ),
-        );
-      }),
+    return AnimatedBuilder(
+      animation: _bounceCtrl,
+      builder: (_, __) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (i) {
+          final filled = i < widget.hearts;
+          final isLosing = i == _lastLost && _bounceCtrl.isAnimating;
+          double scale;
+          if (isLosing) {
+            final t = _bounceCtrl.value;
+            scale = t < 0.2 ? 1 + 0.3 * (t / 0.2) : 1.3 - 0.38 * ((t - 0.2) / 0.8);
+          } else {
+            scale = filled ? 1 : 0.92;
+          }
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.5),
+            child: Transform.scale(
+              scale: scale,
+              child: Icon(Icons.favorite,
+                  size: 24,
+                  color: isLosing
+                      ? Color.lerp(AppColors.red, AppColors.heartEmpty, _bounceCtrl.value)!
+                      : filled
+                          ? AppColors.red
+                          : AppColors.heartEmpty),
+            ),
+          );
+        }),
+      ),
     );
   }
 }
