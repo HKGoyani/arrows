@@ -45,6 +45,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Arrow? _flashBlocker;
   Arrow? _lurchArrow;
   double _lurchDist = 0;
+  bool _clashImpactFired = false;
   double _scale = 1;
   bool _winHandled = false;
 
@@ -61,7 +62,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ..addListener(_rebuild);
     _lurchCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 350))
-      ..addListener(_rebuild);
+      ..addListener(_onLurchTick);
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
   }
@@ -89,7 +90,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     f.ctrl.dispose();
   }
 
-  void _onTapDown(TapDownDetails d) {
+  void _onTapUp(TapUpDetails d) {
     final cell = d.localPosition / _scale;
     final a = c.hitTest(cell.dx, cell.dy);
     if (a == null || c.status != GameStatus.playing) return;
@@ -98,21 +99,29 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (a.state == ArrowState.clashed) a.state = ArrowState.idle;
       _fire(a);
     } else {
-      AudioService.clash();
-      AudioService.vibrate(Haptic.heavy);
       _flashBlocker = c.findBlocker(a);
       if (a.state == ArrowState.idle) c.clash(a);
       _lurchArrow = a;
       _lurchDist = _calcBlockerDist(a);
+      _clashImpactFired = false;
       _lurchCtrl.forward(from: 0).then((_) {
         _lurchArrow = null;
         _rebuild();
       });
+    }
+  }
+
+  void _onLurchTick() {
+    if (!_clashImpactFired && _lurchCtrl.value >= 0.3) {
+      _clashImpactFired = true;
+      AudioService.clash();
+      AudioService.vibrate(Haptic.heavy);
       _clashFlashCtrl.forward(from: 0).then((_) {
         _flashBlocker = null;
         _rebuild();
       });
     }
+    _rebuild();
   }
 
   double _calcBlockerDist(Arrow a) {
@@ -242,7 +251,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           size: boardPx,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTapDown: _onTapDown,
+            onTapUp: _onTapUp,
             child: CustomPaint(
               painter: BoardPainter(
                 c: c,
