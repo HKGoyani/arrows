@@ -207,6 +207,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
   }
 
+  static const _winWords = [
+    'Awesome!', 'Fabulous!', 'Fantastic!', 'Terrific!', 'Excellent!',
+    'Great!', 'Wonderful!', 'Superb!', 'Magnificent!', 'Phenomenal!',
+    'Stunning!', 'Stellar!', 'Mind-blowing!', 'Marvelous!',
+    'Brilliant!', 'Well done!', 'Outstanding!',
+  ];
+
+  String _winMessage() => _winWords[c.level % _winWords.length];
+
   Widget _winOverlay() {
     return Positioned.fill(
       child: IgnorePointer(
@@ -214,8 +223,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           children: [
             const Positioned.fill(child: ConfettiOverlay()),
             Align(
-              alignment: const Alignment(0, -0.10), // ~45% from top
-              child: Text('Brilliant!', style: poppins(34, FontWeight.w800, AppColors.ink)),
+              alignment: const Alignment(0, -0.10),
+              child: Text(_winMessage(), style: poppins(34, FontWeight.w800, AppColors.ink)),
             ),
           ],
         ),

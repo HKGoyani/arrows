@@ -1,8 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'audio.dart';
 import 'config.dart';
 import 'game_controller.dart';
+import 'ui_kit.dart';
 
 /// "Arrows" wordmark — a filled triangle "A" + "rrows".
 class ArrowsWordmark extends StatelessWidget {
@@ -126,6 +127,15 @@ class GameTopBar extends StatelessWidget {
   final GameController c;
   final VoidCallback onBack, onRestart;
   const GameTopBar({super.key, required this.c, required this.onBack, required this.onRestart});
+
+  String get _difficulty {
+    final lvl = c.level;
+    if (lvl < 4) return 'Easy';
+    if (lvl < 6) return 'Medium';
+    if (lvl < 9) return 'Hard';
+    return 'Super Hard';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -142,21 +152,14 @@ class GameTopBar extends StatelessWidget {
             onTap: onRestart,
             child: const Icon(Icons.refresh, color: AppColors.btnInk, size: 24),
           ),
-          const SizedBox(width: 14),
-          HeartsRow(hearts: c.hearts),
-          const Spacer(),
-          ValueListenableBuilder<bool>(
-            valueListenable: AudioService.musicOn,
-            builder: (_, on, __) => GestureDetector(
-              onTap: () => AudioService.setMusic(!on),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Icon(
-                    on ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                    color: AppColors.btnInk,
-                    size: 24),
-              ),
+          Expanded(
+            child: Column(
+              children: [
+                Text(_difficulty,
+                    style: poppins(14, FontWeight.w700, AppColors.blueSoft)),
+                const SizedBox(height: 4),
+                HeartsRow(hearts: c.hearts),
+              ],
             ),
           ),
         ],
@@ -166,5 +169,5 @@ class GameTopBar extends StatelessWidget {
 }
 
 extension _RotatedIcon on Icon {
-  Widget rotated() => Transform.rotate(angle: 3.14159, child: this);
+  Widget rotated() => Transform.rotate(angle: pi, child: this);
 }

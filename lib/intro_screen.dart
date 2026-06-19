@@ -29,9 +29,6 @@ class _IntroScreenState extends State<IntroScreen> {
     super.dispose();
   }
 
-  String get _difficulty =>
-      widget.level < 4 ? 'Easy' : (widget.level < 6 ? 'Medium' : 'Hard');
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -49,8 +46,6 @@ class _IntroScreenState extends State<IntroScreen> {
               const SizedBox(height: 14),
               Text('Level ${widget.level}',
                   style: poppins(24, FontWeight.w700, AppColors.blue)),
-              const SizedBox(height: 4),
-              Text(_difficulty, style: poppins(18, FontWeight.w700, AppColors.blueSoft)),
             ],
           ),
         ),
