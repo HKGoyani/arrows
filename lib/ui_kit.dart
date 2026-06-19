@@ -264,14 +264,28 @@ class ThemeSwitch extends StatelessWidget {
 
 class AppBottomNav extends StatelessWidget {
   final int index;
+  final int level;
+  final bool showCollectionBadge;
   final ValueChanged<int> onTap;
-  const AppBottomNav({super.key, required this.index, required this.onTap});
+  const AppBottomNav({
+    super.key,
+    required this.index,
+    required this.level,
+    required this.onTap,
+    this.showCollectionBadge = false,
+  });
+
   @override
   Widget build(BuildContext context) {
+    final collectionUnlocked = level >= 10;
+    final level20Unlocked = level >= 20;
     final items = [
-      (Icons.home_rounded, 'Home'),
-      (Icons.local_fire_department_rounded, 'Streak'),
-      (Icons.settings_rounded, 'Settings'),
+      (Icons.home_rounded, 'Home', true),
+      (level20Unlocked ? Icons.star_rounded : Icons.lock_rounded,
+          level20Unlocked ? 'Level 20' : 'Level 20', level20Unlocked),
+      (collectionUnlocked ? Icons.star_rounded : Icons.lock_rounded,
+          collectionUnlocked ? 'Collection' : 'Level 10', collectionUnlocked),
+      (Icons.settings_rounded, 'Settings', true),
     ];
     return Container(
       decoration: const BoxDecoration(
@@ -284,9 +298,16 @@ class AppBottomNav extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(items.length, (i) {
           final active = i == index;
-          final color = active ? AppColors.navInk : AppColors.lock;
+          final unlocked = items[i].$3;
+          final color = !unlocked
+              ? AppColors.lock
+              : active
+                  ? AppColors.navInk
+                  : AppColors.lock;
           return Pressable(
-            onTap: () => onTap(i),
+            onTap: () {
+              if (unlocked) onTap(i);
+            },
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -294,10 +315,28 @@ class AppBottomNav extends StatelessWidget {
                   duration: const Duration(milliseconds: 180),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                   decoration: BoxDecoration(
-                    color: active ? AppColors.navPill : Colors.transparent,
+                    color: active && unlocked ? AppColors.navPill : Colors.transparent,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Icon(items[i].$1, size: 22, color: color),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(items[i].$1, size: 22, color: color),
+                      if (i == 2 && collectionUnlocked && showCollectionBadge)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppColors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 5),
                 Text(items[i].$2, style: poppins(12, FontWeight.w600, color)),

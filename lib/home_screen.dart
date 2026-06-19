@@ -7,15 +7,12 @@ import 'widgets.dart';
 
 class HomeScreen extends StatelessWidget {
   final VoidCallback onPlay;
-  final VoidCallback onOpenStreak;
-  const HomeScreen({super.key, required this.onPlay, required this.onOpenStreak});
+  const HomeScreen({super.key, required this.onPlay});
 
   @override
   Widget build(BuildContext context) {
     final level = Prefs.level;
     final streak = StreakService.current;
-    final best = StreakService.best;
-    final solved = (level - 1).clamp(0, 9999);
 
     return Stack(
       children: [
@@ -25,24 +22,20 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Pressable(
-                    onTap: onOpenStreak,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.local_fire_department_rounded,
-                            color: AppColors.flame, size: 19),
-                        const SizedBox(width: 5),
-                        Text('$streak', style: poppins(15, FontWeight.w700, AppColors.ink)),
-                      ]),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: AppColors.cardBorder),
                     ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.local_fire_department_rounded,
+                          color: AppColors.flame, size: 19),
+                      const SizedBox(width: 5),
+                      Text('$streak', style: poppins(15, FontWeight.w700, AppColors.ink)),
+                    ]),
                   ),
                 ),
                 // centered hero block
@@ -78,31 +71,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                // stats
-                Row(
-                  children: [
-                    Expanded(
-                        child: StatCard(
-                            icon: Icons.local_fire_department_rounded,
-                            tint: AppColors.flame,
-                            value: '$streak',
-                            label: 'Day streak')),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: StatCard(
-                            icon: Icons.emoji_events_rounded,
-                            tint: AppColors.blue,
-                            value: '$best',
-                            label: 'Best')),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: StatCard(
-                            icon: Icons.check_circle_rounded,
-                            tint: AppColors.blueSoft,
-                            value: '$solved',
-                            label: 'Solved')),
-                  ],
-                ),
+                const SizedBox(height: 12),
               ],
             ),
           ),

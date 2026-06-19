@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'audio.dart';
+import 'collection_screen.dart';
 import 'config.dart';
 import 'game_controller.dart';
 import 'game_screen.dart';
@@ -9,7 +10,6 @@ import 'intro_screen.dart';
 import 'prefs.dart';
 import 'settings_screen.dart';
 import 'streak.dart';
-import 'streak_screen.dart';
 import 'ui_kit.dart';
 
 Future<void> main() async {
@@ -75,18 +75,23 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final level = Prefs.level;
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: IndexedStack(
         index: _tab,
         children: [
-          HomeScreen(onPlay: _play, onOpenStreak: () => setState(() => _tab = 1)),
-          StreakScreen(),
-          SettingsScreen(),
+          HomeScreen(onPlay: _play),
+          const SizedBox.shrink(), // Level 20 placeholder (locked)
+          const CollectionScreen(),
+          const SettingsScreen(),
         ],
       ),
-      bottomNavigationBar:
-          AppBottomNav(index: _tab, onTap: (i) => setState(() => _tab = i)),
+      bottomNavigationBar: AppBottomNav(
+        index: _tab,
+        level: level,
+        onTap: (i) => setState(() => _tab = i),
+      ),
     );
   }
 }
