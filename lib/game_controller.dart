@@ -51,6 +51,20 @@ class GameController extends ChangeNotifier {
     }
   }
 
+  /// Returns the first arrow blocking [a]'s exit path, or null.
+  Arrow? findBlocker(Arrow a) {
+    var x = a.head.x, y = a.head.y;
+    while (true) {
+      x += a.dir.dx;
+      y += a.dir.dy;
+      if (x < 0 || x > cols || y < 0 || y > rows) return null;
+      final o = occ[cellKey(x, y)];
+      if (o != null && o != a.id) {
+        return arrows.where((ar) => ar.id == o).firstOrNull;
+      }
+    }
+  }
+
   /// Hit-test in cell-unit coordinates (already divided by scale).
   Arrow? hitTest(double px, double py) {
     Arrow? best;

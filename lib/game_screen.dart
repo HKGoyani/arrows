@@ -38,8 +38,13 @@ class _Flight {
 
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   late final AnimationController _rippleCtrl;
+  late final AnimationController _clashFlashCtrl;
+  late final AnimationController _lurchCtrl;
   Offset? _rippleCenter;
   final List<_Flight> _flights = [];
+  Arrow? _flashBlocker;
+  Arrow? _lurchArrow;
+  double _lurchDist = 0;
   double _scale = 1;
   bool _winHandled = false;
 
@@ -51,6 +56,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _rippleCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 420))
       ..addListener(_rebuild);
+    _clashFlashCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500))
+      ..addListener(_rebuild);
+    _lurchCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 350))
+      ..addListener(_rebuild);
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
   }
@@ -59,6 +70,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void dispose() {
     c.removeListener(_rebuild);
     _rippleCtrl.dispose();
+    _clashFlashCtrl.dispose();
+    _lurchCtrl.dispose();
     for (final f in _flights) {
       _disposeFlight(f);
     }
@@ -82,12 +95,38 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (a == null || c.status != GameStatus.playing) return;
     _spawnRipple(a);
     if (c.isClear(a)) {
+      if (a.state == ArrowState.clashed) a.state = ArrowState.idle;
       _fire(a);
     } else {
       AudioService.clash();
       AudioService.vibrate(Haptic.heavy);
-      c.clash(a);
+      _flashBlocker = c.findBlocker(a);
+      if (a.state == ArrowState.idle) c.clash(a);
+      _lurchArrow = a;
+      _lurchDist = _calcBlockerDist(a);
+      _lurchCtrl.forward(from: 0).then((_) {
+        _lurchArrow = null;
+        _rebuild();
+      });
+      _clashFlashCtrl.forward(from: 0).then((_) {
+        _flashBlocker = null;
+        _rebuild();
+      });
     }
+  }
+
+  double _calcBlockerDist(Arrow a) {
+    var x = a.head.x, y = a.head.y;
+    var steps = 0;
+    while (true) {
+      x += a.dir.dx;
+      y += a.dir.dy;
+      steps++;
+      final o = c.occ[cellKey(x, y)];
+      if (o != null && o != a.id) break;
+      if (x < 0 || x > c.cols || y < 0 || y > c.rows) break;
+    }
+    return max(0, (steps - 0.3)) * Cfg.cell;
   }
 
   void _spawnRipple(Arrow a) {
@@ -135,6 +174,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _restart() {
+    _clashFlashCtrl.reset();
+    _lurchCtrl.reset();
+    _flashBlocker = null;
+    _lurchArrow = null;
     for (final f in _flights) {
       _disposeFlight(f);
     }
@@ -157,7 +200,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               children: [
                 GameTopBar(c: c, onBack: widget.onBack, onRestart: _restart),
                 ProgressBar(progress: c.progress),
-                Expanded(child: _boardArea()),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      _boardArea(),
+                      if (_clashFlashCtrl.isAnimating) _clashFlashOverlay(),
+                    ],
+                  ),
+                ),
               ],
             ),
             if (c.status == GameStatus.won) _winOverlay(),
@@ -199,12 +249,33 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 flights: flights,
                 rippleCenter: _rippleCenter,
                 rippleT: _rippleCtrl.value,
+                flashBlocker: _flashBlocker,
+                lurchArrow: _lurchArrow,
+                lurchT: _lurchCtrl.value,
+                lurchDist: _lurchDist,
+                clashTint: _clashFlashCtrl.isAnimating
+                    ? (_clashFlashCtrl.value < 0.15
+                        ? _clashFlashCtrl.value / 0.15
+                        : 1 - ((_clashFlashCtrl.value - 0.15) / 0.85))
+                    : 0,
               ),
             ),
           ),
         ),
       );
     });
+  }
+
+  Widget _clashFlashOverlay() {
+    final t = _clashFlashCtrl.value;
+    final alpha = t < 0.15 ? t / 0.15 : 1 - ((t - 0.15) / 0.85);
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: CustomPaint(
+          painter: _RedVignettePainter(alpha * 0.6),
+        ),
+      ),
+    );
   }
 
   static const _winWords = [
@@ -247,4 +318,27 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ),
     );
   }
+}
+
+class _RedVignettePainter extends CustomPainter {
+  final double alpha;
+  _RedVignettePainter(this.alpha);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final inset = size.width * 0.15;
+
+    canvas.saveLayer(rect, Paint());
+    canvas.drawRect(rect, Paint()..color = AppColors.red.withValues(alpha: alpha));
+    final erasePaint = Paint()
+      ..color = const Color(0xFFFFFFFF)
+      ..blendMode = BlendMode.dstOut
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, inset * 1.2);
+    canvas.drawRect(rect.deflate(inset * 0.4), erasePaint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _RedVignettePainter old) => old.alpha != alpha;
 }

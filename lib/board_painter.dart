@@ -8,15 +8,25 @@ import 'models.dart';
 /// tap ripple, idle/clashed arrows, and the animated leaving arrow on top.
 class BoardPainter extends CustomPainter {
   final GameController c;
-  final List<({FlyOff fly, double adv})> flights; // arrows currently snaking off
+  final List<({FlyOff fly, double adv})> flights;
   final Offset? rippleCenter;
-  final double rippleT; // 0..1, 1 = done
+  final double rippleT;
+  final Arrow? flashBlocker;
+  final Arrow? lurchArrow;
+  final double lurchT;
+  final double lurchDist;
+  final double clashTint;
 
   BoardPainter({
     required this.c,
     this.flights = const [],
     this.rippleCenter,
     this.rippleT = 1,
+    this.flashBlocker,
+    this.lurchArrow,
+    this.lurchT = 0,
+    this.lurchDist = 0,
+    this.clashTint = 0,
   });
 
   @override
@@ -44,16 +54,72 @@ class BoardPainter extends CustomPainter {
     }
 
     // idle / clashed arrows
+    const maroon = Color(0xFF4A1B2E);
     for (final a in c.arrows) {
       if (a.state == ArrowState.leaving) continue;
-      final color = a.state == ArrowState.clashed ? AppColors.red : AppColors.arrow;
-      _drawArrow(canvas, _toOffsets(a), a.dir, color);
+      Color color;
+      if (a.state == ArrowState.clashed) {
+        color = AppColors.red;
+      } else if (flashBlocker != null && a.id == flashBlocker!.id) {
+        final blockerT = (clashTint * 1.8).clamp(0.0, 1.0);
+        color = Color.lerp(AppColors.arrow, AppColors.red, blockerT)!;
+      } else if (clashTint > 0) {
+        color = Color.lerp(AppColors.arrow, maroon, clashTint)!;
+      } else {
+        color = AppColors.arrow;
+      }
+      var pts = _toOffsets(a);
+      if (lurchArrow != null && a.id == lurchArrow!.id && lurchT > 0) {
+        pts = _lurchAlongPath(pts, a.dir, lurchT);
+      }
+      _drawArrow(canvas, pts, a.dir, color);
     }
 
     // animated leaving arrows (snakes), drawn on top
     for (final f in flights) {
       _drawArrow(canvas, f.fly.shaftPoints(f.adv), f.fly.arrow.dir, AppColors.arrowBlue);
     }
+  }
+
+  List<Offset> _lurchAlongPath(List<Offset> pts, Direction dir, double t) {
+    final maxDist = lurchDist > 0 ? lurchDist : Cfg.cell * 0.7;
+    final nudge = t < 0.3
+        ? Curves.easeOut.transform(t / 0.3) * maxDist
+        : maxDist * (1 - Curves.easeOut.transform((t - 0.3) / 0.7));
+    if (nudge < 0.5) return pts;
+
+    final ext = Offset(
+      pts.last.dx + dir.dx * maxDist,
+      pts.last.dy + dir.dy * maxDist,
+    );
+    final track = [...pts, ext];
+
+    final cum = <double>[0];
+    for (var i = 1; i < track.length; i++) {
+      cum.add(cum[i - 1] + (track[i] - track[i - 1]).distance);
+    }
+    final totalLen = cum[pts.length - 1];
+
+    Offset pointAt(double s) {
+      if (s <= 0) return track.first;
+      if (s >= cum.last) return track.last;
+      for (var i = 1; i < cum.length; i++) {
+        if (s <= cum[i]) {
+          final frac = (s - cum[i - 1]) / (cum[i] - cum[i - 1]);
+          return Offset.lerp(track[i - 1], track[i], frac)!;
+        }
+      }
+      return track.last;
+    }
+
+    final tailArc = nudge;
+    final headArc = totalLen + nudge;
+    final out = <Offset>[pointAt(tailArc)];
+    for (var i = 1; i < cum.length; i++) {
+      if (cum[i] > tailArc && cum[i] < headArc) out.add(track[i]);
+    }
+    out.add(pointAt(headArc));
+    return out;
   }
 
   List<Offset> _toOffsets(Arrow a) => a.pts
