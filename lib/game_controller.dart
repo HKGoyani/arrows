@@ -97,6 +97,12 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addLife() {
+    hearts = 1;
+    status = GameStatus.playing;
+    notifyListeners();
+  }
+
   /// Clash: tapping a blocked arrow turns it red (stays red) and costs a life.
   void clash(Arrow a) {
     a.state = ArrowState.clashed;

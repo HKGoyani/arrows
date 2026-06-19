@@ -7,6 +7,7 @@ import 'confetti.dart';
 import 'fly_off.dart';
 import 'game_controller.dart';
 import 'models.dart';
+import 'prefs.dart';
 import 'rng.dart';
 import 'ui_kit.dart';
 import 'widgets.dart';
@@ -337,17 +338,112 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  void _addLife() {
+    Prefs.setUsedFreeLife();
+    c.addLife();
+  }
+
   Widget _loseOverlay() {
+    final canAddFree = !Prefs.usedFreeLife;
     return Positioned.fill(
       child: Container(
-        color: AppColors.bg,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Game Over', style: poppins(34, FontWeight.w800, AppColors.red)),
-            const SizedBox(height: 26),
-            PrimaryButton(label: 'Retry level', onTap: _restart, width: 220),
-          ],
+        color: Colors.black.withValues(alpha: 0.5),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Out of lives',
+                    style: poppins(24, FontWeight.w800, AppColors.ink)),
+                const SizedBox(height: 24),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: AppColors.heartEmpty.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.favorite,
+                          size: 52, color: AppColors.red),
+                    ),
+                    Positioned(
+                      right: -8,
+                      top: -4,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: canAddFree
+                              ? const Color(0xFF4CAF50)
+                              : AppColors.blue,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text('+1',
+                              style: poppins(16, FontWeight.w800, Colors.white)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                GestureDetector(
+                  onTap: canAddFree ? _addLife : null,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: canAddFree
+                          ? const Color(0xFF4CAF50)
+                          : AppColors.navPill,
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (!canAddFree) ...[
+                          Icon(Icons.videocam_rounded,
+                              size: 20,
+                              color: canAddFree
+                                  ? Colors.white
+                                  : AppColors.blue),
+                          const SizedBox(width: 8),
+                        ],
+                        Text('Add More Lives',
+                            style: poppins(17, FontWeight.w700,
+                                canAddFree ? Colors.white : AppColors.blue)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: _restart,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: AppColors.cardBorder, width: 1.5),
+                    ),
+                    child: Center(
+                      child: Text('Restart',
+                          style: poppins(16, FontWeight.w600, AppColors.muted)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

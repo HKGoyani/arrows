@@ -32,6 +32,10 @@ class Prefs {
   static Future<void> setPlayedDays(List<String> v) async =>
       _p?.setStringList('playedDays', v);
 
+  // --- free life tracking ---
+  static bool get usedFreeLife => _p?.getBool('usedFreeLife') ?? false;
+  static Future<void> setUsedFreeLife() async => _p?.setBool('usedFreeLife', true);
+
   static Future<void> resetProgress() async {
     await _p?.remove('level');
     await _p?.remove('curStreak');
