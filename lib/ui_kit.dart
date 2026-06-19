@@ -74,17 +74,13 @@ class PrimaryButton extends StatelessWidget {
         width: width,
         padding: const EdgeInsets.symmetric(vertical: 17),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color, Color.lerp(color, Colors.black, 0.16)!],
-          ),
+          color: color,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-                color: color.withValues(alpha: 0.38),
-                blurRadius: 22,
-                offset: const Offset(0, 10)),
+                color: color.withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 8)),
           ],
         ),
         child: Row(
