@@ -16,6 +16,7 @@ class BoardPainter extends CustomPainter {
   final double lurchT;
   final double lurchDist;
   final double clashTint;
+  final bool showGrid;
 
   BoardPainter({
     required this.c,
@@ -27,6 +28,7 @@ class BoardPainter extends CustomPainter {
     this.lurchT = 0,
     this.lurchDist = 0,
     this.clashTint = 0,
+    this.showGrid = false,
   });
 
   @override
@@ -44,6 +46,31 @@ class BoardPainter extends CustomPainter {
           Cfg.dotR,
           dotPaint,
         );
+      }
+    }
+
+    // grid lines (toggle) — exit path from each arrow's head in its direction
+    if (showGrid) {
+      final far = vbW * 4;
+      final gridPaint = Paint()
+        ..color = const Color(0xFFD0D3E8)
+        ..strokeWidth = Cfg.stroke
+        ..strokeCap = StrokeCap.round;
+      for (final a in c.arrows) {
+        if (a.state == ArrowState.leaving) continue;
+        final hx = Cfg.margin + a.head.x * Cfg.cell;
+        final hy = Cfg.margin + a.head.y * Cfg.cell;
+        final Offset end;
+        if (a.dir == Direction.up) {
+          end = Offset(hx, -far);
+        } else if (a.dir == Direction.down) {
+          end = Offset(hx, far);
+        } else if (a.dir == Direction.left) {
+          end = Offset(-far, hy);
+        } else {
+          end = Offset(far, hy);
+        }
+        canvas.drawLine(Offset(hx, hy), end, gridPaint);
       }
     }
 

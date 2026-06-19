@@ -46,6 +46,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Arrow? _lurchArrow;
   double _lurchDist = 0;
   bool _clashImpactFired = false;
+  bool _showGrid = false;
   double _scale = 1;
   bool _winHandled = false;
 
@@ -97,6 +98,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _spawnRipple(a);
     if (c.isClear(a)) {
       if (a.state == ArrowState.clashed) a.state = ArrowState.idle;
+      _showGrid = false;
       _fire(a);
     } else {
       _flashBlocker = c.findBlocker(a);
@@ -210,14 +212,36 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 GameTopBar(c: c, onBack: widget.onBack, onRestart: _restart),
                 ProgressBar(progress: c.progress),
                 Expanded(
-                  child: Stack(
-                    children: [
-                      _boardArea(),
-                      if (_clashFlashCtrl.isAnimating) _clashFlashOverlay(),
-                    ],
+                  child: ClipRect(
+                    child: Stack(
+                      children: [
+                        _boardArea(),
+                        if (_clashFlashCtrl.isAnimating) _clashFlashOverlay(),
+                      ],
+                    ),
                   ),
                 ),
               ],
+            ),
+            Positioned(
+              right: 16,
+              bottom: 16 + MediaQuery.of(context).padding.bottom,
+              child: GestureDetector(
+                onTap: () => setState(() => _showGrid = !_showGrid),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _showGrid ? AppColors.navPill : AppColors.btnBg,
+                    borderRadius: BorderRadius.circular(_showGrid ? 14 : 25),
+                    border: _showGrid ? Border.all(color: AppColors.blue, width: 1.5) : null,
+                  ),
+                  child: Icon(Icons.tag,
+                      size: 28,
+                      color: AppColors.btnInk),
+                ),
+              ),
             ),
             if (c.status == GameStatus.won) _winOverlay(),
             if (c.status == GameStatus.lost) _loseOverlay(),
@@ -262,6 +286,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 lurchArrow: _lurchArrow,
                 lurchT: _lurchCtrl.value,
                 lurchDist: _lurchDist,
+                showGrid: _showGrid,
                 clashTint: _clashFlashCtrl.isAnimating
                     ? (_clashFlashCtrl.value < 0.15
                         ? _clashFlashCtrl.value / 0.15
