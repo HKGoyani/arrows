@@ -6,7 +6,6 @@ import 'config.dart';
 import 'game_controller.dart';
 import 'game_screen.dart';
 import 'home_screen.dart';
-import 'intro_screen.dart';
 import 'prefs.dart';
 import 'settings_screen.dart';
 import 'streak.dart';
@@ -107,7 +106,6 @@ class GameFlow extends StatefulWidget {
 class _GameFlowState extends State<GameFlow> {
   final GameController _controller = GameController();
   late int _level;
-  bool _intro = true;
 
   @override
   void initState() {
@@ -123,13 +121,6 @@ class _GameFlowState extends State<GameFlow> {
 
   @override
   Widget build(BuildContext context) {
-    if (_intro) {
-      return IntroScreen(
-        key: ValueKey('intro_$_level'),
-        level: _level,
-        onStart: () => setState(() => _intro = false),
-      );
-    }
     return GameScreen(
       key: ValueKey('game_$_level'),
       controller: _controller,
@@ -139,7 +130,6 @@ class _GameFlowState extends State<GameFlow> {
         Prefs.setLevel(next);
         setState(() {
           _level = next;
-          _intro = true;
         });
       },
     );
