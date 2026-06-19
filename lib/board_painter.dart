@@ -52,8 +52,12 @@ class BoardPainter extends CustomPainter {
     // grid lines (toggle) — exit path from each arrow's head in its direction
     if (showGrid) {
       final far = vbW * 4;
-      final gridPaint = Paint()
+      final normalPaint = Paint()
         ..color = const Color(0xFFD0D3E8)
+        ..strokeWidth = Cfg.stroke
+        ..strokeCap = StrokeCap.round;
+      final redPaint = Paint()
+        ..color = AppColors.red.withValues(alpha: 0.4)
         ..strokeWidth = Cfg.stroke
         ..strokeCap = StrokeCap.round;
       for (final a in c.arrows) {
@@ -70,7 +74,8 @@ class BoardPainter extends CustomPainter {
         } else {
           end = Offset(far, hy);
         }
-        canvas.drawLine(Offset(hx, hy), end, gridPaint);
+        canvas.drawLine(Offset(hx, hy), end,
+            a.state == ArrowState.clashed ? redPaint : normalPaint);
       }
     }
 
