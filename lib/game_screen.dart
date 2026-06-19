@@ -224,21 +224,21 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ],
             ),
             Positioned(
-              right: 16,
-              bottom: 16 + MediaQuery.of(context).padding.bottom,
+              right: 14,
+              bottom: 10 + MediaQuery.of(context).padding.bottom,
               child: GestureDetector(
                 onTap: () => setState(() => _showGrid = !_showGrid),
                 child: Container(
-                  width: 50,
-                  height: 50,
+                  width: 46,
+                  height: 46,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: _showGrid ? AppColors.navPill : AppColors.btnBg,
-                    borderRadius: BorderRadius.circular(_showGrid ? 14 : 25),
+                    borderRadius: BorderRadius.circular(_showGrid ? 13 : 23),
                     border: _showGrid ? Border.all(color: AppColors.blue, width: 1.5) : null,
                   ),
                   child: Icon(Icons.tag,
-                      size: 28,
+                      size: 24,
                       color: AppColors.btnInk),
                 ),
               ),

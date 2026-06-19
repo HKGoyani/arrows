@@ -46,8 +46,8 @@ class Cfg {
 
   // fit-to-screen
   static const double targetCell = 40; // low levels render near this px/cell
-  static const double widthFraction = 0.62; // board ≈ 62% of screen width
-  static const double heightFraction = 0.90;
+  static const double widthFraction = 0.72; // board ≈ 72% of screen width
+  static const double heightFraction = 0.95;
 
   // fly-off physics — slower, graceful exit (fly-offs run concurrently so play stays snappy)
   static const int flyHoldMs = 140;
