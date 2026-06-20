@@ -185,27 +185,35 @@ class GameTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 14, 22, 8),
-      child: Row(
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          CircleButton(
-            onTap: onBack,
-            child: const Icon(Icons.play_arrow, color: AppColors.btnInk, size: 24)
-                .rotated(),
+          Column(
+            children: [
+              Text(_difficulty,
+                  style: poppins(14, FontWeight.w700, AppColors.blueSoft)),
+              const SizedBox(height: 4),
+              HeartsRow(hearts: c.hearts),
+            ],
           ),
-          const SizedBox(width: 14),
-          CircleButton(
-            onTap: onRestart,
-            child: const Icon(Icons.refresh, color: AppColors.btnInk, size: 24),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Text(_difficulty,
-                    style: poppins(14, FontWeight.w700, AppColors.blueSoft)),
-                const SizedBox(height: 4),
-                HeartsRow(hearts: c.hearts),
-              ],
-            ),
+          Row(
+            children: [
+              CircleButton(
+                onTap: onBack,
+                child: const Icon(Icons.play_arrow, color: AppColors.btnInk, size: 40)
+                    .rotated(),
+              ),
+              const SizedBox(width: 14),
+              CircleButton(
+                onTap: onRestart,
+                child: Transform.rotate(
+                  angle: -30 * pi / 180,
+                  child: const Icon(Icons.replay_rounded, color: AppColors.btnInk, size: 28,
+                    shadows: [Shadow(color: AppColors.btnInk, blurRadius: 1)],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

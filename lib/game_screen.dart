@@ -249,6 +249,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _flights.clear();
     _rippleCenter = null;
     _winHandled = false;
+    _showGrid = false;
     _hintArrow = null;
     _hintedIds.clear();
     _hintPulseCtrl.reset();
@@ -323,8 +324,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     border: _showGrid ? Border.all(color: AppColors.blue, width: 1.5) : null,
                   ),
                   child: Icon(Icons.tag,
-                      size: 24,
-                      color: AppColors.btnInk),
+                      size: 32,
+                      color: AppColors.btnInk,
+                      shadows: [Shadow(color: AppColors.btnInk, blurRadius: 1)]),
                 ),
               ),
             ),
