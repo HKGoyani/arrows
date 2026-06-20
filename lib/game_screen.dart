@@ -287,6 +287,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 top: 14,
                 child: Pressable(
                   onTap: _useHint,
+                  alignment: Alignment.centerRight,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                     decoration: BoxDecoration(

@@ -28,7 +28,8 @@ class DotGridPainter extends CustomPainter {
 class Pressable extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
-  const Pressable({super.key, required this.child, required this.onTap});
+  final Alignment alignment;
+  const Pressable({super.key, required this.child, required this.onTap, this.alignment = Alignment.center});
   @override
   State<Pressable> createState() => _PressableState();
 }
@@ -44,6 +45,7 @@ class _PressableState extends State<Pressable> {
       onTap: widget.onTap,
       child: AnimatedScale(
         scale: _s,
+        alignment: widget.alignment,
         duration: const Duration(milliseconds: 110),
         curve: Curves.easeOut,
         child: widget.child,
