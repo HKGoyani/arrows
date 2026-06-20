@@ -19,6 +19,7 @@ class BoardPainter extends CustomPainter {
   final bool showGrid;
   final Arrow? hintArrow;
   final double hintPulse;
+  final Set<int> hintedIds;
 
   BoardPainter({
     required this.c,
@@ -33,6 +34,7 @@ class BoardPainter extends CustomPainter {
     this.showGrid = false,
     this.hintArrow,
     this.hintPulse = 0,
+    this.hintedIds = const {},
   });
 
   @override
@@ -94,7 +96,7 @@ class BoardPainter extends CustomPainter {
     for (final a in c.arrows) {
       if (a.state == ArrowState.leaving) continue;
       Color color;
-      if (hintArrow != null && a.id == hintArrow!.id) {
+      if (hintedIds.contains(a.id)) {
         color = AppColors.arrowBlue;
       } else if (a.state == ArrowState.clashed) {
         color = AppColors.red;

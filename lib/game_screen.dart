@@ -51,6 +51,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _showGrid = false;
   bool _showHint = false;
   Arrow? _hintArrow;
+  final Set<int> _hintedIds = {};
   Timer? _hintTimer;
   late final AnimationController _hintPulseCtrl;
   double _scale = 1;
@@ -94,10 +95,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _useHint() {
-    final safe = c.arrows.where((a) => a.state == ArrowState.idle && c.isClear(a)).toList();
+    if (_lurchCtrl.isAnimating || _clashFlashCtrl.isAnimating) return;
+    final safe = c.arrows
+        .where((a) => a.state == ArrowState.idle && c.isClear(a) && !_hintedIds.contains(a.id))
+        .toList();
     if (safe.isEmpty) return;
     setState(() {
       _hintArrow = safe.first;
+      _hintedIds.add(safe.first.id);
       _showHint = false;
     });
     _hintPulseCtrl.forward(from: 0);
@@ -146,6 +151,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     } else {
       _flashBlocker = c.findBlocker(a);
       if (a.state == ArrowState.idle) c.clash(a);
+      if (c.status == GameStatus.lost) {
+        _hintTimer?.cancel();
+        _showHint = false;
+      }
       _lurchArrow = a;
       _lurchDist = _calcBlockerDist(a);
       _clashImpactFired = false;
@@ -220,6 +229,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _handleWin() {
     if (_winHandled) return;
     _winHandled = true;
+    _hintTimer?.cancel();
+    _showHint = false;
     AudioService.win();
     AudioService.vibrate(Haptic.medium);
     Future.delayed(const Duration(milliseconds: 2300), () {
@@ -239,6 +250,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _rippleCenter = null;
     _winHandled = false;
     _hintArrow = null;
+    _hintedIds.clear();
     _hintPulseCtrl.reset();
     c.loadLevel(c.level);
     _resetHintTimer();
@@ -361,6 +373,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 showGrid: _showGrid,
                 hintArrow: _hintArrow,
                 hintPulse: _hintPulseCtrl.value,
+                hintedIds: _hintedIds,
                 clashTint: _clashFlashCtrl.isAnimating
                     ? (_clashFlashCtrl.value < 0.15
                         ? _clashFlashCtrl.value / 0.15
