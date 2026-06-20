@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'config.dart';
 import 'game_controller.dart';
 import 'ui_kit.dart';
@@ -20,7 +19,8 @@ class ArrowsWordmark extends StatelessWidget {
         ),
         Text(
           'rrows',
-          style: GoogleFonts.poppins(
+          style: const TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 40,
             fontWeight: FontWeight.w800,
             color: AppColors.ink,

@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:arrows_game/level_generator.dart';
 import 'package:arrows_game/models.dart';
 import 'package:arrows_game/main.dart';
@@ -8,7 +7,6 @@ void main() {
   final gen = LevelGenerator();
 
   testWidgets('boots to home with Play button and bottom nav', (tester) async {
-    GoogleFonts.config.allowRuntimeFetching = false;
     await tester.pumpWidget(const ArrowsApp());
     await tester.pump();
     expect(find.text('Play'), findsOneWidget);

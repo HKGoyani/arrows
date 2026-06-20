@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'config.dart';
 
 TextStyle poppins(double size, FontWeight w, Color c, {double? ls, double? height}) =>
-    GoogleFonts.poppins(
+    TextStyle(
+        fontFamily: 'Poppins',
         fontSize: size, fontWeight: w, color: c, letterSpacing: ls, height: height);
 
 /// Faint dot-grid backdrop (echoes the game board) for menu screens.
