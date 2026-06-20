@@ -43,6 +43,7 @@ dependencies:
 
   # persist the player's level + settings until uninstall
   shared_preferences: ^2.3.2
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'audio.dart';
 import 'config.dart';
 import 'prefs.dart';
@@ -130,12 +132,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.star_rounded,
                     tint: AppColors.navInk,
                     title: 'Rate us',
+                    onTap: () => _rateUs(context),
                   ),
                   const _Divider(),
                   SettingsTile(
                     icon: Icons.edit_rounded,
                     tint: AppColors.navInk,
                     title: 'Write us',
+                    onTap: _openEmail,
                   ),
                 ],
               ),
@@ -179,6 +183,199 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: subtitle,
         trailing: ThemeSwitch(value: v, onChanged: (x) => setter(x)),
         onTap: () => setter(!v),
+      ),
+    );
+  }
+
+  static const _appStoreId = ''; // TODO: add App Store ID after publishing
+  static const _playStoreId = 'com.shoolin.arrows_game';
+  static const _supportEmail = 'akashmangukiya10@gmail.com';
+
+  void _openStore() {
+    final uri = Uri.parse(
+      defaultTargetPlatform == TargetPlatform.iOS
+          ? 'https://apps.apple.com/app/id$_appStoreId'
+          : 'https://play.google.com/store/apps/details?id=$_playStoreId',
+    );
+    launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  void _openEmail() {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      queryParameters: {'subject': 'Arrow Escape Feedback'},
+    );
+    launchUrl(uri);
+  }
+
+  void _showFeedback(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('How can we improve?',
+                  style: poppins(22, FontWeight.w800, AppColors.ink)),
+              const SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEEFF8),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFD0D4EE)),
+                ),
+                child: TextField(
+                  controller: controller,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    hintText: 'Enter your feedback...',
+                    hintStyle: poppins(14, FontWeight.w500, AppColors.muted),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                  style: poppins(14, FontWeight.w500, AppColors.ink),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Pressable(
+                onTap: () {
+                  Navigator.pop(context);
+                  if (controller.text.trim().isNotEmpty) {
+                    final uri = Uri(
+                      scheme: 'mailto',
+                      path: _supportEmail,
+                      queryParameters: {
+                        'subject': 'Arrow Escape Feedback',
+                        'body': controller.text.trim(),
+                      },
+                    );
+                    launchUrl(uri);
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.blue,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: Center(
+                    child: Text('Submit',
+                        style: poppins(17, FontWeight.w700, Colors.white)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Pressable(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
+                  ),
+                  child: Center(
+                    child: Text('Cancel',
+                        style: poppins(16, FontWeight.w600, AppColors.muted)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _rateUs(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Enjoying Arrows?',
+                  style: poppins(22, FontWeight.w800, AppColors.ink)),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (_) => const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(Icons.star_rounded, size: 42, color: Color(0xFFFFB800)),
+                )),
+              ),
+              const SizedBox(height: 18),
+              Text('Take a moment to rate the game!\nThank you for your support',
+                  textAlign: TextAlign.center,
+                  style: poppins(14, FontWeight.w500, AppColors.muted, height: 1.4)),
+              const SizedBox(height: 24),
+              Pressable(
+                onTap: () {
+                  Navigator.pop(context);
+                  _showFeedback(context);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
+                  ),
+                  child: Center(
+                    child: Text('1-4 Stars',
+                        style: poppins(16, FontWeight.w600, AppColors.muted)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Pressable(
+                onTap: () {
+                  Navigator.pop(context);
+                  _openStore();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.blue,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: Center(
+                    child: Text('5 Stars',
+                        style: poppins(17, FontWeight.w700, Colors.white)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Pressable(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
+                  ),
+                  child: Center(
+                    child: Text('Close',
+                        style: poppins(16, FontWeight.w600, AppColors.muted)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
