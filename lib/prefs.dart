@@ -32,6 +32,14 @@ class Prefs {
   static Future<void> setPlayedDays(List<String> v) async =>
       _p?.setStringList('playedDays', v);
 
+  // --- settings placeholders ---
+  static bool get darkMode => _p?.getBool('darkMode') ?? false;
+  static Future<void> setDarkMode(bool v) async => _p?.setBool('darkMode', v);
+  static bool get accountConnection => _p?.getBool('accountConn') ?? false;
+  static Future<void> setAccountConnection(bool v) async => _p?.setBool('accountConn', v);
+  static bool get removeAds => _p?.getBool('removeAds') ?? false;
+  static Future<void> setRemoveAds(bool v) async => _p?.setBool('removeAds', v);
+
   // --- free life tracking ---
   static bool get usedFreeLife => _p?.getBool('usedFreeLife') ?? false;
   static Future<void> setUsedFreeLife() async => _p?.setBool('usedFreeLife', true);
