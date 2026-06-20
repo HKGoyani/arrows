@@ -33,11 +33,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('English', style: poppins(14, FontWeight.w500, AppColors.muted)),
+                        Text(Prefs.language, style: poppins(14, FontWeight.w500, AppColors.muted)),
                         const SizedBox(width: 4),
                         const Icon(Icons.chevron_right_rounded, color: AppColors.muted, size: 20),
                       ],
                     ),
+                    onTap: () => _showLanguage(context),
                   ),
                   const _Divider(),
                   _toggle(AudioService.vibrationOn, Icons.waves_rounded, AppColors.navInk,
@@ -207,6 +208,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
       queryParameters: {'subject': 'Arrow Escape Feedback'},
     );
     launchUrl(uri);
+  }
+
+  static const _languages = [
+    'English', 'Deutsch', 'français', 'italiano', '日本語',
+    '한국어', 'português (Brasil)', 'русский', 'español', 'Türkçe',
+  ];
+
+  void _showLanguage(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final selected = Prefs.language;
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Language',
+                      style: poppins(22, FontWeight.w800, AppColors.ink)),
+                  const SizedBox(height: 16),
+                  ...List.generate(_languages.length, (i) {
+                    final lang = _languages[i];
+                    final isSelected = lang == selected;
+                    return Column(
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            Prefs.setLanguage(lang);
+                            setDialogState(() {});
+                            setState(() {});
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(lang,
+                                      style: poppins(16, FontWeight.w600,
+                                          isSelected ? AppColors.blue : AppColors.ink)),
+                                ),
+                                if (isSelected)
+                                  Icon(Icons.check_circle,
+                                      color: AppColors.blue, size: 24),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (i < _languages.length - 1)
+                          Divider(height: 1, thickness: 1, color: AppColors.cardBorder),
+                      ],
+                    );
+                  }),
+                  const SizedBox(height: 16),
+                  Pressable(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
+                      ),
+                      child: Center(
+                        child: Text('Close',
+                            style: poppins(16, FontWeight.w600, AppColors.muted)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _showFeedback(BuildContext context) {

@@ -32,6 +32,10 @@ class Prefs {
   static Future<void> setPlayedDays(List<String> v) async =>
       _p?.setStringList('playedDays', v);
 
+  // --- language ---
+  static String get language => _p?.getString('language') ?? 'English';
+  static Future<void> setLanguage(String v) async => _p?.setString('language', v);
+
   // --- settings placeholders ---
   static bool get darkMode => _p?.getBool('darkMode') ?? false;
   static Future<void> setDarkMode(bool v) async => _p?.setBool('darkMode', v);
