@@ -17,6 +17,8 @@ class BoardPainter extends CustomPainter {
   final double lurchDist;
   final double clashTint;
   final bool showGrid;
+  final Arrow? hintArrow;
+  final double hintPulse;
 
   BoardPainter({
     required this.c,
@@ -29,6 +31,8 @@ class BoardPainter extends CustomPainter {
     this.lurchDist = 0,
     this.clashTint = 0,
     this.showGrid = false,
+    this.hintArrow,
+    this.hintPulse = 0,
   });
 
   @override
@@ -90,7 +94,9 @@ class BoardPainter extends CustomPainter {
     for (final a in c.arrows) {
       if (a.state == ArrowState.leaving) continue;
       Color color;
-      if (a.state == ArrowState.clashed) {
+      if (hintArrow != null && a.id == hintArrow!.id) {
+        color = AppColors.arrowBlue;
+      } else if (a.state == ArrowState.clashed) {
         color = AppColors.red;
       } else if (flashBlocker != null && a.id == flashBlocker!.id) {
         final blockerT = (clashTint * 1.8).clamp(0.0, 1.0);
@@ -103,6 +109,56 @@ class BoardPainter extends CustomPainter {
       var pts = _toOffsets(a);
       if (lurchArrow != null && a.id == lurchArrow!.id && lurchT > 0) {
         pts = _lurchAlongPath(pts, a.dir, lurchT);
+      }
+      if (hintArrow != null && a.id == hintArrow!.id && pts.length >= 2 && hintPulse > 0.01 && hintPulse < 0.99) {
+        double glowSize;
+        double glowAlpha;
+        if (hintPulse < 0.50) {
+          final t = Curves.easeOut.transform(hintPulse / 0.50);
+          glowSize = t;
+          glowAlpha = 1.0 - t;
+        } else if (hintPulse < 0.60) {
+          glowSize = 0.0;
+          glowAlpha = 0.0;
+        } else {
+          final t = Curves.easeOut.transform((hintPulse - 0.60) / 0.40);
+          glowSize = t;
+          glowAlpha = 1.0 - t;
+        }
+        glowSize = glowSize.clamp(0.0, 1.0);
+        glowAlpha = glowAlpha.clamp(0.0, 1.0);
+        final glowScale = 1.5 + 1.5 * glowSize;
+        final glowPath = Path()..moveTo(pts.first.dx, pts.first.dy);
+        for (var i = 1; i < pts.length; i++) {
+          glowPath.lineTo(pts[i].dx, pts[i].dy);
+        }
+        canvas.drawPath(glowPath, Paint()
+          ..color = AppColors.arrowBlue.withValues(alpha: glowAlpha)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = Cfg.stroke * glowScale
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round);
+        final h = pts.last;
+        final dx = a.dir.dx.toDouble(), dy = a.dir.dy.toDouble();
+        final px = -dy, py = dx;
+        final tip = Offset(h.dx + dx * Cfg.headLen, h.dy + dy * Cfg.headLen);
+        final l = Offset(h.dx - dx * Cfg.headBase + px * Cfg.headHalf,
+            h.dy - dy * Cfg.headBase + py * Cfg.headHalf);
+        final r = Offset(h.dx - dx * Cfg.headBase - px * Cfg.headHalf,
+            h.dy - dy * Cfg.headBase - py * Cfg.headHalf);
+        final headPath = Path()
+          ..moveTo(tip.dx, tip.dy)
+          ..lineTo(l.dx, l.dy)
+          ..lineTo(r.dx, r.dy)
+          ..close();
+        canvas.drawPath(headPath, Paint()
+          ..color = AppColors.arrowBlue.withValues(alpha: glowAlpha)
+          ..style = PaintingStyle.fill);
+        canvas.drawPath(headPath, Paint()
+          ..color = AppColors.arrowBlue.withValues(alpha: glowAlpha)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = Cfg.stroke * (glowScale - 0.5)
+          ..strokeJoin = StrokeJoin.round);
       }
       _drawArrow(canvas, pts, a.dir, color);
     }

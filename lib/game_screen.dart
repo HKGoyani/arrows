@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'audio.dart';
@@ -48,6 +49,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   double _lurchDist = 0;
   bool _clashImpactFired = false;
   bool _showGrid = false;
+  bool _showHint = false;
+  Arrow? _hintArrow;
+  Timer? _hintTimer;
+  late final AnimationController _hintPulseCtrl;
   double _scale = 1;
   bool _winHandled = false;
 
@@ -65,16 +70,48 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _lurchCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 350))
       ..addListener(_onLurchTick);
+    _hintPulseCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200))
+      ..addListener(_rebuild);
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
+    _resetHintTimer();
+  }
+
+  void _resetHintTimer() {
+    _hintTimer?.cancel();
+    _showHint = false;
+    _startHintTimer();
+  }
+
+  void _startHintTimer() {
+    _hintTimer?.cancel();
+    _hintTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted && c.status == GameStatus.playing) {
+        setState(() => _showHint = true);
+      }
+    });
+  }
+
+  void _useHint() {
+    final safe = c.arrows.where((a) => a.state == ArrowState.idle && c.isClear(a)).toList();
+    if (safe.isEmpty) return;
+    setState(() {
+      _hintArrow = safe.first;
+      _showHint = false;
+    });
+    _hintPulseCtrl.forward(from: 0);
+    _startHintTimer();
   }
 
   @override
   void dispose() {
+    _hintTimer?.cancel();
     c.removeListener(_rebuild);
     _rippleCtrl.dispose();
     _clashFlashCtrl.dispose();
     _lurchCtrl.dispose();
+    _hintPulseCtrl.dispose();
     for (final f in _flights) {
       _disposeFlight(f);
     }
@@ -100,6 +137,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (c.isClear(a)) {
       if (a.state == ArrowState.clashed) a.state = ArrowState.idle;
       _showGrid = false;
+      if (_hintArrow != null && a.id == _hintArrow!.id) {
+        _hintArrow = null;
+        _hintPulseCtrl.reset();
+      }
+      _resetHintTimer();
       _fire(a);
     } else {
       _flashBlocker = c.findBlocker(a);
@@ -196,7 +238,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _flights.clear();
     _rippleCenter = null;
     _winHandled = false;
+    _hintArrow = null;
+    _hintPulseCtrl.reset();
     c.loadLevel(c.level);
+    _resetHintTimer();
   }
 
   @override
@@ -224,6 +269,32 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
+            if (_showHint && c.status == GameStatus.playing)
+              Positioned(
+                right: 0,
+                top: 14,
+                child: Pressable(
+                  onTap: _useHint,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.blue,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(22),
+                        bottomLeft: Radius.circular(22),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 6),
+                        Text('Hint', style: poppins(16, FontWeight.w700, Colors.white)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             Positioned(
               right: 14,
               bottom: 10 + MediaQuery.of(context).padding.bottom,
@@ -288,6 +359,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 lurchT: _lurchCtrl.value,
                 lurchDist: _lurchDist,
                 showGrid: _showGrid,
+                hintArrow: _hintArrow,
+                hintPulse: _hintPulseCtrl.value,
                 clashTint: _clashFlashCtrl.isAnimating
                     ? (_clashFlashCtrl.value < 0.15
                         ? _clashFlashCtrl.value / 0.15
