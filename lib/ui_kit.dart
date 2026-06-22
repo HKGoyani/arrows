@@ -319,7 +319,7 @@ class AppBottomNav extends StatelessWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      Icon(items[i].$1, size: 22, color: color),
+                      Icon(items[i].$1, size: 24, color: color),
                       if (i == 2 && collectionUnlocked && showCollectionBadge)
                         Positioned(
                           right: -4,

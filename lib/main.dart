@@ -39,17 +39,24 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
-  int _tab = 0; // Home
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  int _tab = 0;
+  late final AnimationController _navSlideCtrl;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _navSlideCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+      value: 1.0,
+    );
   }
 
   @override
   void dispose() {
+    _navSlideCtrl.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -69,7 +76,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     StreakService.registerPlayToday();
     await Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const GameFlow()));
-    if (mounted) setState(() {}); // refresh stats after returning
+    if (mounted) {
+      _navSlideCtrl.forward(from: 0);
+      setState(() {});
+    }
   }
 
   @override
@@ -86,10 +96,19 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           const SettingsScreen(),
         ],
       ),
-      bottomNavigationBar: AppBottomNav(
-        index: _tab,
-        level: level,
-        onTap: (i) => setState(() => _tab = i),
+      bottomNavigationBar: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: _navSlideCtrl,
+          curve: Curves.easeOut,
+        )),
+        child: AppBottomNav(
+          index: _tab,
+          level: level,
+          onTap: (i) => setState(() => _tab = i),
+        ),
       ),
     );
   }

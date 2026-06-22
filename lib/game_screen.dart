@@ -420,8 +420,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           child: Stack(
             children: [
               const Positioned.fill(child: ConfettiOverlay()),
-              Center(
-                child: Text(_winMessage(), style: poppins(34, FontWeight.w800, AppColors.ink)),
+              Align(
+                alignment: const Alignment(0, -0.08),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 1.0, end: 0.0),
+                  duration: const Duration(milliseconds: 2800),
+                  curve: const Interval(0.75, 1.0, curve: Curves.easeOut),
+                  builder: (_, opacity, child) => Opacity(opacity: opacity, child: child),
+                  child: Text(_winMessage(), style: poppins(22, FontWeight.w700, const Color(0xFF3D3D5C))),
+                ),
               ),
             ],
           ),
