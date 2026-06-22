@@ -75,7 +75,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   Future<void> _play() async {
     StreakService.registerPlayToday();
     await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const GameFlow()));
+        .push(PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const GameFlow(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 300),
+        ));
     if (mounted) {
       _navSlideCtrl.forward(from: 0);
       setState(() {});
