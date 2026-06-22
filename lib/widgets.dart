@@ -11,20 +11,21 @@ class ArrowsWordmark extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 3, right: 1),
-          child: CustomPaint(size: const Size(31, 35), painter: _TrianglePainter()),
+          padding: const EdgeInsets.only(right: 2),
+          child: CustomPaint(size: const Size(26, 30), painter: _TrianglePainter()),
         ),
         Text(
           'rrows',
           style: const TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 40,
-            fontWeight: FontWeight.w800,
-            color: AppColors.ink,
-            letterSpacing: -1,
+            fontSize: 36,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF2E3260),
+            letterSpacing: -0.5,
             height: 1,
           ),
         ),
@@ -41,7 +42,7 @@ class _TrianglePainter extends CustomPainter {
       ..lineTo(s.width, s.height)
       ..lineTo(0, s.height)
       ..close();
-    canvas.drawPath(p, Paint()..color = AppColors.ink);
+    canvas.drawPath(p, Paint()..color = const Color(0xFF2E3260));
   }
 
   @override
