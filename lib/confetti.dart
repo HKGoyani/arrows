@@ -38,9 +38,9 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
   void _burst(bool fromLeft) {
     for (var i = 0; i < 15; i++) {
       final w = 6 + _rnd.nextDouble() * 9;
-      final baseAngle = fromLeft ? -75.0 : -105.0;
-      final angle = (baseAngle + (_rnd.nextDouble() - 0.5) * 30) * pi / 180;
-      final speed = 500 + _rnd.nextDouble() * 750;
+      final baseAngle = fromLeft ? -80.0 : -100.0;
+      final angle = (baseAngle + (_rnd.nextDouble() - 0.5) * 24) * pi / 180;
+      final speed = 650 + _rnd.nextDouble() * 600;
       _pieces.add(_Piece(
         x: fromLeft ? _size.width * 0.005 : _size.width * 0.995,
         y: _size.height * 0.98,
@@ -62,11 +62,11 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
     _last = elapsed;
     _elapsed += dt;
 
-    if (_leftBursts < 3 && _elapsed >= _leftBursts * 0.18) {
+    if (_leftBursts < 3 && _elapsed >= _leftBursts * 0.15) {
       _burst(true);
       _leftBursts++;
     }
-    if (_rightBursts < 3 && _elapsed >= 0.25 + _rightBursts * 0.18) {
+    if (_rightBursts < 3 && _elapsed >= _rightBursts * 0.15) {
       _burst(false);
       _rightBursts++;
     }
