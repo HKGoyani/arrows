@@ -110,28 +110,38 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           animation: levelBumpAnim,
                           builder: (_, __) {
                             final t = levelBumpAnim.value;
-                            return ClipRect(
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Transform.translate(
-                                    offset: Offset(0, -30 * t),
-                                    child: Opacity(
-                                      opacity: (1 - t).clamp(0.0, 1.0),
-                                      child: Text('Level $_prevLevel',
-                                          style: poppins(22, FontWeight.w700, AppColors.blue)),
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('Level ', style: poppins(22, FontWeight.w700, AppColors.blue)),
+                                ClipRect(
+                                  child: SizedBox(
+                                    width: 30,
+                                    height: 32,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Transform.translate(
+                                          offset: Offset(0, 30 * t),
+                                          child: Opacity(
+                                            opacity: (1 - t).clamp(0.0, 1.0),
+                                            child: Text('$_prevLevel',
+                                                style: poppins(22, FontWeight.w700, AppColors.blue)),
+                                          ),
+                                        ),
+                                        Transform.translate(
+                                          offset: Offset(0, -30 * (1 - t)),
+                                          child: Opacity(
+                                            opacity: t.clamp(0.0, 1.0),
+                                            child: Text('$_currLevel',
+                                                style: poppins(22, FontWeight.w700, AppColors.blue)),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Transform.translate(
-                                    offset: Offset(0, 30 * (1 - t)),
-                                    child: Opacity(
-                                      opacity: t.clamp(0.0, 1.0),
-                                      child: Text('Level $_currLevel',
-                                          style: poppins(22, FontWeight.w700, AppColors.blue)),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             );
                           },
                         )
@@ -144,16 +154,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const Spacer(flex: 4),
                 FadeTransition(
                   opacity: playAnim,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.3),
-                      end: Offset.zero,
-                    ).animate(playAnim),
-                    child: PrimaryButton(
-                        label: 'Play',
-                        onTap: widget.onPlay,
-                        width: 280),
-                  ),
+                  child: PrimaryButton(
+                      label: 'Play',
+                      onTap: widget.onPlay,
+                      width: 280),
                 ),
                 const SizedBox(height: 12),
                 FadeTransition(
