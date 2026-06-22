@@ -105,7 +105,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final safe = c.arrows
         .where((a) => a.state == ArrowState.idle && c.isClear(a) && !_hintedIds.contains(a.id))
         .toList();
-    if (safe.isEmpty) return;
+    if (safe.isEmpty) {
+      setState(() => _showHint = false);
+      _startHintTimer();
+      return;
+    }
     setState(() {
       _hintArrow = safe.first;
       _hintedIds.add(safe.first.id);
@@ -346,21 +350,28 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             Positioned(
               right: 14,
               bottom: 10 + MediaQuery.of(context).padding.bottom,
-              child: GestureDetector(
-                onTap: () => setState(() => _showGrid = !_showGrid),
-                child: Container(
-                  width: 46,
-                  height: 46,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: _showGrid ? AppColors.navPill : AppColors.btnBg,
-                    borderRadius: BorderRadius.circular(_showGrid ? 13 : 23),
-                    border: _showGrid ? Border.all(color: AppColors.blue, width: 1.5) : null,
+              child: AnimatedBuilder(
+                animation: _heartCtrl,
+                builder: (_, child) => Opacity(
+                  opacity: (1.0 - _heartCtrl.value * 3.0).clamp(0.0, 1.0),
+                  child: child,
+                ),
+                child: GestureDetector(
+                  onTap: () => setState(() => _showGrid = !_showGrid),
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _showGrid ? AppColors.navPill : AppColors.btnBg,
+                      borderRadius: BorderRadius.circular(_showGrid ? 13 : 23),
+                      border: _showGrid ? Border.all(color: AppColors.blue, width: 1.5) : null,
+                    ),
+                    child: Icon(Icons.tag,
+                        size: 32,
+                        color: AppColors.btnInk,
+                        shadows: [Shadow(color: AppColors.btnInk, blurRadius: 1)]),
                   ),
-                  child: Icon(Icons.tag,
-                      size: 32,
-                      color: AppColors.btnInk,
-                      shadows: [Shadow(color: AppColors.btnInk, blurRadius: 1)]),
                 ),
               ),
             ),
