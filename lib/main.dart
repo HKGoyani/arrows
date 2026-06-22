@@ -128,9 +128,7 @@ class _GameFlowState extends State<GameFlow> {
       onBack: () => Navigator.of(context).maybePop(),
       onWin: (next) {
         Prefs.setLevel(next);
-        setState(() {
-          _level = next;
-        });
+        if (mounted) Navigator.of(context).maybePop();
       },
     );
   }

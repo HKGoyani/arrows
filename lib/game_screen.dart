@@ -231,9 +231,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _winHandled = true;
     _hintTimer?.cancel();
     _showHint = false;
+    _showGrid = false;
     AudioService.win();
     AudioService.vibrate(Haptic.medium);
-    Future.delayed(const Duration(milliseconds: 2300), () {
+    Future.delayed(const Duration(milliseconds: 2800), () {
       if (mounted) widget.onWin(c.level + 1);
     });
   }
@@ -414,14 +415,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Widget _winOverlay() {
     return Positioned.fill(
       child: IgnorePointer(
-        child: Stack(
-          children: [
-            const Positioned.fill(child: ConfettiOverlay()),
-            Align(
-              alignment: const Alignment(0, -0.10),
-              child: Text(_winMessage(), style: poppins(34, FontWeight.w800, AppColors.ink)),
-            ),
-          ],
+        child: Container(
+          color: AppColors.bg,
+          child: Stack(
+            children: [
+              const Positioned.fill(child: ConfettiOverlay()),
+              Center(
+                child: Text(_winMessage(), style: poppins(34, FontWeight.w800, AppColors.ink)),
+              ),
+            ],
+          ),
         ),
       ),
     );

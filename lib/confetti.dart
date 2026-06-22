@@ -2,8 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
-/// Win confetti: two bottom-corner cannons fire up-and-inward, then the pieces
-/// fall under gravity (spin + drift + fade) over ~2.4s — matches the HTML.
 class ConfettiOverlay extends StatefulWidget {
   const ConfettiOverlay({super.key});
   @override
@@ -16,7 +14,10 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
   final _rnd = Random();
   final List<_Piece> _pieces = [];
   Duration _last = Duration.zero;
-  bool _spawned = false;
+  double _elapsed = 0;
+  Size _size = Size.zero;
+  int _leftBursts = 0;
+  int _rightBursts = 0;
 
   static const _colors = [
     Color(0xFF6C7EFA),
@@ -24,8 +25,9 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
     Color(0xFF455176),
     Color(0xFFE5E5E5),
     Color(0xFF5B6AF9),
+    Color(0xFF3A4DBF),
   ];
-  static const _gravity = 2600.0;
+  static const _gravity = 1200.0;
 
   @override
   void initState() {
@@ -33,36 +35,52 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
     _ticker = createTicker(_tick)..start();
   }
 
-  void _spawn(Size size) {
-    for (var i = 0; i < 130; i++) {
-      final fromLeft = i.isEven;
-      final w = 6 + _rnd.nextDouble() * 12;
+  void _burst(bool fromLeft) {
+    for (var i = 0; i < 15; i++) {
+      final w = 6 + _rnd.nextDouble() * 9;
+      final baseAngle = fromLeft ? -75.0 : -105.0;
+      final angle = (baseAngle + (_rnd.nextDouble() - 0.5) * 30) * pi / 180;
+      final speed = 500 + _rnd.nextDouble() * 750;
       _pieces.add(_Piece(
-        x: fromLeft ? size.width * 0.05 : size.width * 0.95,
-        y: size.height * 0.99,
-        vx: (200 + _rnd.nextDouble() * 520) * (fromLeft ? 1 : -1),
-        vy: -(1500 + _rnd.nextDouble() * 850),
+        x: fromLeft ? _size.width * 0.005 : _size.width * 0.995,
+        y: _size.height * 0.98,
+        vx: cos(angle) * speed,
+        vy: sin(angle) * speed,
         rot: _rnd.nextDouble() * pi * 2,
-        vr: (_rnd.nextDouble() - 0.5) * 15,
+        vr: (_rnd.nextDouble() - 0.5) * 10,
         w: w,
-        h: w * (0.5 + _rnd.nextDouble() * 0.6),
-        color: _colors[i % _colors.length],
+        h: w * (0.3 + _rnd.nextDouble() * 0.35),
+        color: _colors[_rnd.nextInt(_colors.length)],
+        curve: (_rnd.nextDouble() - 0.5) * 0.4,
       ));
     }
-    _spawned = true;
   }
 
   void _tick(Duration elapsed) {
-    if (!_spawned) return;
+    if (_size == Size.zero) return;
     final dt = ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.032);
     _last = elapsed;
+    _elapsed += dt;
+
+    if (_leftBursts < 3 && _elapsed >= _leftBursts * 0.18) {
+      _burst(true);
+      _leftBursts++;
+    }
+    if (_rightBursts < 3 && _elapsed >= 0.25 + _rightBursts * 0.18) {
+      _burst(false);
+      _rightBursts++;
+    }
+
     for (final p in _pieces) {
       p.life += dt;
       p.vy += _gravity * dt;
+      p.vx *= 0.994;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.rot += p.vr * dt;
-      p.opacity = p.life < 1.3 ? 1.0 : (1 - (p.life - 1.3) / 1.1).clamp(0.0, 1.0);
+      if (p.life > 1.5) {
+        p.opacity = (1 - (p.life - 1.5) / 1.2).clamp(0.0, 1.0);
+      }
     }
     setState(() {});
   }
@@ -76,9 +94,8 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      if (!_spawned) {
-        WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _spawn(constraints.biggest));
+      if (_size == Size.zero) {
+        _size = constraints.biggest;
       }
       return CustomPaint(size: constraints.biggest, painter: _ConfettiPainter(_pieces));
     });
@@ -87,6 +104,7 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
 
 class _Piece {
   double x, y, vx, vy, rot, vr, w, h, life = 0, opacity = 1;
+  final double curve;
   final Color color;
   _Piece({
     required this.x,
@@ -98,6 +116,7 @@ class _Piece {
     required this.w,
     required this.h,
     required this.color,
+    required this.curve,
   });
 }
 
@@ -112,14 +131,19 @@ class _ConfettiPainter extends CustomPainter {
       canvas.save();
       canvas.translate(p.x, p.y);
       canvas.rotate(p.rot);
-      final paint = Paint()..color = p.color.withValues(alpha: p.opacity);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: p.w, height: p.h),
-          const Radius.circular(2),
-        ),
-        paint,
-      );
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: p.opacity)
+        ..style = PaintingStyle.fill;
+      final hw = p.w / 2;
+      final hh = p.h / 2;
+      final bend = p.w * p.curve;
+      final path = Path()
+        ..moveTo(-hw, -hh)
+        ..quadraticBezierTo(-hw + bend, 0, -hw, hh)
+        ..lineTo(hw, hh)
+        ..quadraticBezierTo(hw + bend, 0, hw, -hh)
+        ..close();
+      canvas.drawPath(path, paint);
       canvas.restore();
     }
   }
