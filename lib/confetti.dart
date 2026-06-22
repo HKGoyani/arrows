@@ -79,7 +79,9 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
       p.y += p.vy * dt;
       p.rot += p.vr * dt;
       if (p.life > 1.5) {
-        p.opacity = (1 - (p.life - 1.5) / 1.2).clamp(0.0, 1.0);
+        final t = ((p.life - 1.5) / 1.2).clamp(0.0, 1.0);
+        p.opacity = 1 - t;
+        p.scale = 1 - t * 0.6;
       }
     }
     setState(() {});
@@ -103,7 +105,7 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
 }
 
 class _Piece {
-  double x, y, vx, vy, rot, vr, w, h, life = 0, opacity = 1;
+  double x, y, vx, vy, rot, vr, w, h, life = 0, opacity = 1, scale = 1;
   final double curve;
   final Color color;
   _Piece({
@@ -134,8 +136,8 @@ class _ConfettiPainter extends CustomPainter {
       final paint = Paint()
         ..color = p.color.withValues(alpha: p.opacity)
         ..style = PaintingStyle.fill;
-      final hw = p.w / 2;
-      final hh = p.h / 2;
+      final hw = p.w * p.scale / 2;
+      final hh = p.h * p.scale / 2;
       final bend = p.w * p.curve;
       final path = Path()
         ..moveTo(-hw, -hh)
