@@ -19,7 +19,11 @@ class GameController extends ChangeNotifier {
   int total = 0;
   GameStatus status = GameStatus.playing;
 
-  double get progress => total == 0 ? 0 : (total - arrows.length) / total;
+  double get progress {
+    if (total == 0) return 0;
+    final remaining = arrows.where((a) => a.state != ArrowState.leaving).length;
+    return (total - remaining) / total;
+  }
 
   void loadLevel(int lvl) {
     level = lvl;
