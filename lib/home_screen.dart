@@ -42,8 +42,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     if (newLevel != _currLevel) {
       _prevLevel = _currLevel;
       _currLevel = newLevel;
+      _ctrl.forward(from: 0).then((_) {
+        if (mounted) setState(() => _prevLevel = _currLevel);
+      });
     }
-    _ctrl.forward(from: 0);
   }
 
   @override
@@ -152,12 +154,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                 ),
                 const Spacer(flex: 4),
-                FadeTransition(
-                  opacity: playAnim,
-                  child: PrimaryButton(
-                      label: 'Play',
-                      onTap: widget.onPlay,
-                      width: 280),
+                AnimatedBuilder(
+                  animation: _ctrl,
+                  builder: (_, __) => IgnorePointer(
+                    ignoring: _ctrl.value < 0.85,
+                    child: FadeTransition(
+                      opacity: playAnim,
+                      child: PrimaryButton(
+                          label: 'Play',
+                          onTap: widget.onPlay,
+                          width: 280),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 FadeTransition(

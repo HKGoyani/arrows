@@ -54,6 +54,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   final Set<int> _hintedIds = {};
   Timer? _hintTimer;
   late final AnimationController _hintPulseCtrl;
+  late final AnimationController _heartCtrl;
+  bool _showWinText = false;
+  bool _showWinConfetti = false;
   double _scale = 1;
   bool _winHandled = false;
 
@@ -73,6 +76,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ..addListener(_onLurchTick);
     _hintPulseCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1200))
+      ..addListener(_rebuild);
+    _heartCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1000))
       ..addListener(_rebuild);
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
@@ -114,6 +120,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _hintTimer?.cancel();
     c.removeListener(_rebuild);
     _rippleCtrl.dispose();
+    _heartCtrl.dispose();
     _clashFlashCtrl.dispose();
     _lurchCtrl.dispose();
     _hintPulseCtrl.dispose();
@@ -234,8 +241,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _showGrid = false;
     AudioService.win();
     AudioService.vibrate(Haptic.medium);
-    Future.delayed(const Duration(milliseconds: 2800), () {
-      if (mounted) widget.onWin(c.level + 1);
+    _heartCtrl.forward(from: 0);
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      setState(() {
+        _showWinText = true;
+        _showWinConfetti = true;
+      });
+      Future.delayed(const Duration(milliseconds: 2800), () {
+        if (mounted) widget.onWin(c.level + 1);
+      });
     });
   }
 
@@ -254,6 +269,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _hintArrow = null;
     _hintedIds.clear();
     _hintPulseCtrl.reset();
+    _heartCtrl.reset();
+    _showWinText = false;
+    _showWinConfetti = false;
     c.loadLevel(c.level);
     _resetHintTimer();
   }
@@ -269,8 +287,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                GameTopBar(c: c, onBack: widget.onBack, onRestart: _restart),
-                ProgressBar(progress: c.progress),
+                if (_heartCtrl.value < 0.01)
+                  GameTopBar(c: c, onBack: widget.onBack, onRestart: _restart),
+                if (_heartCtrl.value < 0.01)
+                  ProgressBar(progress: c.progress),
                 Expanded(
                   child: ClipRect(
                     child: Stack(
@@ -331,7 +351,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            if (c.status == GameStatus.won) _winOverlay(),
+            if (_showWinText || _showWinConfetti) _winOverlay(),
             if (c.status == GameStatus.lost) _loseOverlay(),
           ],
         ),
@@ -378,6 +398,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 hintArrow: _hintArrow,
                 hintPulse: _hintPulseCtrl.value,
                 hintedIds: _hintedIds,
+                heartT: _heartCtrl.value,
                 clashTint: _clashFlashCtrl.isAnimating
                     ? (_clashFlashCtrl.value < 0.15
                         ? _clashFlashCtrl.value / 0.15
@@ -415,23 +436,41 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Widget _winOverlay() {
     return Positioned.fill(
       child: IgnorePointer(
-        child: Container(
-          color: AppColors.bg,
-          child: Stack(
-            children: [
-              const Positioned.fill(child: ConfettiOverlay()),
+        child: Stack(
+          children: [
+            if (_showWinConfetti)
+              Positioned.fill(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeIn,
+                  builder: (_, opacity, child) => Opacity(opacity: opacity, child: child!),
+                  child: const ConfettiOverlay(),
+                ),
+              ),
+            if (_showWinText)
               Align(
                 alignment: const Alignment(0, -0.08),
                 child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 1.0, end: 0.0),
+                  tween: Tween(begin: 0.0, end: 1.0),
                   duration: const Duration(milliseconds: 2800),
-                  curve: const Interval(0.75, 1.0, curve: Curves.easeOut),
-                  builder: (_, opacity, child) => Opacity(opacity: opacity, child: child),
-                  child: Text(_winMessage(), style: poppins(22, FontWeight.w700, const Color(0xFF3D3D5C))),
+                  builder: (_, v, __) {
+                    double opacity;
+                    if (v < 0.14) {
+                      opacity = v / 0.14;
+                    } else if (v < 0.75) {
+                      opacity = 1.0;
+                    } else {
+                      opacity = 1.0 - (v - 0.75) / 0.25;
+                    }
+                    return Opacity(
+                      opacity: opacity.clamp(0.0, 1.0),
+                      child: Text(_winMessage(), style: poppins(22, FontWeight.w700, const Color(0xFF3D3D5C))),
+                    );
+                  },
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

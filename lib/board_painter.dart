@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'config.dart';
 import 'fly_off.dart';
@@ -20,6 +21,7 @@ class BoardPainter extends CustomPainter {
   final Arrow? hintArrow;
   final double hintPulse;
   final Set<int> hintedIds;
+  final double heartT;
 
   BoardPainter({
     required this.c,
@@ -35,6 +37,7 @@ class BoardPainter extends CustomPainter {
     this.hintArrow,
     this.hintPulse = 0,
     this.hintedIds = const {},
+    this.heartT = 0,
   });
 
   @override
@@ -44,14 +47,18 @@ class BoardPainter extends CustomPainter {
     canvas.scale(scale);
 
     // dot grid (revealed in empty/cleared cells)
-    final dotPaint = Paint()..color = AppColors.dot;
-    for (var i = 0; i <= c.cols; i++) {
-      for (var j = 0; j <= c.rows; j++) {
-        canvas.drawCircle(
-          Offset(Cfg.margin + i * Cfg.cell, Cfg.margin + j * Cfg.cell),
-          Cfg.dotR,
-          dotPaint,
-        );
+    if (heartT > 0) {
+      _drawHeartDots(canvas);
+    } else {
+      final dotPaint = Paint()..color = AppColors.dot;
+      for (var i = 0; i <= c.cols; i++) {
+        for (var j = 0; j <= c.rows; j++) {
+          canvas.drawCircle(
+            Offset(Cfg.margin + i * Cfg.cell, Cfg.margin + j * Cfg.cell),
+            Cfg.dotR,
+            dotPaint,
+          );
+        }
       }
     }
 
@@ -168,6 +175,54 @@ class BoardPainter extends CustomPainter {
     // animated leaving arrows (snakes), drawn on top
     for (final f in flights) {
       _drawArrow(canvas, f.fly.shaftPoints(f.adv), f.fly.arrow.dir, AppColors.arrowBlue);
+    }
+  }
+
+  void _drawHeartDots(Canvas canvas) {
+    const waveColor = Color(0xFFA0A4D4);
+    final t = heartT.clamp(0.0, 1.0);
+    final cx = c.cols / 2.0;
+    final cy = c.rows / 2.0;
+    final maxDist = sqrt(cx * cx + cy * cy);
+    final waveFront = t * (maxDist + 2.0);
+    const waveWidth = 2.5;
+
+    for (var i = 0; i <= c.cols; i++) {
+      for (var j = 0; j <= c.rows; j++) {
+        final dx = i - cx;
+        final dy = j - cy;
+        final dist = sqrt(dx * dx + dy * dy);
+        final center = Offset(Cfg.margin + i * Cfg.cell, Cfg.margin + j * Cfg.cell);
+
+        final distToWave = (dist - waveFront).abs();
+        final inWave = distToWave < waveWidth;
+        final behindWave = dist < waveFront - waveWidth;
+        final aheadOfWave = dist > waveFront + waveWidth;
+
+        double dotSize;
+        double dotAlpha;
+
+        if (inWave) {
+          final waveT = 1.0 - (distToWave / waveWidth);
+          dotSize = Cfg.dotR + Cfg.dotR * 1.0 * waveT;
+          dotAlpha = 0.4 + 0.4 * waveT;
+        } else if (behindWave) {
+          dotSize = 0;
+          dotAlpha = 0;
+        } else {
+          dotSize = Cfg.dotR;
+          dotAlpha = 1.0 - t * 0.3;
+        }
+
+        if (dotAlpha < 0.01 || dotSize < 0.3) continue;
+        canvas.drawCircle(
+          center,
+          dotSize,
+          Paint()..color = inWave
+              ? waveColor.withValues(alpha: dotAlpha)
+              : AppColors.dot.withValues(alpha: dotAlpha),
+        );
+      }
     }
   }
 
