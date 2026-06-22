@@ -78,7 +78,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         vsync: this, duration: const Duration(milliseconds: 1200))
       ..addListener(_rebuild);
     _heartCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1000))
+        vsync: this, duration: const Duration(milliseconds: 1200))
       ..addListener(_rebuild);
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
@@ -221,7 +221,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (s == AnimationStatus.completed) _finish(flight);
     });
     _flights.add(flight);
-    c.startFire(a); // free cells now so neighbours open up
+    c.startFire(a);
+    final remaining = c.arrows.where((ar) => ar.state != ArrowState.leaving).length;
+    if (remaining == 0 && !_winHandled) {
+      _heartCtrl.forward(from: 0);
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        setState(() {
+          _showWinText = true;
+          _showWinConfetti = true;
+        });
+      });
+    }
     ctrl.forward();
   }
 
@@ -241,16 +252,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _showGrid = false;
     AudioService.win();
     AudioService.vibrate(Haptic.medium);
-    _heartCtrl.forward(from: 0);
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-      setState(() {
-        _showWinText = true;
-        _showWinConfetti = true;
-      });
-      Future.delayed(const Duration(milliseconds: 2800), () {
-        if (mounted) widget.onWin(c.level + 1);
-      });
+    if (!_heartCtrl.isAnimating) _heartCtrl.forward(from: 0);
+    Future.delayed(const Duration(milliseconds: 2800), () {
+      if (mounted) widget.onWin(c.level + 1);
     });
   }
 
@@ -287,10 +291,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_heartCtrl.value < 0.01)
-                  GameTopBar(c: c, onBack: widget.onBack, onRestart: _restart),
-                if (_heartCtrl.value < 0.01)
-                  ProgressBar(progress: c.progress),
+                AnimatedBuilder(
+                  animation: _heartCtrl,
+                  builder: (_, child) => Opacity(
+                    opacity: (1.0 - _heartCtrl.value * 3.0).clamp(0.0, 1.0),
+                    child: child,
+                  ),
+                  child: Column(
+                    children: [
+                      GameTopBar(c: c, onBack: widget.onBack, onRestart: _restart),
+                      ProgressBar(progress: c.progress),
+                    ],
+                  ),
+                ),
                 Expanded(
                   child: ClipRect(
                     child: Stack(
