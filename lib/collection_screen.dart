@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'collection_icons.dart';
 import 'config.dart';
 import 'prefs.dart';
 import 'streak.dart';
@@ -12,124 +13,83 @@ class CollectionScreen extends StatelessWidget {
     final best = StreakService.best;
     final solved = (Prefs.level - 1).clamp(0, 9999);
     final current = StreakService.current;
+    final now = DateTime.now();
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 6, 4, 16),
-              child: Text('Collection',
-                  style: poppins(26, FontWeight.w800, AppColors.ink)),
-            ),
-            // Records
             _SectionHeader(title: 'Records'),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _TrophyCard(
-                    icon: Icons.local_fire_department_rounded,
-                    tint: AppColors.flame,
-                    value: '$current',
-                    label: 'Longest Streak',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _TrophyCard(
-                    icon: Icons.emoji_events_rounded,
-                    tint: AppColors.blue,
-                    value: '$best',
-                    label: 'Highest Win\nStreak',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _TrophyCard(
-                    icon: Icons.arrow_upward_rounded,
-                    tint: AppColors.blueSoft,
-                    value: '$solved',
-                    label: 'Most Wins',
-                  ),
-                ),
+                Expanded(child: _RecordCard(
+                  painter: FlamePainter(),
+                  value: '$current',
+                  label: 'Longest Streak',
+                  date: _formatDate(now),
+                )),
+                const SizedBox(width: 12),
+                Expanded(child: _RecordCard(
+                  painter: CrownPainter(),
+                  value: '$best',
+                  label: 'Highest Win\nStreak',
+                  date: _formatDate(now),
+                )),
+                const SizedBox(width: 12),
+                Expanded(child: _RecordCard(
+                  painter: WingArrowPainter(),
+                  value: '$solved',
+                  label: 'Most Wins',
+                  date: _formatDate(now),
+                )),
               ],
             ),
             const SizedBox(height: 28),
-            // Awards
             _SectionHeader(title: 'Awards'),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _AwardBadge(
+                Expanded(child: _AwardCard(
+                  icon: Icons.star_rounded,
                   label: 'Level Legend',
                   unlocked: solved >= 50,
                 )),
-                const SizedBox(width: 10),
-                Expanded(child: _AwardBadge(
+                const SizedBox(width: 12),
+                Expanded(child: _AwardCard(
+                  icon: Icons.hexagon_rounded,
                   label: 'Perfect Play',
                   unlocked: false,
                 )),
-                const SizedBox(width: 10),
-                Expanded(child: _AwardBadge(
+                const SizedBox(width: 12),
+                Expanded(child: _AwardCard(
+                  icon: Icons.shield_rounded,
                   label: 'Unstoppable',
                   unlocked: false,
                 )),
               ],
             ),
             const SizedBox(height: 28),
-            // Challenge Trophies
             _SectionHeader(title: 'Challenge Trophies'),
-            const SizedBox(height: 4),
-            Text('${DateTime.now().year}',
-                style: poppins(14, FontWeight.w800, AppColors.muted)),
-            const SizedBox(height: 12),
-            AppCard(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-              child: Column(
-                children: [
-                  Text('Win 3 Nightmare levels to earn\nthis award.',
-                      textAlign: TextAlign.center,
-                      style: poppins(14, FontWeight.w800, AppColors.ink, height: 1.4)),
-                  const SizedBox(height: 18),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: _monthTrophies(),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 8),
+            Text('${now.year}',
+                style: poppins(18, FontWeight.w900, AppColors.ink)),
+            const SizedBox(height: 16),
+            _TrophyGrid(year: now.year),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _monthTrophies() {
-    const months = ['January', 'February', 'March'];
-    return months.map((m) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: const Icon(Icons.emoji_events_rounded,
-                color: AppColors.lock, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(m, style: poppins(12, FontWeight.w800, AppColors.muted)),
-          Text('0 of 31', style: poppins(11, FontWeight.w800, AppColors.lock)),
-        ],
-      );
-    }).toList();
+  static String _formatDate(DateTime d) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[d.month - 1]} ${d.day} ${d.year}';
   }
 }
 
@@ -140,86 +100,178 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(title, style: poppins(16, FontWeight.w800, AppColors.blue)),
-        const SizedBox(width: 10),
+        Text(title, style: poppins(18, FontWeight.w900, AppColors.blue)),
+        const SizedBox(width: 12),
         Expanded(
-          child: Container(height: 1, color: AppColors.cardBorder),
+          child: Container(height: 1.5, color: AppColors.cardBorder),
         ),
       ],
     );
   }
 }
 
-class _TrophyCard extends StatelessWidget {
-  final IconData icon;
-  final Color tint;
-  final String value;
-  final String label;
-  const _TrophyCard({
-    required this.icon,
-    required this.tint,
-    required this.value,
-    required this.label,
-  });
+/// Soft rounded square that contains only the icon art.
+class _IconBox extends StatelessWidget {
+  final Widget child;
+  const _IconBox({required this.child});
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      child: Column(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: tint.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: tint, size: 26),
-          ),
-          const SizedBox(height: 8),
-          Text(value, style: poppins(20, FontWeight.w800, AppColors.ink)),
-          const SizedBox(height: 2),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: poppins(11, FontWeight.w800, AppColors.muted)),
-        ],
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: child,
       ),
     );
   }
 }
 
-class _AwardBadge extends StatelessWidget {
-  final String label;
-  final bool unlocked;
-  const _AwardBadge({required this.label, required this.unlocked});
+/// White pill badge that shows a record number.
+class _NumberBadge extends StatelessWidget {
+  final String value;
+  const _NumberBadge(this.value);
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: unlocked
-                  ? AppColors.blue.withValues(alpha: 0.14)
-                  : AppColors.surface,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.shield_rounded,
-              color: unlocked ? AppColors.blue : AppColors.lock,
-              size: 30,
-            ),
+    final base = poppins(20, FontWeight.w900, Colors.white);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // gray outline
+        Text(value, style: base.copyWith(
+          foreground: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 6
+            ..strokeJoin = StrokeJoin.round
+            ..color = const Color(0xFF6F7596),
+        )),
+        // white fill
+        Text(value, style: base),
+      ],
+    );
+  }
+}
+
+class _RecordCard extends StatelessWidget {
+  final CustomPainter painter;
+  final String value;
+  final String label;
+  final String date;
+  const _RecordCard({
+    required this.painter,
+    required this.value,
+    required this.label,
+    required this.date,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _IconBox(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+                  child: CustomPaint(painter: painter),
+                ),
+              ),
+              Align(
+                alignment: const Alignment(0, 0.6),
+                child: _NumberBadge(value),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: poppins(12, FontWeight.w800,
-                  unlocked ? AppColors.ink : AppColors.lock)),
-        ],
+        ),
+        const SizedBox(height: 10),
+        Text(label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: poppins(12, FontWeight.w800, AppColors.ink)),
+        const SizedBox(height: 2),
+        Text(date,
+            style: poppins(10.5, FontWeight.w700, AppColors.muted)),
+      ],
+    );
+  }
+}
+
+class _AwardCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool unlocked;
+  const _AwardCard({
+    required this.icon,
+    required this.label,
+    required this.unlocked,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _IconBox(
+          child: Center(
+            child: Icon(icon,
+                color: unlocked ? AppColors.blue : AppColors.lock,
+                size: 50),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: poppins(12, FontWeight.w800,
+                unlocked ? AppColors.ink : AppColors.muted)),
+      ],
+    );
+  }
+}
+
+class _TrophyGrid extends StatelessWidget {
+  final int year;
+  const _TrophyGrid({required this.year});
+
+  static const _monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  static const _daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 18,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.70,
       ),
+      itemCount: 12,
+      itemBuilder: (_, i) {
+        final days = (i == 1 && year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
+            ? 29 : _daysInMonth[i];
+        return Column(
+          children: [
+            _IconBox(
+              child: Center(
+                child: Icon(Icons.emoji_events_rounded,
+                    color: AppColors.lock, size: 46),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(_monthNames[i],
+                style: poppins(12, FontWeight.w800, AppColors.ink)),
+            Text('0 of $days',
+                style: poppins(10.5, FontWeight.w700, AppColors.muted)),
+          ],
+        );
+      },
     );
   }
 }
