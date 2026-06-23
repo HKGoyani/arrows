@@ -176,16 +176,17 @@ class GameTopBar extends StatelessWidget {
   final VoidCallback onBack, onRestart;
   const GameTopBar({super.key, required this.c, required this.onBack, required this.onRestart});
 
-  String get _difficulty {
+  (String, Color) get _difficultyInfo {
     final lvl = c.level;
-    if (lvl < 4) return 'Easy';
-    if (lvl < 6) return 'Medium';
-    if (lvl < 9) return 'Hard';
-    return 'Super Hard';
+    if (lvl < 4) return ('Easy', AppColors.blueSoft);
+    if (lvl < 6) return ('Medium', AppColors.blueSoft);
+    if (lvl < 9) return ('Hard', const Color(0xFF38ADF2));
+    return ('Super Hard', const Color(0xFFDE63FB));
   }
 
   @override
   Widget build(BuildContext context) {
+    final (label, color) = _difficultyInfo;
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 14, 0, 8),
       child: Row(
@@ -208,8 +209,8 @@ class GameTopBar extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                Text(_difficulty,
-                    style: poppins(14, FontWeight.w800, AppColors.blueSoft)),
+                Text(label,
+                    style: poppins(14, FontWeight.w900, color)),
                 const SizedBox(height: 4),
                 HeartsRow(hearts: c.hearts),
               ],

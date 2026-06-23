@@ -341,7 +341,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       children: [
                         const Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
                         const SizedBox(width: 6),
-                        Text('Hint', style: poppins(16, FontWeight.w800, Colors.white)),
+                        Text('Hint', style: poppins(16, FontWeight.w900, Colors.white)),
                       ],
                     ),
                   ),
@@ -489,7 +489,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     }
                     return Opacity(
                       opacity: opacity.clamp(0.0, 1.0),
-                      child: Text(_winMessage(), style: poppins(24, FontWeight.w800, const Color(0xFF3D3D5C))),
+                      child: Text(_winMessage(), style: poppins(22, FontWeight.w900, const Color(0xFF535B83))),
                     );
                   },
                 ),
