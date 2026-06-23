@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 ),
-                const Spacer(flex: 3),
+                const Spacer(flex: 4),
                 FadeTransition(
                   opacity: appearAnim,
                   child: const ArrowsWordmark(),
@@ -153,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               style: poppins(20, FontWeight.w900, AppColors.blue)),
                         ),
                 ),
-                const Spacer(flex: 4),
+                const Spacer(flex: 3),
                 AnimatedBuilder(
                   animation: _ctrl,
                   builder: (_, __) => IgnorePointer(
