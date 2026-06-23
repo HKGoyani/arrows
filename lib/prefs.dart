@@ -64,6 +64,10 @@ class Prefs {
   static bool get unstoppableUnseen => _p?.getBool('unstoppableUnseen') ?? false;
   static Future<void> setUnstoppableUnseen(bool v) async => _p?.setBool('unstoppableUnseen', v);
 
+  // --- perfect play unseen badge ---
+  static bool get perfectUnseen => _p?.getBool('perfectUnseen') ?? false;
+  static Future<void> setPerfectUnseen(bool v) async => _p?.setBool('perfectUnseen', v);
+
   // --- perfect play (valid, uninterrupted level completions) ---
   static int get perfectCount => _p?.getInt('perfectCount') ?? 0;
   static Future<void> setPerfectCount(int v) async => _p?.setInt('perfectCount', v);
@@ -89,6 +93,7 @@ class Prefs {
     await _p?.remove('unstoppableDates');
     await _p?.remove('unstoppableUnseen');
     await _p?.remove('legendUnseen');
+    await _p?.remove('perfectUnseen');
     await _p?.remove('perfectCount');
     await _p?.remove('perfectLevel');
     await _p?.remove('perfectValid');

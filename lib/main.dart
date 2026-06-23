@@ -8,6 +8,7 @@ import 'game_controller.dart';
 import 'game_screen.dart';
 import 'home_screen.dart';
 import 'level_legend.dart';
+import 'perfect.dart';
 import 'unstoppable.dart';
 import 'prefs.dart';
 import 'settings_screen.dart';
@@ -122,7 +123,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
             }
             setState(() => _tab = i);
           },
-          showCollectionBadge: LevelLegend.hasUnseen || Unstoppable.hasUnseen,
+          showCollectionBadge: LevelLegend.hasUnseen || PerfectPlay.hasUnseen || Unstoppable.hasUnseen,
         ),
       ),
     );
@@ -153,11 +154,21 @@ class _GameFlowState extends State<GameFlow> {
     super.dispose();
   }
 
-  void _showCelebration(int newLevel) {
-    final solved = newLevel - 1;
+  void _showLevelLegendCelebration(int newLevel) {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => _CelebrationScreen(milestone: solved),
+        pageBuilder: (_, __, ___) => _LevelLegendCelebration(milestone: newLevel),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+
+  void _showPerfectPlayCelebration() {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => _PerfectPlayCelebration(milestone: PerfectPlay.reached),
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
         transitionDuration: const Duration(milliseconds: 300),
@@ -177,7 +188,9 @@ class _GameFlowState extends State<GameFlow> {
         LevelLegend.onWin(next);
         if (!mounted) return;
         if (LevelLegend.justUnlockedMilestone(next)) {
-          _showCelebration(next);
+          _showLevelLegendCelebration(next);
+        } else if (PerfectPlay.justUnlockedMilestone()) {
+          _showPerfectPlayCelebration();
         } else {
           Navigator.of(context).maybePop();
         }
@@ -186,9 +199,9 @@ class _GameFlowState extends State<GameFlow> {
   }
 }
 
-class _CelebrationScreen extends StatelessWidget {
+class _LevelLegendCelebration extends StatelessWidget {
   final int milestone;
-  const _CelebrationScreen({required this.milestone});
+  const _LevelLegendCelebration({required this.milestone});
 
   @override
   Widget build(BuildContext context) {
@@ -230,6 +243,78 @@ class _CelebrationScreen extends StatelessWidget {
               const SizedBox(height: 18),
               Text(
                 'You earned Level Legend by\nreaching level $milestone!',
+                textAlign: TextAlign.center,
+                style: poppins(20, FontWeight.w800, AppColors.ink),
+              ),
+              const Spacer(flex: 5),
+              GestureDetector(
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    color: AppColors.blue,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('Continue',
+                      style: poppins(18, FontWeight.w800, Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 28),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PerfectPlayCelebration extends StatelessWidget {
+  final int milestone;
+  const _PerfectPlayCelebration({required this.milestone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: [
+              const Spacer(flex: 3),
+              SizedBox(
+                width: 230,
+                height: 230,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                          painter: TargetMedalPainter(unlocked: true)),
+                    ),
+                    Align(
+                      alignment: const Alignment(0, 0.96),
+                      child: _CelebBadge('$milestone'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F2F8),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('New Unlock!',
+                    style: poppins(13.5, FontWeight.w700, AppColors.muted)),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'You earned Perfect Play by\nwinning $milestone levels on your\nfirst attempt!',
                 textAlign: TextAlign.center,
                 style: poppins(20, FontWeight.w800, AppColors.ink),
               ),

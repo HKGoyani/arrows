@@ -79,6 +79,7 @@ class CollectionScreen extends StatelessWidget {
                   sublabel: PerfectPlay.unlocked
                       ? '${PerfectPlay.tier} of ${PerfectPlay.milestones.length}'
                       : null,
+                  showBadge: PerfectPlay.hasUnseen,
                   onTap: () => showPerfectPlayDetail(context),
                 )),
                 const SizedBox(width: 12),
@@ -655,6 +656,7 @@ void showPerfectPlayDetail(BuildContext context) {
       child: child,
     ),
   );
+  PerfectPlay.markSeen();
 }
 
 class _PerfectPlayDetailScreen extends StatelessWidget {

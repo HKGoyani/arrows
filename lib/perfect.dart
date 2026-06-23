@@ -70,15 +70,28 @@ class PerfectPlay {
   /// Player manually restarted the level — invalidate this attempt.
   static void onRestart() => Prefs.setPerfectValid(false);
 
+  static bool get hasUnseen => Prefs.perfectUnseen;
+
+  static void markSeen() => Prefs.setPerfectUnseen(false);
+
+  /// Whether the most recent win just crossed a milestone.
+  static bool justUnlockedMilestone() => _lastMilestoneHit;
+  static bool _lastMilestoneHit = false;
+
   /// Player cleared [level]. Counts toward Perfect Play only if the attempt
   /// was never invalidated. Marks the attempt spent to avoid double-counting,
   /// and stamps the earned-date when a milestone is freshly crossed.
   static void onWin(int level) {
+    _lastMilestoneHit = false;
     if (Prefs.perfectValid && Prefs.perfectLevel == level) {
       final newCount = Prefs.perfectCount + 1;
       Prefs.setPerfectCount(newCount);
       final i = milestones.indexOf(newCount);
-      if (i >= 0) _stampMilestone(i);
+      if (i >= 0) {
+        _stampMilestone(i);
+        Prefs.setPerfectUnseen(true);
+        _lastMilestoneHit = true;
+      }
     }
     Prefs.setPerfectValid(false);
   }
