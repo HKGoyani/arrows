@@ -48,11 +48,29 @@ class Prefs {
   static bool get usedFreeLife => _p?.getBool('usedFreeLife') ?? false;
   static Future<void> setUsedFreeLife() async => _p?.setBool('usedFreeLife', true);
 
+  // --- perfect play (valid, uninterrupted level completions) ---
+  static int get perfectCount => _p?.getInt('perfectCount') ?? 0;
+  static Future<void> setPerfectCount(int v) async => _p?.setInt('perfectCount', v);
+  // the level the current attempt-validity refers to
+  static int get perfectLevel => _p?.getInt('perfectLevel') ?? 0;
+  static Future<void> setPerfectLevel(int v) async => _p?.setInt('perfectLevel', v);
+  // is the current level's attempt still valid (no loss / no restart)?
+  static bool get perfectValid => _p?.getBool('perfectValid') ?? false;
+  static Future<void> setPerfectValid(bool v) async => _p?.setBool('perfectValid', v);
+  // ISO date each milestone was earned (index-aligned to PerfectPlay.milestones)
+  static List<String> get perfectDates => _p?.getStringList('perfectDates') ?? const [];
+  static Future<void> setPerfectDates(List<String> v) async =>
+      _p?.setStringList('perfectDates', v);
+
   static Future<void> resetProgress() async {
     await _p?.remove('level');
     await _p?.remove('curStreak');
     await _p?.remove('bestStreak');
     await _p?.remove('lastPlayed');
     await _p?.remove('playedDays');
+    await _p?.remove('perfectCount');
+    await _p?.remove('perfectLevel');
+    await _p?.remove('perfectValid');
+    await _p?.remove('perfectDates');
   }
 }

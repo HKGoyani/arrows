@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Hand-built 3D-style illustrations for the Collection screen.
@@ -318,4 +319,221 @@ class WingArrowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ───────────────────────── Star medallion (award) ─────────────────────────
+class StarMedalPainter extends CustomPainter {
+  final bool unlocked;
+  StarMedalPainter({required this.unlocked});
+
+  Path _star(Offset c, double outer, double inner) {
+    final path = Path();
+    for (int i = 0; i < 10; i++) {
+      final r = i.isEven ? outer : inner;
+      final a = -math.pi / 2 + i * math.pi / 5;
+      final p = Offset(c.dx + r * math.cos(a), c.dy + r * math.sin(a));
+      i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
+    }
+    return path..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final c = Offset(w / 2, h * 0.46);
+    final R = math.min(w, h) * 0.44;
+
+    // soft drop shadow under the coin
+    canvas.drawCircle(
+      c.translate(0, R * 0.10), R,
+      Paint()
+        ..color = const Color(0xFF9AA0C2).withValues(alpha: 0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+
+    // outer disc — domed coin
+    canvas.drawCircle(c, R, Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.35, -0.45),
+        colors: const [Color(0xFFF1F2FB), Color(0xFFD2D7EA)],
+      ).createShader(Rect.fromCircle(center: c, radius: R)));
+
+    // raised rim ring
+    canvas.drawCircle(c, R * 0.985, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = R * 0.05
+      ..color = const Color(0xFFC6CBE2));
+
+    // recessed inner dish (darker at top = shadow under rim)
+    final inner = R * 0.74;
+    canvas.drawCircle(c, inner, Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFFCAD0E5), Color(0xFFE7EAF5)],
+      ).createShader(Rect.fromCircle(center: c, radius: inner)));
+
+    // ── star ──
+    final starOuter = R * 0.56, starInner = R * 0.24;
+    final star = _star(c, starOuter, starInner);
+
+    final shader = unlocked
+        ? const LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [Color(0xFF8FC8FF), Color(0xFF4A93EE), Color(0xFF2A6FD0)],
+          ).createShader(star.getBounds())
+        : const LinearGradient(
+            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            colors: [Color(0xFFECEEF8), Color(0xFFCFD4E8)],
+          ).createShader(star.getBounds());
+
+    // single star: fill + round-join stroke to soften the points
+    canvas.drawPath(star, Paint()..shader = shader);
+    canvas.drawPath(star, Paint()
+      ..shader = shader
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = R * 0.07
+      ..strokeJoin = StrokeJoin.round);
+
+    // gloss highlight kept INSIDE the star (clipped) so it never reads as a 2nd star
+    canvas.save();
+    canvas.clipPath(star);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: c.translate(-R * 0.06, -R * 0.20),
+        width: R * 0.6, height: R * 0.34),
+      Paint()
+        ..color = Colors.white.withValues(alpha: unlocked ? 0.34 : 0.5)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant StarMedalPainter old) => old.unlocked != unlocked;
+}
+
+// ───────────────────── Target / dartboard hexagon (Perfect Play) ──────────
+class TargetMedalPainter extends CustomPainter {
+  final bool unlocked;
+  TargetMedalPainter({required this.unlocked});
+
+  Path _hexagon(Offset c, double r) {
+    // pointy-top hexagon: a corner sits at the top (not a flat edge)
+    final v = <Offset>[
+      for (var k = 0; k < 6; k++)
+        Offset(
+          c.dx + r * math.cos((-90 + 60 * k) * math.pi / 180),
+          c.dy + r * math.sin((-90 + 60 * k) * math.pi / 180),
+        ),
+    ];
+    final rad = r * 0.10; // rounded but crisp corners
+    final path = Path();
+    final n = v.length;
+    for (var i = 0; i < n; i++) {
+      final cur = v[i];
+      final toPrev = v[(i - 1 + n) % n] - cur;
+      final toNext = v[(i + 1) % n] - cur;
+      final p1 = cur + toPrev / toPrev.distance * rad;
+      final p2 = cur + toNext / toNext.distance * rad;
+      i == 0 ? path.moveTo(p1.dx, p1.dy) : path.lineTo(p1.dx, p1.dy);
+      path.quadraticBezierTo(cur.dx, cur.dy, p2.dx, p2.dy);
+    }
+    return path..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final c = Offset(w / 2, h * 0.46);
+    final R = math.min(w, h) * 0.42;
+
+    // drop shadow
+    canvas.drawPath(
+      _hexagon(c.translate(0, R * 0.09), R),
+      Paint()
+        ..color = const Color(0xFF9AA0C2).withValues(alpha: 0.30)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7));
+
+    // outer hexagon frame (corners already rounded in the path)
+    final outer = _hexagon(c, R);
+    final outerPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [Color(0xFFEAEDF7), Color(0xFFD3D8EC)],
+      ).createShader(Rect.fromCircle(center: c, radius: R));
+    canvas.drawPath(outer, outerPaint);
+
+    // inner recessed hexagon
+    final inner = _hexagon(c, R * 0.80);
+    canvas.drawPath(inner, Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFFCBD0E5), Color(0xFFE4E7F3)],
+      ).createShader(Rect.fromCircle(center: c, radius: R * 0.80)));
+
+    final tr = R * 0.46;
+    _target(canvas, c, tr);
+    _dart(canvas, c, tr);
+  }
+
+  void _target(Canvas canvas, Offset o, double r) {
+    final red = unlocked ? const Color(0xFFEF5230) : const Color(0xFFCDD2E6);
+    final white = unlocked ? Colors.white : const Color(0xFFE9ECF5);
+    Paint p(Color col) => Paint()..color = col;
+    canvas.drawCircle(o, r * 1.04, p(white));
+    canvas.drawCircle(o, r * 1.00, p(red));
+    canvas.drawCircle(o, r * 0.78, p(white));
+    canvas.drawCircle(o, r * 0.58, p(red));
+    canvas.drawCircle(o, r * 0.38, p(white));
+    canvas.drawCircle(o, r * 0.18, p(red));
+    // top gloss
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: o.translate(0, -r * 0.42), width: r * 1.2, height: r * 0.5),
+      Paint()..color = Colors.white.withValues(alpha: 0.16));
+  }
+
+  void _dart(Canvas canvas, Offset center, double r) {
+    final gLight = unlocked ? const Color(0xFF5BC65F) : const Color(0xFFCFD4E6);
+    final gDark = unlocked ? const Color(0xFF34A03E) : const Color(0xFFB4B9CF);
+    // unit vector from the bullseye toward the upper-right (where the tail sits)
+    final u = const Offset(0.70, -0.71) / const Offset(0.70, -0.71).distance;
+    final perp = Offset(-u.dy, u.dx);
+    final back = center + u * (r * 1.16); // far (upper-right) end with flights
+
+    // shaft: from just outside the bullseye to the back
+    canvas.drawLine(center + u * (r * 0.10), back, Paint()
+      ..color = gDark
+      ..strokeWidth = r * 0.09
+      ..strokeCap = StrokeCap.round);
+
+    // flight: two facets folded along the spine for a 3D look
+    final inner = back - u * (r * 0.55); // meets the shaft, toward center
+    final backTip = back + u * (r * 0.18); // far point of the tail
+    final wing = r * 0.30;
+    final upper = back - perp * wing; // upper-left fin (catches light)
+    final lower = back + perp * wing; // lower-right fin (in shadow)
+    final facetUpper = Path()
+      ..moveTo(inner.dx, inner.dy)
+      ..lineTo(upper.dx, upper.dy)
+      ..lineTo(backTip.dx, backTip.dy)
+      ..close();
+    final facetLower = Path()
+      ..moveTo(inner.dx, inner.dy)
+      ..lineTo(lower.dx, lower.dy)
+      ..lineTo(backTip.dx, backTip.dy)
+      ..close();
+    canvas.drawPath(facetLower, Paint()..color = gDark);
+    canvas.drawPath(facetUpper, Paint()..color = gLight);
+
+    // sharp point planted in the bullseye (points down-left into center)
+    final tipBase = center + u * (r * 0.16);
+    final point = Path()
+      ..moveTo(center.dx, center.dy)
+      ..lineTo((tipBase + perp * (r * 0.05)).dx, (tipBase + perp * (r * 0.05)).dy)
+      ..lineTo((tipBase - perp * (r * 0.05)).dx, (tipBase - perp * (r * 0.05)).dy)
+      ..close();
+    canvas.drawPath(point, Paint()..color = const Color(0xFF8A8FA6));
+  }
+
+  @override
+  bool shouldRepaint(covariant TargetMedalPainter old) => old.unlocked != unlocked;
 }

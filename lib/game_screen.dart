@@ -8,6 +8,7 @@ import 'confetti.dart';
 import 'fly_off.dart';
 import 'game_controller.dart';
 import 'models.dart';
+import 'perfect.dart';
 import 'prefs.dart';
 import 'rng.dart';
 import 'ui_kit.dart';
@@ -82,6 +83,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ..addListener(_rebuild);
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
+    PerfectPlay.onLevelStart(widget.level);
     _resetHintTimer();
   }
 
@@ -165,6 +167,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (c.status == GameStatus.lost) {
         _hintTimer?.cancel();
         _showHint = false;
+        PerfectPlay.onFail(); // lost all hearts → attempt no longer perfect
       }
       _lurchArrow = a;
       _lurchDist = _calcBlockerDist(a);
@@ -251,6 +254,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _handleWin() {
     if (_winHandled) return;
     _winHandled = true;
+    PerfectPlay.onWin(c.level); // counts only if attempt stayed valid
     _hintTimer?.cancel();
     _showHint = false;
     _showGrid = false;
@@ -263,6 +267,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _restart() {
+    PerfectPlay.onRestart(); // manual restart → attempt no longer perfect
     _clashFlashCtrl.reset();
     _lurchCtrl.reset();
     _flashBlocker = null;
