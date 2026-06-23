@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'audio.dart';
+import 'collection_icons.dart';
 import 'collection_screen.dart';
 import 'config.dart';
 import 'game_controller.dart';
 import 'game_screen.dart';
 import 'home_screen.dart';
+import 'level_legend.dart';
 import 'prefs.dart';
 import 'settings_screen.dart';
 import 'streak.dart';
@@ -113,7 +115,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
         child: AppBottomNav(
           index: _tab,
           level: level,
-          onTap: (i) => setState(() => _tab = i),
+          onTap: (i) {
+            if (i == 2 && LevelLegend.hasUnseen) {
+              // don't clear yet — clear when they view the detail
+            }
+            setState(() => _tab = i);
+          },
+          showCollectionBadge: LevelLegend.hasUnseen,
         ),
       ),
     );
@@ -144,6 +152,18 @@ class _GameFlowState extends State<GameFlow> {
     super.dispose();
   }
 
+  void _showCelebration(int newLevel) {
+    final solved = newLevel - 1;
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => _CelebrationScreen(milestone: solved),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GameScreen(
@@ -153,8 +173,110 @@ class _GameFlowState extends State<GameFlow> {
       onBack: () => Navigator.of(context).maybePop(),
       onWin: (next) {
         Prefs.setLevel(next);
-        if (mounted) Navigator.of(context).maybePop();
+        LevelLegend.onWin(next);
+        if (!mounted) return;
+        if (LevelLegend.justUnlockedMilestone(next)) {
+          _showCelebration(next);
+        } else {
+          Navigator.of(context).maybePop();
+        }
       },
+    );
+  }
+}
+
+class _CelebrationScreen extends StatelessWidget {
+  final int milestone;
+  const _CelebrationScreen({required this.milestone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: [
+              const Spacer(flex: 3),
+              SizedBox(
+                width: 230,
+                height: 230,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                          painter: StarMedalPainter(unlocked: true)),
+                    ),
+                    Align(
+                      alignment: const Alignment(0, 0.96),
+                      child: _CelebBadge('$milestone'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F2F8),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('New Unlock!',
+                    style: poppins(13.5, FontWeight.w700, AppColors.muted)),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'You earned Level Legend by\nreaching level $milestone!',
+                textAlign: TextAlign.center,
+                style: poppins(20, FontWeight.w800, AppColors.ink),
+              ),
+              const Spacer(flex: 5),
+              GestureDetector(
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    color: AppColors.blue,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('Continue',
+                      style: poppins(18, FontWeight.w800, Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 28),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CelebBadge extends StatelessWidget {
+  final String value;
+  const _CelebBadge(this.value);
+  @override
+  Widget build(BuildContext context) {
+    const fs = 40.0;
+    final base = poppins(fs, FontWeight.w900, Colors.white);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Text(value,
+            style: base.copyWith(
+              foreground: Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = fs * 0.3
+                ..strokeJoin = StrokeJoin.round
+                ..color = const Color(0xFF6F7596),
+            )),
+        Text(value, style: base),
+      ],
     );
   }
 }

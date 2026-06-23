@@ -48,6 +48,13 @@ class Prefs {
   static bool get usedFreeLife => _p?.getBool('usedFreeLife') ?? false;
   static Future<void> setUsedFreeLife() async => _p?.setBool('usedFreeLife', true);
 
+  // --- level legend (milestone dates + unseen badge) ---
+  static List<String> get legendDates => _p?.getStringList('legendDates') ?? const [];
+  static Future<void> setLegendDates(List<String> v) async =>
+      _p?.setStringList('legendDates', v);
+  static bool get legendUnseen => _p?.getBool('legendUnseen') ?? false;
+  static Future<void> setLegendUnseen(bool v) async => _p?.setBool('legendUnseen', v);
+
   // --- perfect play (valid, uninterrupted level completions) ---
   static int get perfectCount => _p?.getInt('perfectCount') ?? 0;
   static Future<void> setPerfectCount(int v) async => _p?.setInt('perfectCount', v);
@@ -68,6 +75,8 @@ class Prefs {
     await _p?.remove('bestStreak');
     await _p?.remove('lastPlayed');
     await _p?.remove('playedDays');
+    await _p?.remove('legendDates');
+    await _p?.remove('legendUnseen');
     await _p?.remove('perfectCount');
     await _p?.remove('perfectLevel');
     await _p?.remove('perfectValid');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'collection_icons.dart';
 import 'config.dart';
+import 'level_legend.dart';
 import 'perfect.dart';
 import 'prefs.dart';
 import 'streak.dart';
@@ -58,15 +59,14 @@ class CollectionScreen extends StatelessWidget {
                 Expanded(child: _AwardCard(
                   icon: Icons.star_rounded,
                   label: 'Level Legend',
-                  unlocked: solved >= 25,
-                  painter: StarMedalPainter(unlocked: solved >= 25),
-                  value: '$solved',
-                  onTap: () => showAwardDetail(
-                    context,
-                    medal: (u) => StarMedalPainter(unlocked: u),
-                    current: solved,
-                    target: 25,
-                  ),
+                  unlocked: LevelLegend.unlocked,
+                  painter: StarMedalPainter(unlocked: LevelLegend.unlocked),
+                  value: LevelLegend.unlocked ? '${LevelLegend.reached}' : null,
+                  sublabel: LevelLegend.unlocked
+                      ? '${LevelLegend.tier} of ${LevelLegend.milestones.length}'
+                      : null,
+                  showBadge: LevelLegend.hasUnseen,
+                  onTap: () => showLevelLegendDetail(context),
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _AwardCard(
@@ -232,6 +232,7 @@ class _AwardCard extends StatelessWidget {
   final CustomPainter? painter;
   final String? value;
   final String? sublabel;
+  final bool showBadge;
   final VoidCallback? onTap;
   const _AwardCard({
     required this.icon,
@@ -240,6 +241,7 @@ class _AwardCard extends StatelessWidget {
     this.painter,
     this.value,
     this.sublabel,
+    this.showBadge = false,
     this.onTap,
   });
   @override
@@ -249,6 +251,7 @@ class _AwardCard extends StatelessWidget {
         _IconBox(
           child: painter != null
               ? Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     Positioned.fill(
                       child: Padding(
@@ -260,6 +263,19 @@ class _AwardCard extends StatelessWidget {
                       Align(
                         alignment: const Alignment(0, 0.86),
                         child: _NumberBadge(value!),
+                      ),
+                    if (showBadge)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: const BoxDecoration(
+                            color: AppColors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
                   ],
                 )
@@ -432,36 +448,36 @@ class _AwardDetailScreen extends StatelessWidget {
 class _AwardProgress extends StatelessWidget {
   final int current;
   final int target;
+  final int from;
   final bool showTarget;
   const _AwardProgress({
     required this.current,
     required this.target,
+    this.from = 0,
     this.showTarget = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final raw = target <= 0 ? 1.0 : current / target;
-    final factor = raw.clamp(0.18, 1.0).toDouble();
+    final span = target - from;
+    final raw = span <= 0 ? 1.0 : (current - from) / span;
+    final factor = raw.clamp(0.12, 1.0).toDouble();
     return SizedBox(
       height: 36,
       child: Stack(
         children: [
-          // track
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFFEDEFF7),
               borderRadius: BorderRadius.circular(20),
             ),
           ),
-          // target number at the far right
           if (showTarget)
             Align(
               alignment: const Alignment(0.92, 0),
               child: Text('$target',
                   style: poppins(16, FontWeight.w900, const Color(0xFFAFB4CC))),
             ),
-          // green fill with current number at right edge
           FractionallySizedBox(
             widthFactor: factor,
             alignment: Alignment.centerLeft,
@@ -473,12 +489,123 @@ class _AwardProgress extends StatelessWidget {
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 14),
               child: Text('$current',
-                  style: poppins(18, FontWeight.w900, Colors.white)),
+                  style: poppins(showTarget ? 18 : 16, FontWeight.w900,
+                      Colors.white)),
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+// ───────────────────── Level Legend detail (tap) ──────────────────────
+
+void showLevelLegendDetail(BuildContext context) {
+  LevelLegend.markSeen();
+  showGeneralDialog(
+    context: context,
+    barrierLabel: 'Level Legend',
+    barrierColor: Colors.black.withValues(alpha: 0.0),
+    transitionDuration: const Duration(milliseconds: 240),
+    pageBuilder: (_, __, ___) => const _LevelLegendDetailScreen(),
+    transitionBuilder: (_, anim, __, child) => FadeTransition(
+      opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+      child: child,
+    ),
+  );
+}
+
+class _LevelLegendDetailScreen extends StatelessWidget {
+  const _LevelLegendDetailScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final count = LevelLegend.count;
+    final unlocked = LevelLegend.unlocked;
+    final reached = LevelLegend.reached;
+    final next = LevelLegend.next;
+
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: [
+              const Spacer(flex: 3),
+              SizedBox(
+                width: 230,
+                height: 230,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                          painter: StarMedalPainter(unlocked: unlocked)),
+                    ),
+                    if (unlocked)
+                      Align(
+                        alignment: const Alignment(0, 0.96),
+                        child: _NumberBadge('$reached', fontSize: 40),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (unlocked) ...[
+                _DatePill(LevelLegend.earnedDateFor(reached) ?? _formatToday()),
+                const SizedBox(height: 18),
+                Text(
+                  'You earned Level Legend by\nreaching level $reached!',
+                  textAlign: TextAlign.center,
+                  style: poppins(20, FontWeight.w800, AppColors.ink),
+                ),
+              ] else
+                Text(
+                  'Reach Level ${LevelLegend.milestones.first} to earn '
+                  'this award.',
+                  textAlign: TextAlign.center,
+                  style: poppins(20, FontWeight.w800, AppColors.ink),
+                ),
+              if (!unlocked) ...[
+                const SizedBox(height: 26),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: _AwardProgress(
+                      current: count,
+                      target: LevelLegend.milestones.first),
+                ),
+              ],
+              const Spacer(flex: 5),
+              if (unlocked && next != null) ...[
+                Text('Next award at level $next',
+                    style: poppins(
+                        15, FontWeight.w700, const Color(0xFF7A7F9E))),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: _AwardProgress(
+                      current: count, target: next, from: reached,
+                      showTarget: false),
+                ),
+                const SizedBox(height: 24),
+              ],
+              _CloseButton(onTap: () => Navigator.of(context).pop()),
+              const SizedBox(height: 28),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _formatToday() {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final d = DateTime.now();
+    return '${months[d.month - 1]} ${d.day} ${d.year}';
   }
 }
 
@@ -563,7 +690,8 @@ class _PerfectPlayDetailScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
                   child: _AwardProgress(
-                      current: count, target: next, showTarget: false),
+                      current: count, target: next, from: reached,
+                      showTarget: false),
                 ),
                 const SizedBox(height: 24),
               ],
