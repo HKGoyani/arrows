@@ -181,7 +181,8 @@ class GameTopBar extends StatelessWidget {
     if (lvl < 4) return ('Easy', AppColors.blueSoft);
     if (lvl < 6) return ('Medium', AppColors.blueSoft);
     if (lvl < 9) return ('Hard', const Color(0xFF38ADF2));
-    return ('Super Hard', const Color(0xFFDE63FB));
+    if (lvl < 35) return ('Super Hard', const Color(0xFFDE63FB));
+    return ('Nightmare', const Color(0xFFE53935));
   }
 
   @override

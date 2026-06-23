@@ -537,3 +537,119 @@ class TargetMedalPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant TargetMedalPainter old) => old.unlocked != unlocked;
 }
+
+// ───────────────────── Skull shield (Unstoppable) ─────────────────────
+class SkullShieldPainter extends CustomPainter {
+  final bool unlocked;
+  SkullShieldPainter({required this.unlocked});
+
+  Path _shield(Offset c, double w, double h) {
+    final top = c.dy - h * 0.50;
+    final bot = c.dy + h * 0.50;
+    final left = c.dx - w * 0.50;
+    final right = c.dx + w * 0.50;
+    final shoulderY = top + h * 0.10;
+    final midY = c.dy + h * 0.12;
+    return Path()
+      ..moveTo(c.dx, top)
+      ..lineTo(left + w * 0.03, shoulderY)
+      ..quadraticBezierTo(left, shoulderY + h * 0.01, left, shoulderY + h * 0.05)
+      ..lineTo(left, midY)
+      ..quadraticBezierTo(left + w * 0.01, bot - h * 0.14, c.dx, bot)
+      ..quadraticBezierTo(right - w * 0.01, bot - h * 0.14, right, midY)
+      ..lineTo(right, shoulderY + h * 0.05)
+      ..quadraticBezierTo(right, shoulderY + h * 0.01, right - w * 0.03, shoulderY)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final c = Offset(w / 2, h * 0.48);
+    final sw = w * 0.90, sh = h * 0.98;
+
+    // drop shadow
+    canvas.drawPath(
+      _shield(c.translate(0, sh * 0.03), sw, sh),
+      Paint()
+        ..color = const Color(0xFF9AA0C2).withValues(alpha: 0.28)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8));
+
+    // outer shield
+    final outer = _shield(c, sw, sh);
+    canvas.drawPath(outer, Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: unlocked
+            ? const [Color(0xFFE0E5F5), Color(0xFFC5CCEB)]
+            : const [Color(0xFFEAEDF7), Color(0xFFD3D8EC)],
+      ).createShader(outer.getBounds()));
+
+    // inner recessed shield
+    final inner = _shield(c.translate(0, sh * 0.01), sw * 0.76, sh * 0.74);
+    canvas.drawPath(inner, Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: unlocked
+            ? const [Color(0xFFC6CCE5), Color(0xFFDFE3F2)]
+            : const [Color(0xFFCBD0E5), Color(0xFFE4E7F3)],
+      ).createShader(inner.getBounds()));
+
+    // skull centered in the inner shield area
+    _skull(canvas, c.translate(0, -sh * 0.02), sw * 0.28);
+  }
+
+  void _skull(Canvas canvas, Offset c, double r) {
+    final bone1 = unlocked ? const Color(0xFFF7F2EC) : const Color(0xFFE0E3EE);
+    final bone2 = unlocked ? const Color(0xFFEBE0D4) : const Color(0xFFD0D5E6);
+    final socket = unlocked ? const Color(0xFFCBBDA8) : const Color(0xFFB5BAD0);
+
+    // cranium — large round dome
+    final crC = c.translate(0, -r * 0.20);
+    canvas.drawOval(
+      Rect.fromCenter(center: crC, width: r * 2.2, height: r * 2.0),
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.2, -0.4),
+          radius: 0.85,
+          colors: [bone1, bone2],
+        ).createShader(Rect.fromCenter(center: crC, width: r * 2.2, height: r * 2.0)));
+
+    // jaw — connected below
+    canvas.drawOval(
+      Rect.fromCenter(center: c.translate(0, r * 0.45), width: r * 1.3, height: r * 0.7),
+      Paint()..color = bone2);
+    canvas.drawRect(
+      Rect.fromCenter(center: c.translate(0, r * 0.15), width: r * 1.3, height: r * 0.5),
+      Paint()..color = bone2);
+
+    // eye sockets — two round dark circles
+    final eyeY = c.dy - r * 0.02;
+    for (final dx in [-r * 0.38, r * 0.38]) {
+      canvas.drawOval(
+        Rect.fromCenter(
+            center: Offset(c.dx + dx, eyeY),
+            width: r * 0.58, height: r * 0.52),
+        Paint()..color = socket);
+    }
+
+    // nose — small inverted triangle
+    final ny = c.dy + r * 0.35;
+    final nose = Path()
+      ..moveTo(c.dx - r * 0.10, ny + r * 0.10)
+      ..lineTo(c.dx + r * 0.10, ny + r * 0.10)
+      ..lineTo(c.dx, ny - r * 0.02)
+      ..close();
+    canvas.drawPath(nose, Paint()..color = socket);
+
+    // cranium highlight
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: crC.translate(0, -r * 0.36), width: r * 1.0, height: r * 0.45),
+      Paint()..color = Colors.white.withValues(alpha: unlocked ? 0.38 : 0.42)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+  }
+
+  @override
+  bool shouldRepaint(covariant SkullShieldPainter old) => old.unlocked != unlocked;
+}

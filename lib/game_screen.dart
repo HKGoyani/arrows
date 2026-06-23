@@ -9,6 +9,7 @@ import 'fly_off.dart';
 import 'game_controller.dart';
 import 'models.dart';
 import 'perfect.dart';
+import 'unstoppable.dart';
 import 'prefs.dart';
 import 'rng.dart';
 import 'ui_kit.dart';
@@ -254,7 +255,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _handleWin() {
     if (_winHandled) return;
     _winHandled = true;
-    PerfectPlay.onWin(c.level); // counts only if attempt stayed valid
+    PerfectPlay.onWin(c.level);
+    Unstoppable.onWin(c.level);
     _hintTimer?.cancel();
     _showHint = false;
     _showGrid = false;

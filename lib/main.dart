@@ -8,6 +8,7 @@ import 'game_controller.dart';
 import 'game_screen.dart';
 import 'home_screen.dart';
 import 'level_legend.dart';
+import 'unstoppable.dart';
 import 'prefs.dart';
 import 'settings_screen.dart';
 import 'streak.dart';
@@ -121,7 +122,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
             }
             setState(() => _tab = i);
           },
-          showCollectionBadge: LevelLegend.hasUnseen,
+          showCollectionBadge: LevelLegend.hasUnseen || Unstoppable.hasUnseen,
         ),
       ),
     );

@@ -6,6 +6,7 @@ import 'perfect.dart';
 import 'prefs.dart';
 import 'streak.dart';
 import 'ui_kit.dart';
+import 'unstoppable.dart';
 
 class CollectionScreen extends StatelessWidget {
   const CollectionScreen({super.key});
@@ -84,7 +85,14 @@ class CollectionScreen extends StatelessWidget {
                 Expanded(child: _AwardCard(
                   icon: Icons.shield_rounded,
                   label: 'Unstoppable',
-                  unlocked: false,
+                  unlocked: Unstoppable.unlocked,
+                  painter: SkullShieldPainter(unlocked: Unstoppable.unlocked),
+                  value: Unstoppable.unlocked ? '${Unstoppable.reached}' : null,
+                  sublabel: Unstoppable.unlocked
+                      ? '${Unstoppable.tier} of ${Unstoppable.milestones.length}'
+                      : null,
+                  showBadge: Unstoppable.hasUnseen,
+                  onTap: () => showUnstoppableDetail(context),
                 )),
               ],
             ),
@@ -461,41 +469,63 @@ class _AwardProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final span = target - from;
     final raw = span <= 0 ? 1.0 : (current - from) / span;
-    final factor = raw.clamp(0.12, 1.0).toDouble();
-    return SizedBox(
-      height: 36,
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFEDEFF7),
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          if (showTarget)
-            Align(
-              alignment: const Alignment(0.92, 0),
-              child: Text('$target',
-                  style: poppins(16, FontWeight.w900, const Color(0xFFAFB4CC))),
-            ),
-          FractionallySizedBox(
-            widthFactor: factor,
-            alignment: Alignment.centerLeft,
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF28E588),
-                borderRadius: BorderRadius.circular(20),
+    final factor = raw.clamp(0.0, 1.0).toDouble();
+    final fs = showTarget ? 18.0 : 16.0;
+    return Row(
+      children: [
+        Expanded(
+          child: LayoutBuilder(builder: (context, cons) {
+            final trackW = cons.maxWidth;
+            const h = 36.0;
+            final pillW = _pillWidth('$current', fs, h);
+            final fillW = (factor * trackW).clamp(pillW, trackW);
+            return SizedBox(
+              height: h,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDEFF7),
+                      borderRadius: BorderRadius.circular(h / 2),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: fillW,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF28E588),
+                        borderRadius: BorderRadius.circular(h / 2),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text('$current',
+                          style: poppins(fs, FontWeight.w900, Colors.white)),
+                    ),
+                  ),
+                ],
               ),
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 14),
-              child: Text('$current',
-                  style: poppins(showTarget ? 18 : 16, FontWeight.w900,
-                      Colors.white)),
-            ),
-          ),
+            );
+          }),
+        ),
+        if (showTarget) ...[
+          const SizedBox(width: 10),
+          Text('$target',
+              style: poppins(16, FontWeight.w900, const Color(0xFFAFB4CC))),
         ],
-      ),
+      ],
     );
+  }
+
+  static double _pillWidth(String text, double fontSize, double height) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w900)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final w = tp.width + 24;
+    return w < height ? height : w;
   }
 }
 
@@ -726,6 +756,116 @@ class _DatePill extends StatelessWidget {
       ),
       child: Text(text, style: poppins(13.5, FontWeight.w700, AppColors.muted)),
     );
+  }
+}
+
+// ───────────────────── Unstoppable detail (tap) ──────────────────────
+
+void showUnstoppableDetail(BuildContext context) {
+  Unstoppable.markSeen();
+  showGeneralDialog(
+    context: context,
+    barrierLabel: 'Unstoppable',
+    barrierColor: Colors.black.withValues(alpha: 0.0),
+    transitionDuration: const Duration(milliseconds: 240),
+    pageBuilder: (_, __, ___) => const _UnstoppableDetailScreen(),
+    transitionBuilder: (_, anim, __, child) => FadeTransition(
+      opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+      child: child,
+    ),
+  );
+}
+
+class _UnstoppableDetailScreen extends StatelessWidget {
+  const _UnstoppableDetailScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final count = Unstoppable.count;
+    final unlocked = Unstoppable.unlocked;
+    final reached = Unstoppable.reached;
+    final next = Unstoppable.next;
+
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: [
+              const Spacer(flex: 3),
+              SizedBox(
+                width: 230,
+                height: 230,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                          painter: SkullShieldPainter(unlocked: unlocked)),
+                    ),
+                    if (unlocked)
+                      Align(
+                        alignment: const Alignment(0, 0.96),
+                        child: _NumberBadge('$reached', fontSize: 40),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (unlocked) ...[
+                _DatePill(Unstoppable.earnedDateFor(reached) ?? _formatToday()),
+                const SizedBox(height: 18),
+                Text(
+                  'You earned Unstoppable by\nwinning $reached Nightmare levels!',
+                  textAlign: TextAlign.center,
+                  style: poppins(20, FontWeight.w800, AppColors.ink),
+                ),
+              ] else
+                Text(
+                  'Win ${Unstoppable.milestones.first} Nightmare levels to earn '
+                  'this award.',
+                  textAlign: TextAlign.center,
+                  style: poppins(20, FontWeight.w800, AppColors.ink),
+                ),
+              if (!unlocked) ...[
+                const SizedBox(height: 26),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: _AwardProgress(
+                      current: count,
+                      target: Unstoppable.milestones.first),
+                ),
+              ],
+              const Spacer(flex: 5),
+              if (unlocked && next != null) ...[
+                Text('Next award at $next levels',
+                    style: poppins(
+                        15, FontWeight.w700, const Color(0xFF7A7F9E))),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: _AwardProgress(
+                      current: count, target: next, from: reached,
+                      showTarget: false),
+                ),
+                const SizedBox(height: 24),
+              ],
+              _CloseButton(onTap: () => Navigator.of(context).pop()),
+              const SizedBox(height: 28),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _formatToday() {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final d = DateTime.now();
+    return '${months[d.month - 1]} ${d.day} ${d.year}';
   }
 }
 
