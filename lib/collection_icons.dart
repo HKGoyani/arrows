@@ -25,70 +25,113 @@ class Icon3D extends StatelessWidget {
       CustomPaint(size: Size(size, size), painter: painter);
 }
 
-// ───────────────────────── Flame on pedestal ─────────────────────────
-class FlamePainter extends CustomPainter {
+// ───────────────────────── Compact pedestal (cup at top → base at bottom) ──
+class PedestalPainter extends CustomPainter {
   @override
   void paint(Canvas c, Size s) {
     final w = s.width, h = s.height;
     Offset p(double x, double y) => Offset(x * w, y * h);
 
-    // pedestal foot
-    final foot = Rect.fromCenter(center: p(0.5, 0.93), width: w * 0.5, height: h * 0.12);
-    c.drawOval(foot, Paint()..shader = const LinearGradient(
+    // base bottom ellipse (depth)
+    final baseOval = Rect.fromCenter(center: p(0.5, 0.92), width: w * 0.60, height: h * 0.16);
+    c.drawOval(baseOval, Paint()..shader = const LinearGradient(
       begin: Alignment.topCenter, end: Alignment.bottomCenter,
       colors: [_pedMid, _pedDark],
-    ).createShader(foot));
+    ).createShader(baseOval));
 
-    // stem
-    final stem = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.43, h * 0.74, w * 0.14, h * 0.16),
-      Radius.circular(w * 0.04));
-    c.drawRRect(stem, Paint()..shader = LinearGradient(
+    // base foot
+    final baseFoot = Path()
+      ..moveTo(w * 0.28, h * 0.78)
+      ..lineTo(w * 0.72, h * 0.78)
+      ..lineTo(w * 0.70, h * 0.92)
+      ..lineTo(w * 0.30, h * 0.92)
+      ..close();
+    c.drawPath(baseFoot, Paint()..shader = const LinearGradient(
+      begin: Alignment.topCenter, end: Alignment.bottomCenter,
       colors: [_pedLight, _pedMid],
-    ).createShader(stem.outerRect));
+    ).createShader(baseFoot.getBounds()));
+    final baseTop = Rect.fromCenter(center: p(0.5, 0.78), width: w * 0.50, height: h * 0.12);
+    c.drawOval(baseTop, Paint()..color = _pedLight);
 
-    // cup bowl
-    final bowl = Path()
-      ..moveTo(w * 0.27, h * 0.62)
-      ..quadraticBezierTo(w * 0.5, h * 0.86, w * 0.73, h * 0.62)
-      ..quadraticBezierTo(w * 0.5, h * 0.74, w * 0.27, h * 0.62)
+    // tapered neck
+    final neck = Path()
+      ..moveTo(w * 0.40, h * 0.40)
+      ..lineTo(w * 0.60, h * 0.40)
+      ..lineTo(w * 0.66, h * 0.78)
+      ..lineTo(w * 0.34, h * 0.78)
       ..close();
-    c.drawPath(bowl, Paint()..shader = LinearGradient(
+    c.drawPath(neck, Paint()..shader = const LinearGradient(
+      colors: [_pedLight, _pedMid],
+    ).createShader(neck.getBounds()));
+
+    // top cup
+    final cup = Path()
+      ..moveTo(w * 0.26, h * 0.16)
+      ..lineTo(w * 0.74, h * 0.16)
+      ..lineTo(w * 0.62, h * 0.42)
+      ..lineTo(w * 0.38, h * 0.42)
+      ..close();
+    c.drawPath(cup, Paint()..shader = const LinearGradient(
       begin: Alignment.topCenter, end: Alignment.bottomCenter,
-      colors: const [_pedLight, _pedMid],
-    ).createShader(bowl.getBounds()));
-    // rim ellipse
-    final rim = Rect.fromCenter(center: p(0.5, 0.62), width: w * 0.46, height: h * 0.12);
-    c.drawOval(rim, Paint()..color = _pedLight);
+      colors: [_pedLight, _pedMid],
+    ).createShader(cup.getBounds()));
+
+    // top rim ellipse (where the flame sits)
+    final topRim = Rect.fromCenter(center: p(0.5, 0.16), width: w * 0.50, height: h * 0.14);
+    c.drawOval(topRim, Paint()..color = _pedLight);
     c.drawOval(
-      Rect.fromCenter(center: p(0.5, 0.61), width: w * 0.34, height: h * 0.07),
+      Rect.fromCenter(center: p(0.5, 0.14), width: w * 0.36, height: h * 0.09),
       Paint()..color = _pedHi);
-
-    // flame outer
-    final flame = Path()
-      ..moveTo(w * 0.5, h * 0.10)
-      ..cubicTo(w * 0.42, h * 0.26, w * 0.72, h * 0.34, w * 0.70, h * 0.50)
-      ..cubicTo(w * 0.69, h * 0.62, w * 0.59, h * 0.66, w * 0.5, h * 0.66)
-      ..cubicTo(w * 0.41, h * 0.66, w * 0.31, h * 0.62, w * 0.30, h * 0.50)
-      ..cubicTo(w * 0.29, h * 0.38, w * 0.40, h * 0.34, w * 0.42, h * 0.24)
-      ..cubicTo(w * 0.44, h * 0.18, w * 0.47, h * 0.14, w * 0.5, h * 0.10)
-      ..close();
-    c.drawPath(flame, Paint()..shader = LinearGradient(
-      begin: Alignment.topCenter, end: Alignment.bottomCenter,
-      colors: const [_flameHi, _flameMid, _flameDark],
-    ).createShader(flame.getBounds()));
-
-    // inner droplet highlight
-    final drop = Path()
-      ..moveTo(w * 0.5, h * 0.34)
-      ..cubicTo(w * 0.44, h * 0.42, w * 0.42, h * 0.50, w * 0.5, h * 0.58)
-      ..cubicTo(w * 0.58, h * 0.50, w * 0.56, h * 0.42, w * 0.5, h * 0.34)
-      ..close();
-    c.drawPath(drop, Paint()..color = _flameHi.withValues(alpha: 0.9));
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+/// Flame Material icon sitting in the trophy pedestal cup.
+class FlameOnPedestal extends StatelessWidget {
+  const FlameOnPedestal({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (ctx, cons) {
+        final s = cons.biggest.shortestSide;
+        return Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            // pedestal: taller/narrower stand, cup rim near its own top
+            Positioned(
+              bottom: 0,
+              left: s * 0.12,
+              right: s * 0.12,
+              height: s * 0.62,
+              child: CustomPaint(painter: PedestalPainter()),
+            ),
+            // flame: base dips well into the cup
+            Positioned(
+              top: s * 0.10,
+              left: 0,
+              right: 0,
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFFD15C), Color(0xFFFFA838), Color(0xFFF8842B)],
+                ).createShader(bounds),
+                blendMode: BlendMode.srcIn,
+                child: Icon(
+                  Icons.local_fire_department_rounded,
+                  size: s * 0.64,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 // ───────────────────────── Crown on pillow ─────────────────────────
@@ -99,40 +142,66 @@ class CrownPainter extends CustomPainter {
     double x(double v) => v * w;
     double y(double v) => v * h;
 
-    // ── puffy cushion ──
-    final pillow = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(x(0.5), y(0.80)), width: w * 0.74, height: h * 0.30),
-      Radius.circular(w * 0.16));
-    c.drawRRect(pillow, Paint()..shader = const LinearGradient(
+    // ── saucer (rakabi) ──
+    // bottom ellipse (shadow/depth)
+    final saucerBottom = Rect.fromCenter(
+      center: Offset(x(0.5), y(0.76)), width: w * 0.82, height: h * 0.16);
+    c.drawOval(saucerBottom, Paint()..shader = const LinearGradient(
       begin: Alignment.topCenter, end: Alignment.bottomCenter,
-      colors: [_pedLight, _pedMid],
-    ).createShader(pillow.outerRect));
-    // top highlight
-    c.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(x(0.5), y(0.72)), width: w * 0.52, height: h * 0.09),
-        Radius.circular(w * 0.1)),
-      Paint()..color = _pedHi.withValues(alpha: 0.65));
+      colors: [_pedMid, _pedDark],
+    ).createShader(saucerBottom));
 
-    // ── crown body (sharp peaks, softened by round-join stroke + balls) ──
+    // side/rim (thin trapezoid connecting top and bottom ellipses)
+    final rim = Path()
+      ..moveTo(x(0.09), y(0.72))
+      ..quadraticBezierTo(x(0.5), y(0.88), x(0.91), y(0.72))
+      ..quadraticBezierTo(x(0.5), y(0.82), x(0.09), y(0.72))
+      ..close();
+    c.drawPath(rim, Paint()..shader = const LinearGradient(
+      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+      colors: [_pedMid, _pedDark],
+    ).createShader(rim.getBounds()));
+
+    // top surface ellipse (flat plate face)
+    final saucerTop = Rect.fromCenter(
+      center: Offset(x(0.5), y(0.72)), width: w * 0.82, height: h * 0.16);
+    c.drawOval(saucerTop, Paint()..shader = const LinearGradient(
+      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+      colors: [_pedHi, _pedLight],
+    ).createShader(saucerTop));
+
+    // highlight on top surface
+    final highlight = Rect.fromCenter(
+      center: Offset(x(0.5), y(0.70)), width: w * 0.50, height: h * 0.07);
+    c.drawOval(highlight, Paint()..color = Colors.white.withValues(alpha: 0.45));
+
+    // ── bottom band / rim ──
+    final band = RRect.fromRectAndRadius(
+      Rect.fromLTWH(x(0.18), y(0.52), w * 0.64, h * 0.14),
+      Radius.circular(w * 0.04));
+    c.drawRRect(band, Paint()..shader = const LinearGradient(
+      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+      colors: [_goldMid, _goldDark],
+    ).createShader(band.outerRect));
+
+    // ── crown peaks rising from the band ──
     final crown = Path()
-      ..moveTo(x(0.21), y(0.52))
+      ..moveTo(x(0.18), y(0.56))
       ..lineTo(x(0.23), y(0.30))
-      ..lineTo(x(0.30), y(0.45))
-      ..lineTo(x(0.37), y(0.35))
-      ..lineTo(x(0.435), y(0.46))
+      ..lineTo(x(0.30), y(0.46))
+      ..lineTo(x(0.37), y(0.33))
+      ..lineTo(x(0.435), y(0.47))
       ..lineTo(x(0.50), y(0.22))
-      ..lineTo(x(0.565), y(0.46))
-      ..lineTo(x(0.63), y(0.35))
-      ..lineTo(x(0.70), y(0.45))
+      ..lineTo(x(0.565), y(0.47))
+      ..lineTo(x(0.63), y(0.33))
+      ..lineTo(x(0.70), y(0.46))
       ..lineTo(x(0.77), y(0.30))
-      ..lineTo(x(0.79), y(0.52))
-      ..quadraticBezierTo(x(0.50), y(0.63), x(0.21), y(0.52))
+      ..lineTo(x(0.82), y(0.56))
       ..close();
     final crownShader = const LinearGradient(
       begin: Alignment.topCenter, end: Alignment.bottomCenter,
       colors: [_goldHi, _goldMid, _goldDark],
-    ).createShader(Rect.fromLTWH(x(0.21), y(0.22), w * 0.58, h * 0.41));
+    ).createShader(Rect.fromLTWH(x(0.18), y(0.22), w * 0.64, h * 0.36));
     c.drawPath(crown, Paint()..shader = crownShader);
     c.drawPath(crown, Paint()
       ..shader = crownShader
@@ -142,7 +211,7 @@ class CrownPainter extends CustomPainter {
 
     // ── ball tips on each peak ──
     const peaks = [
-      [0.23, 0.28], [0.37, 0.33], [0.50, 0.20], [0.63, 0.33], [0.77, 0.28],
+      [0.23, 0.28], [0.37, 0.31], [0.50, 0.20], [0.63, 0.31], [0.77, 0.28],
     ];
     for (final p in peaks) {
       final cx = x(p[0]), cy = y(p[1]);
@@ -165,33 +234,52 @@ class WingArrowPainter extends CustomPainter {
     final w = s.width, h = s.height;
     double y(double v) => v * h;
 
-    // ── feathered wing (right side; mirrored for left) ──
-    Path wing(bool right) {
-      double x(double v) => (right ? v : 1 - v) * w;
+    // ── layered feather wings ──
+    // a single feather: pointed leaf bulging out from base to tip
+    Path feather(Offset base, Offset tip, double bulge) {
+      final dir = tip - base;
+      final len = dir.distance == 0 ? 1.0 : dir.distance;
+      final perp = Offset(-dir.dy, dir.dx) / len;
+      final mid = base + dir * 0.5;
+      final c1 = mid + perp * bulge;
+      final c2 = mid - perp * bulge;
       return Path()
-        ..moveTo(x(0.52), y(0.56))
-        ..cubicTo(x(0.66), y(0.47), x(0.80), y(0.45), x(0.91), y(0.50))
-        ..quadraticBezierTo(x(0.955), y(0.515), x(0.905), y(0.565))
-        ..quadraticBezierTo(x(0.85), y(0.63), x(0.80), y(0.585))
-        ..quadraticBezierTo(x(0.745), y(0.66), x(0.685), y(0.605))
-        ..quadraticBezierTo(x(0.62), y(0.665), x(0.555), y(0.61))
+        ..moveTo(base.dx, base.dy)
+        ..quadraticBezierTo(c1.dx, c1.dy, tip.dx, tip.dy)
+        ..quadraticBezierTo(c2.dx, c2.dy, base.dx, base.dy)
         ..close();
     }
 
-    final wingPaint = Paint()
+    // feathers per wing: [baseX, baseY, tipX, tipY, bulge] (right side)
+    const feathers = [
+      [0.50, 0.55, 0.93, 0.39, 0.055], // top, longest
+      [0.50, 0.57, 0.91, 0.50, 0.060],
+      [0.49, 0.59, 0.84, 0.60, 0.055],
+      [0.48, 0.61, 0.74, 0.67, 0.048], // bottom, shortest
+    ];
+
+    final wingFill = Paint()
       ..shader = const LinearGradient(
-        begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [_pedLight, _pedMid],
-      ).createShader(Rect.fromLTWH(0, h * 0.44, w, h * 0.24))
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [_pedHi, _pedMid],
+      ).createShader(Rect.fromLTWH(0, h * 0.38, w, h * 0.32))
       ..style = PaintingStyle.fill;
     final wingEdge = Paint()
-      ..shader = wingPaint.shader
+      ..color = _pedDark.withValues(alpha: 0.55)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.02
+      ..strokeWidth = w * 0.012
       ..strokeJoin = StrokeJoin.round;
+
     for (final right in const [true, false]) {
-      c.drawPath(wing(right), wingPaint);
-      c.drawPath(wing(right), wingEdge);
+      double fx(double v) => (right ? v : 1 - v) * w;
+      // draw back (longest) → front (shortest) so they overlap like real feathers
+      for (final f in feathers) {
+        final base = Offset(fx(f[0]), y(f[1]));
+        final tip = Offset(fx(f[2]), y(f[3]));
+        final path = feather(base, tip, w * f[4]);
+        c.drawPath(path, wingFill);
+        c.drawPath(path, wingEdge);
+      }
     }
 
     // ── chunky upward arrow ──

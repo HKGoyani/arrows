@@ -27,7 +27,7 @@ class CollectionScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: _RecordCard(
-                  painter: FlamePainter(),
+                  iconWidget: const FlameOnPedestal(),
                   value: '$current',
                   label: 'Longest Streak',
                   date: _formatDate(now),
@@ -155,29 +155,39 @@ class _NumberBadge extends StatelessWidget {
 }
 
 class _RecordCard extends StatelessWidget {
-  final CustomPainter painter;
+  final CustomPainter? painter;
+  final Widget? iconWidget;
   final String value;
   final String label;
   final String date;
   const _RecordCard({
-    required this.painter,
+    this.painter,
+    this.iconWidget,
     required this.value,
     required this.label,
     required this.date,
   });
   @override
   Widget build(BuildContext context) {
+    final iconContent = iconWidget != null
+        ? Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(6, 4, 6, 14),
+              child: iconWidget!,
+            ),
+          )
+        : Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+              child: CustomPaint(painter: painter),
+            ),
+          );
     return Column(
       children: [
         _IconBox(
           child: Stack(
             children: [
-              Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
-                  child: CustomPaint(painter: painter),
-                ),
-              ),
+              iconContent,
               Align(
                 alignment: const Alignment(0, 0.6),
                 child: _NumberBadge(value),
