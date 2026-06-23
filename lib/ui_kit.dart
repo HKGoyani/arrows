@@ -282,9 +282,9 @@ class AppBottomNav extends StatelessWidget {
     final level20Unlocked = level >= 20;
     final items = [
       (Icons.home_rounded, 'Home', true),
-      (level20Unlocked ? Icons.star_rounded : Icons.lock_rounded,
-          level20Unlocked ? 'Level 20' : 'Level 20', level20Unlocked),
-      (collectionUnlocked ? Icons.star_rounded : Icons.lock_rounded,
+      (level20Unlocked ? Icons.calendar_month_rounded : Icons.lock_rounded,
+          level20Unlocked ? 'Challenge' : 'Level 20', level20Unlocked),
+      (collectionUnlocked ? Icons.hotel_class : Icons.lock_rounded,
           collectionUnlocked ? 'Collection' : 'Level 10', collectionUnlocked),
       (Icons.settings_rounded, 'Settings', true),
     ];
@@ -304,7 +304,7 @@ class AppBottomNav extends StatelessWidget {
               ? AppColors.lock
               : active
                   ? AppColors.navInk
-                  : AppColors.lock;
+                  : AppColors.navInk.withValues(alpha: 0.6);
           return Pressable(
             onTap: () {
               if (unlocked) onTap(i);
@@ -322,7 +322,7 @@ class AppBottomNav extends StatelessWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      Icon(items[i].$1, size: 24, color: color),
+                      Icon(items[i].$1, size: 28, color: color),
                       if (i == 2 && collectionUnlocked && showCollectionBadge)
                         Positioned(
                           right: -4,
