@@ -269,14 +269,25 @@ class WingArrowPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = w * 0.012
       ..strokeJoin = StrokeJoin.round;
+    final featherShadow = Paint()
+      ..color = const Color(0xFF7E84AE).withValues(alpha: 0.55)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
 
     for (final right in const [true, false]) {
       double fx(double v) => (right ? v : 1 - v) * w;
-      // draw back (longest) → front (shortest) so they overlap like real feathers
-      for (final f in feathers) {
+      // draw bottom → top so each upper feather overlaps + shadows the one below
+      for (int i = feathers.length - 1; i >= 0; i--) {
+        final f = feathers[i];
         final base = Offset(fx(f[0]), y(f[1]));
         final tip = Offset(fx(f[2]), y(f[3]));
         final path = feather(base, tip, w * f[4]);
+        // soft shadow cast onto the feather already drawn beneath
+        if (i != feathers.length - 1) {
+          c.save();
+          c.translate(0, h * 0.024);
+          c.drawPath(path, featherShadow);
+          c.restore();
+        }
         c.drawPath(path, wingFill);
         c.drawPath(path, wingEdge);
       }
