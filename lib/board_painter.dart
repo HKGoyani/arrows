@@ -150,11 +150,12 @@ class BoardPainter extends CustomPainter {
         final h = pts.last;
         final dx = a.dir.dx.toDouble(), dy = a.dir.dy.toDouble();
         final px = -dy, py = dx;
-        final tip = Offset(h.dx + dx * Cfg.headLen, h.dy + dy * Cfg.headLen);
-        final l = Offset(h.dx - dx * Cfg.headBase + px * Cfg.headHalf,
-            h.dy - dy * Cfg.headBase + py * Cfg.headHalf);
-        final r = Offset(h.dx - dx * Cfg.headBase - px * Cfg.headHalf,
-            h.dy - dy * Cfg.headBase - py * Cfg.headHalf);
+        final halfLen = Cfg.headLen / 2;
+        final tip = Offset(h.dx + dx * halfLen, h.dy + dy * halfLen);
+        final l = Offset(h.dx - dx * halfLen + px * Cfg.headHalf,
+            h.dy - dy * halfLen + py * Cfg.headHalf);
+        final r = Offset(h.dx - dx * halfLen - px * Cfg.headHalf,
+            h.dy - dy * halfLen - py * Cfg.headHalf);
         final headPath = Path()
           ..moveTo(tip.dx, tip.dy)
           ..lineTo(l.dx, l.dy)
@@ -285,15 +286,15 @@ class BoardPainter extends CustomPainter {
     }
     canvas.drawPath(path, shaft);
 
-    // chevron head at the front, oriented along dir
     final h = pts.last;
     final dx = dir.dx.toDouble(), dy = dir.dy.toDouble();
     final px = -dy, py = dx;
-    final tip = Offset(h.dx + dx * Cfg.headLen, h.dy + dy * Cfg.headLen);
-    final l = Offset(h.dx - dx * Cfg.headBase + px * Cfg.headHalf,
-        h.dy - dy * Cfg.headBase + py * Cfg.headHalf);
-    final r = Offset(h.dx - dx * Cfg.headBase - px * Cfg.headHalf,
-        h.dy - dy * Cfg.headBase - py * Cfg.headHalf);
+    final halfLen = Cfg.headLen / 2;
+    final tip = Offset(h.dx + dx * halfLen, h.dy + dy * halfLen);
+    final l = Offset(h.dx - dx * halfLen + px * Cfg.headHalf,
+        h.dy - dy * halfLen + py * Cfg.headHalf);
+    final r = Offset(h.dx - dx * halfLen - px * Cfg.headHalf,
+        h.dy - dy * halfLen - py * Cfg.headHalf);
     final head = Path()
       ..moveTo(tip.dx, tip.dy)
       ..lineTo(l.dx, l.dy)
@@ -305,7 +306,7 @@ class BoardPainter extends CustomPainter {
         Paint()
           ..color = color
           ..style = PaintingStyle.stroke
-          ..strokeWidth = Cfg.headStroke
+          ..strokeWidth = 5
           ..strokeJoin = StrokeJoin.round);
   }
 

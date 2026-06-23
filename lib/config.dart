@@ -35,9 +35,9 @@ class Cfg {
   static const double cell = 60; // grid pitch
   static const double margin = 42; // board margin (heads/caps don't clip)
   static const double stroke = 11; // arrow shaft width (~0.18*cell)
-  static const double headLen = 15; // arrowhead length (along dir)
-  static const double headHalf = 18; // arrowhead half-width (full 36 ≈ 0.6*cell)
-  static const double headBase = 2; // head base setback
+  static const double headLen = 27; // arrowhead length (along dir)
+  static const double headHalf = 14; // arrowhead half-width (full 28)
+  static const double headBase = 3; // base set back so it overlaps the shaft for a clean join
   static const double headStroke = 3; // soft head-corner rounding
   static const double dotR = 4; // grid dot radius
   static const double rippleR = 1.7 * 60; // tap ripple max radius
