@@ -21,11 +21,13 @@ class ArrowsWordmark extends StatelessWidget {
         Text(
           'rrows',
           style: const TextStyle(
-            fontFamily: 'Poppins',
+            fontFamily: 'Area',
+            fontFamilyFallback: ['Poppins'],
             fontSize: 36,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF2E3260),
-            letterSpacing: -0.5,
+            fontWeight: FontWeight.w900,
+            shadows: [Shadow(color: Color(0xFF38427E), blurRadius: 1)],
+            color: const Color(0xFF38427E),
+            letterSpacing: 0.5,
             height: 1,
           ),
         ),
@@ -42,7 +44,7 @@ class _TrianglePainter extends CustomPainter {
       ..lineTo(s.width, s.height)
       ..lineTo(0, s.height)
       ..close();
-    canvas.drawPath(p, Paint()..color = const Color(0xFF2E3260));
+    canvas.drawPath(p, Paint()..color = const Color(0xFF38427E));
   }
 
   @override
@@ -207,7 +209,7 @@ class GameTopBar extends StatelessWidget {
             child: Column(
               children: [
                 Text(_difficulty,
-                    style: poppins(14, FontWeight.w700, AppColors.blueSoft)),
+                    style: poppins(14, FontWeight.w800, AppColors.blueSoft)),
                 const SizedBox(height: 4),
                 HeartsRow(hearts: c.hearts),
               ],

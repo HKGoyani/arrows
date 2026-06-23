@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         const Icon(Icons.local_fire_department_rounded,
                             color: AppColors.flame, size: 19),
                         const SizedBox(width: 5),
-                        Text('$streak', style: poppins(15, FontWeight.w700, AppColors.ink)),
+                        Text('$streak', style: poppins(15, FontWeight.w800, AppColors.ink)),
                       ]),
                     ),
                   ),
@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 FadeTransition(
                   opacity: appearAnim,
                   child: Text('Clear every arrow on the board',
-                      style: poppins(13.5, FontWeight.w500, AppColors.muted)),
+                      style: poppins(13.5, FontWeight.w800, AppColors.muted)),
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -115,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             return Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text('Level ', style: poppins(22, FontWeight.w700, AppColors.blue)),
+                                Text('Level ', style: poppins(20, FontWeight.w900, AppColors.blue)),
                                 ClipRect(
                                   child: SizedBox(
                                     width: 30,
@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                           child: Opacity(
                                             opacity: (1 - t).clamp(0.0, 1.0),
                                             child: Text('$_prevLevel',
-                                                style: poppins(22, FontWeight.w700, AppColors.blue)),
+                                                style: poppins(20, FontWeight.w900, AppColors.blue)),
                                           ),
                                         ),
                                         Transform.translate(
@@ -136,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                           child: Opacity(
                                             opacity: t.clamp(0.0, 1.0),
                                             child: Text('$_currLevel',
-                                                style: poppins(22, FontWeight.w700, AppColors.blue)),
+                                                style: poppins(20, FontWeight.w900, AppColors.blue)),
                                           ),
                                         ),
                                       ],
@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       : FadeTransition(
                           opacity: appearAnim,
                           child: Text('Level $_currLevel',
-                              style: poppins(22, FontWeight.w700, AppColors.blue)),
+                              style: poppins(20, FontWeight.w900, AppColors.blue)),
                         ),
                 ),
                 const Spacer(flex: 4),
@@ -171,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 FadeTransition(
                   opacity: playAnim,
                   child: Text(_currLevel > 1 ? 'Continue your run' : 'Tap to begin',
-                      style: poppins(13, FontWeight.w500, AppColors.muted)),
+                      style: poppins(13, FontWeight.w800, AppColors.muted)),
                 ),
                 const SizedBox(height: 20),
               ],

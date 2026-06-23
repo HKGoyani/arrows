@@ -3,7 +3,8 @@ import 'config.dart';
 
 TextStyle poppins(double size, FontWeight w, Color c, {double? ls, double? height}) =>
     TextStyle(
-        fontFamily: 'Poppins',
+        fontFamily: 'Area',
+        fontFamilyFallback: const ['Poppins'],
         fontSize: size, fontWeight: w, color: c, letterSpacing: ls, height: height);
 
 /// Faint dot-grid backdrop (echoes the game board) for menu screens.
@@ -92,7 +93,9 @@ class PrimaryButton extends StatelessWidget {
               Icon(icon, color: Colors.white, size: 22),
               const SizedBox(width: 8),
             ],
-            Text(label, style: poppins(18, FontWeight.w700, Colors.white)),
+            Text(label, style: poppins(22, FontWeight.w900, Colors.white).copyWith(
+              shadows: [const Shadow(color: Colors.white, blurRadius: 1)],
+            )),
           ],
         ),
       ),
@@ -148,7 +151,7 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(value, style: poppins(22, FontWeight.w800, AppColors.ink)),
           const SizedBox(height: 2),
-          Text(label, style: poppins(12, FontWeight.w500, AppColors.muted)),
+          Text(label, style: poppins(12, FontWeight.w800, AppColors.muted)),
         ],
       ),
     );
@@ -162,7 +165,7 @@ class SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
         child: Text(text.toUpperCase(),
-            style: poppins(12, FontWeight.w700, AppColors.muted, ls: 1.2)),
+            style: poppins(12, FontWeight.w800, AppColors.muted, ls: 1.2)),
       );
 }
 
@@ -204,10 +207,10 @@ class SettingsTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: poppins(15.5, FontWeight.w600, AppColors.ink)),
+                  Text(title, style: poppins(15.5, FontWeight.w800, AppColors.ink)),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(subtitle!, style: poppins(12.5, FontWeight.w500, AppColors.muted)),
+                    Text(subtitle!, style: poppins(12.5, FontWeight.w800, AppColors.muted)),
                   ],
                 ],
               ),
@@ -337,7 +340,7 @@ class AppBottomNav extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text(items[i].$2, style: poppins(12, FontWeight.w600, color)),
+                Text(items[i].$2, style: poppins(12, FontWeight.w800, color)),
               ],
             ),
           );

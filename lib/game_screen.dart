@@ -341,7 +341,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       children: [
                         const Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
                         const SizedBox(width: 6),
-                        Text('Hint', style: poppins(16, FontWeight.w700, Colors.white)),
+                        Text('Hint', style: poppins(16, FontWeight.w800, Colors.white)),
                       ],
                     ),
                   ),
@@ -489,7 +489,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     }
                     return Opacity(
                       opacity: opacity.clamp(0.0, 1.0),
-                      child: Text(_winMessage(), style: poppins(22, FontWeight.w700, const Color(0xFF3D3D5C))),
+                      child: Text(_winMessage(), style: poppins(24, FontWeight.w800, const Color(0xFF3D3D5C))),
                     );
                   },
                 ),
@@ -581,7 +581,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           const SizedBox(width: 8),
                         ],
                         Text('Add More Lives',
-                            style: poppins(17, FontWeight.w700,
+                            style: poppins(17, FontWeight.w800,
                                 canAddFree ? Colors.white : AppColors.blue)),
                       ],
                     ),
@@ -599,7 +599,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     ),
                     child: Center(
                       child: Text('Restart',
-                          style: poppins(16, FontWeight.w600, AppColors.muted)),
+                          style: poppins(16, FontWeight.w800, AppColors.muted)),
                     ),
                   ),
                 ),

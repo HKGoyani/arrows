@@ -9,7 +9,7 @@ class AppColors {
   static const arrowBlue = Color(0xFF586FFE); // arrow while firing/leaving
   static const red = Color(0xFFF23A5C); // clashed arrow + filled heart
   static const ink = Color(0xFF2B2E4F); // logo + headings
-  static const blue = Color(0xFF5B6AF9); // "Level N" + progress fill
+  static const blue = Color(0xFF667CFF); // "Level N" + Play button
   static const blueSoft = Color(0xFF0EADF0); // difficulty subtitle
   static const heartEmpty = Color(0xFFD7DAF5);
   static const btnBg = Color(0xFFD9DCF7); // round top-bar buttons

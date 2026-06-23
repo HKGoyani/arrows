@@ -84,7 +84,7 @@ class CollectionScreen extends StatelessWidget {
             _SectionHeader(title: 'Challenge Trophies'),
             const SizedBox(height: 4),
             Text('${DateTime.now().year}',
-                style: poppins(14, FontWeight.w600, AppColors.muted)),
+                style: poppins(14, FontWeight.w800, AppColors.muted)),
             const SizedBox(height: 12),
             AppCard(
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -92,7 +92,7 @@ class CollectionScreen extends StatelessWidget {
                 children: [
                   Text('Win 3 Nightmare levels to earn\nthis award.',
                       textAlign: TextAlign.center,
-                      style: poppins(14, FontWeight.w600, AppColors.ink, height: 1.4)),
+                      style: poppins(14, FontWeight.w800, AppColors.ink, height: 1.4)),
                   const SizedBox(height: 18),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -125,8 +125,8 @@ class CollectionScreen extends StatelessWidget {
                 color: AppColors.lock, size: 28),
           ),
           const SizedBox(height: 8),
-          Text(m, style: poppins(12, FontWeight.w600, AppColors.muted)),
-          Text('0 of 31', style: poppins(11, FontWeight.w500, AppColors.lock)),
+          Text(m, style: poppins(12, FontWeight.w800, AppColors.muted)),
+          Text('0 of 31', style: poppins(11, FontWeight.w800, AppColors.lock)),
         ],
       );
     }).toList();
@@ -140,7 +140,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(title, style: poppins(16, FontWeight.w700, AppColors.blue)),
+        Text(title, style: poppins(16, FontWeight.w800, AppColors.blue)),
         const SizedBox(width: 10),
         Expanded(
           child: Container(height: 1, color: AppColors.cardBorder),
@@ -181,7 +181,7 @@ class _TrophyCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(label,
               textAlign: TextAlign.center,
-              style: poppins(11, FontWeight.w500, AppColors.muted)),
+              style: poppins(11, FontWeight.w800, AppColors.muted)),
         ],
       ),
     );
@@ -216,7 +216,7 @@ class _AwardBadge extends StatelessWidget {
           const SizedBox(height: 8),
           Text(label,
               textAlign: TextAlign.center,
-              style: poppins(12, FontWeight.w500,
+              style: poppins(12, FontWeight.w800,
                   unlocked ? AppColors.ink : AppColors.lock)),
         ],
       ),

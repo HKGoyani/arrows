@@ -70,6 +70,20 @@ flutter:
     - assets/audio/
 
   fonts:
+    - family: Area
+      fonts:
+        - asset: assets/fonts/Area-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Area-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Area-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Area-Bold.otf
+          weight: 700
+        - asset: assets/fonts/Area-ExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/Area-Black.otf
+          weight: 900
     - family: Poppins
       fonts:
         - asset: assets/fonts/Poppins-Regular.ttf

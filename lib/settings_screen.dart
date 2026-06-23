@@ -33,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(Prefs.language, style: poppins(14, FontWeight.w500, AppColors.muted)),
+                        Text(Prefs.language, style: poppins(14, FontWeight.w800, AppColors.muted)),
                         const SizedBox(width: 4),
                         const Icon(Icons.chevron_right_rounded, color: AppColors.muted, size: 20),
                       ],
@@ -250,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               children: [
                                 Expanded(
                                   child: Text(lang,
-                                      style: poppins(16, FontWeight.w600,
+                                      style: poppins(16, FontWeight.w800,
                                           isSelected ? AppColors.blue : AppColors.ink)),
                                 ),
                                 if (isSelected)
@@ -277,7 +277,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       child: Center(
                         child: Text('Close',
-                            style: poppins(16, FontWeight.w600, AppColors.muted)),
+                            style: poppins(16, FontWeight.w800, AppColors.muted)),
                       ),
                     ),
                   ),
@@ -316,11 +316,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   maxLines: 5,
                   decoration: InputDecoration(
                     hintText: 'Enter your feedback...',
-                    hintStyle: poppins(14, FontWeight.w500, AppColors.muted),
+                    hintStyle: poppins(14, FontWeight.w800, AppColors.muted),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.all(16),
                   ),
-                  style: poppins(14, FontWeight.w500, AppColors.ink),
+                  style: poppins(14, FontWeight.w800, AppColors.ink),
                 ),
               ),
               const SizedBox(height: 24),
@@ -348,7 +348,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Center(
                     child: Text('Submit',
-                        style: poppins(17, FontWeight.w700, Colors.white)),
+                        style: poppins(17, FontWeight.w800, Colors.white)),
                   ),
                 ),
               ),
@@ -364,7 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Center(
                     child: Text('Cancel',
-                        style: poppins(16, FontWeight.w600, AppColors.muted)),
+                        style: poppins(16, FontWeight.w800, AppColors.muted)),
                   ),
                 ),
               ),
@@ -399,7 +399,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 18),
               Text('Take a moment to rate the game!\nThank you for your support',
                   textAlign: TextAlign.center,
-                  style: poppins(14, FontWeight.w500, AppColors.muted, height: 1.4)),
+                  style: poppins(14, FontWeight.w800, AppColors.muted, height: 1.4)),
               const SizedBox(height: 24),
               Pressable(
                 onTap: () {
@@ -415,7 +415,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Center(
                     child: Text('1-4 Stars',
-                        style: poppins(16, FontWeight.w600, AppColors.muted)),
+                        style: poppins(16, FontWeight.w800, AppColors.muted)),
                   ),
                 ),
               ),
@@ -434,7 +434,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Center(
                     child: Text('5 Stars',
-                        style: poppins(17, FontWeight.w700, Colors.white)),
+                        style: poppins(17, FontWeight.w800, Colors.white)),
                   ),
                 ),
               ),
@@ -450,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Center(
                     child: Text('Close',
-                        style: poppins(16, FontWeight.w600, AppColors.muted)),
+                        style: poppins(16, FontWeight.w800, AppColors.muted)),
                   ),
                 ),
               ),
@@ -474,12 +474,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           '• If it is blocked, it turns red and you lose a life.\n'
           '• You have 3 lives. Clear the whole board to win.\n\n'
           'Boards get bigger and busier as you level up.',
-          style: poppins(14, FontWeight.w500, AppColors.muted, height: 1.5),
+          style: poppins(14, FontWeight.w800, AppColors.muted, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Got it', style: poppins(15, FontWeight.w700, AppColors.blue)),
+            child: Text('Got it', style: poppins(15, FontWeight.w800, AppColors.blue)),
           ),
         ],
       ),
@@ -495,19 +495,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text('Reset progress?', style: poppins(19, FontWeight.w800, AppColors.ink)),
         content: Text(
           'This clears your level and streak. This cannot be undone.',
-          style: poppins(14, FontWeight.w500, AppColors.muted, height: 1.5),
+          style: poppins(14, FontWeight.w800, AppColors.muted, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: poppins(15, FontWeight.w700, AppColors.muted)),
+            child: Text('Cancel', style: poppins(15, FontWeight.w800, AppColors.muted)),
           ),
           TextButton(
             onPressed: () async {
               await Prefs.resetProgress();
               if (context.mounted) Navigator.pop(context);
             },
-            child: Text('Reset', style: poppins(15, FontWeight.w700, AppColors.red)),
+            child: Text('Reset', style: poppins(15, FontWeight.w800, AppColors.red)),
           ),
         ],
       ),
