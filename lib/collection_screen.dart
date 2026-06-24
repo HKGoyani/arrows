@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'collection_icons.dart';
 import 'config.dart';
 import 'level_legend.dart';
+import 'main.dart' show navigateToChallenge;
 import 'perfect.dart';
 import 'prefs.dart';
 import 'streak.dart';
@@ -365,30 +366,35 @@ class _TrophyGrid extends StatelessWidget {
         crossAxisSpacing: 12,
         childAspectRatio: 0.70,
       ),
-      itemCount: 12,
+      itemCount: year == DateTime.now().year ? DateTime.now().month : 12,
       itemBuilder: (_, i) {
         final days = (i == 1 && year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
             ? 29 : _daysInMonth[i];
         final played = _countPlayed(i + 1);
         final completed = played >= days;
-        return Column(
-          children: [
-            _IconBox(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                child: SizedBox.expand(
-                  child: CustomPaint(
-                    painter: TrophyPainter(unlocked: completed),
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => showTrophyDetail(context, year: year, month: i + 1,
+              played: played, totalDays: days, completed: completed),
+          child: Column(
+            children: [
+              _IconBox(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  child: SizedBox.expand(
+                    child: CustomPaint(
+                      painter: TrophyPainter(unlocked: completed),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(_monthNames[i],
-                style: poppins(12, FontWeight.w800, AppColors.ink)),
-            Text('$played of $days',
-                style: poppins(10.5, FontWeight.w700, AppColors.muted)),
-          ],
+              const SizedBox(height: 8),
+              Text(_monthNames[i],
+                  style: poppins(12, FontWeight.w800, AppColors.ink)),
+              Text('$played of $days',
+                  style: poppins(10.5, FontWeight.w700, AppColors.muted)),
+            ],
+          ),
         );
       },
     );
@@ -923,6 +929,411 @@ class _CloseButton extends StatelessWidget {
         ),
         child: Text('Close',
             style: poppins(17, FontWeight.w800, const Color(0xFF8C90A6))),
+      ),
+    );
+  }
+}
+
+// ───────────────── Trophy detail modal (tap trophy card) ─────────────────
+
+void showTrophyDetail(BuildContext context, {
+  required int year,
+  required int month,
+  required int played,
+  required int totalDays,
+  required bool completed,
+}) {
+  final monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  showGeneralDialog(
+    context: context,
+    barrierLabel: 'Trophy',
+    barrierColor: Colors.black.withValues(alpha: 0.0),
+    transitionDuration: const Duration(milliseconds: 240),
+    pageBuilder: (_, __, ___) => _TrophyDetailScreen(
+      year: year,
+      month: month,
+      monthName: monthNames[month - 1],
+      played: played,
+      totalDays: totalDays,
+      completed: completed,
+    ),
+    transitionBuilder: (_, anim, __, child) => FadeTransition(
+      opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+      child: child,
+    ),
+  );
+}
+
+class _TrophyDetailScreen extends StatelessWidget {
+  final int year, month, played, totalDays;
+  final String monthName;
+  final bool completed;
+
+  const _TrophyDetailScreen({
+    required this.year,
+    required this.month,
+    required this.monthName,
+    required this.played,
+    required this.totalDays,
+    required this.completed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: [
+              const Spacer(flex: 3),
+              SizedBox(
+                width: 200,
+                height: 200,
+                child: CustomPaint(
+                  painter: TrophyPainter(unlocked: completed),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('$monthName $year',
+                  style: poppins(22, FontWeight.w900, AppColors.blue)),
+              const SizedBox(height: 18),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _AwardProgress(
+                    current: played, target: totalDays),
+              ),
+              const Spacer(flex: 5),
+              GestureDetector(
+                onTap: () {
+                  navigateToChallenge(year, month);
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 56,
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.blue,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('Go to month',
+                      style: poppins(18, FontWeight.w900, Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: double.infinity,
+                  height: 56,
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                        color: const Color(0xFFE4E6F1), width: 1.5),
+                  ),
+                  child: Text('Close',
+                      style: poppins(18, FontWeight.w900, const Color(0xFF8C90A6))),
+                ),
+              ),
+              const SizedBox(height: 28),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+}
+
+// ───────────────── Month detail screen (Challenge tab) ─────────────────
+
+class MonthDetailScreen extends StatefulWidget {
+  final int initialYear;
+  final int initialMonth;
+  const MonthDetailScreen({
+    super.key,
+    required this.initialYear,
+    required this.initialMonth,
+  });
+
+  @override
+  State<MonthDetailScreen> createState() => _MonthDetailScreenState();
+}
+
+class _MonthDetailScreenState extends State<MonthDetailScreen> {
+  late int _year;
+  late int _month;
+
+  @override
+  void initState() {
+    super.initState();
+    _year = widget.initialYear;
+    _month = widget.initialMonth;
+  }
+
+  void _prev() {
+    setState(() {
+      _month--;
+      if (_month < 1) { _month = 12; _year--; }
+    });
+  }
+
+  void _next() {
+    final now = DateTime.now();
+    final nextM = _month + 1;
+    final nextY = nextM > 12 ? _year + 1 : _year;
+    final adjM = nextM > 12 ? 1 : nextM;
+    if (nextY > now.year || (nextY == now.year && adjM > now.month)) return;
+    setState(() {
+      _month = adjM;
+      _year = nextY;
+    });
+  }
+
+  bool get _canGoNext {
+    final now = DateTime.now();
+    final nextM = _month + 1;
+    final nextY = nextM > 12 ? _year + 1 : _year;
+    final adjM = nextM > 12 ? 1 : nextM;
+    return nextY < now.year || (nextY == now.year && adjM <= now.month);
+  }
+
+  static const _monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  static const _daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  @override
+  Widget build(BuildContext context) {
+    final played = Prefs.playedDays.toSet();
+    final now = DateTime.now();
+    final isLeap = _month == 2 && _year % 4 == 0 &&
+        (_year % 100 != 0 || _year % 400 == 0);
+    final totalDays = isLeap ? 29 : _daysInMonth[_month - 1];
+
+    var playedCount = 0;
+    final prefix = '$_year-${_month.toString().padLeft(2, '0')}-';
+    for (final d in played) {
+      if (d.startsWith(prefix)) playedCount++;
+    }
+    final completed = playedCount >= totalDays;
+
+    final firstWeekday = DateTime(_year, _month, 1).weekday; // 1=Mon
+    final isCurrentMonth = _year == now.year && _month == now.month;
+
+    return SafeArea(
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          // trophy + nav arrows
+          Row(
+            children: [
+              const SizedBox(width: 8),
+              _NavArrow(icon: Icons.arrow_back_ios_rounded, onTap: _prev),
+              Expanded(
+                child: SizedBox(
+                  height: 140,
+                  child: CustomPaint(
+                    painter: TrophyPainter(unlocked: completed),
+                  ),
+                ),
+              ),
+              _canGoNext
+                  ? _NavArrow(icon: Icons.arrow_forward_ios_rounded, onTap: _next)
+                  : const SizedBox(width: 48),
+              const SizedBox(width: 8),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // progress bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 50),
+            child: _AwardProgress(current: playedCount, target: totalDays),
+          ),
+          const SizedBox(height: 20),
+          // month title
+          Text('${_monthNames[_month - 1]} $_year',
+              style: poppins(22, FontWeight.w800, AppColors.ink)),
+          const SizedBox(height: 16),
+          // weekday headers
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+                  .map((d) => Expanded(
+                        child: Center(
+                          child: Text(d,
+                              style: poppins(13, FontWeight.w700, AppColors.muted)),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // calendar grid
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _CalendarGrid(
+                year: _year,
+                month: _month,
+                totalDays: totalDays,
+                firstWeekday: firstWeekday,
+                playedDays: played,
+                isCurrentMonth: isCurrentMonth,
+                today: now.day,
+              ),
+            ),
+          ),
+          // Play button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(40, 8, 40, 16),
+            child: GestureDetector(
+              onTap: () {
+                // TODO: navigate to daily challenge for this month
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.blue,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                alignment: Alignment.center,
+                child: Text('Play',
+                    style: poppins(18, FontWeight.w800, Colors.white)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavArrow extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _NavArrow({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8EAF4),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 18, color: AppColors.ink),
+      ),
+    );
+  }
+}
+
+class _CalendarGrid extends StatelessWidget {
+  final int year, month, totalDays, firstWeekday, today;
+  final Set<String> playedDays;
+  final bool isCurrentMonth;
+
+  const _CalendarGrid({
+    required this.year,
+    required this.month,
+    required this.totalDays,
+    required this.firstWeekday,
+    required this.playedDays,
+    required this.isCurrentMonth,
+    required this.today,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cells = <Widget>[];
+    // empty cells before first day
+    for (var i = 1; i < firstWeekday; i++) {
+      cells.add(const SizedBox());
+    }
+    for (var d = 1; d <= totalDays; d++) {
+      final dateStr =
+          '$year-${month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
+      final wasPlayed = playedDays.contains(dateStr);
+      final isToday = isCurrentMonth && d == today;
+      final isFuture = isCurrentMonth && d > today;
+
+      cells.add(_DayCell(
+        day: d,
+        played: wasPlayed,
+        isToday: isToday,
+        isFuture: isFuture,
+      ));
+    }
+
+    return GridView.count(
+      crossAxisCount: 7,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 0,
+      children: cells,
+    );
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  final int day;
+  final bool played;
+  final bool isToday;
+  final bool isFuture;
+
+  const _DayCell({
+    required this.day,
+    required this.played,
+    required this.isToday,
+    required this.isFuture,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color bg;
+    Color textColor;
+
+    if (played && !isToday) {
+      bg = const Color(0xFF28E588);
+      textColor = Colors.white;
+    } else if (isToday) {
+      bg = AppColors.blue;
+      textColor = Colors.white;
+    } else if (isFuture) {
+      bg = Colors.transparent;
+      textColor = const Color(0xFFCDD2E4);
+    } else {
+      bg = const Color(0xFFEDEFF7);
+      textColor = AppColors.ink;
+    }
+
+    return Center(
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: bg,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text('$day',
+            style: poppins(14, FontWeight.w800, textColor)),
       ),
     );
   }

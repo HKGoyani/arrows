@@ -31,20 +31,36 @@ class ArrowsApp extends StatelessWidget {
       title: 'Arrow Escape',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(scaffoldBackgroundColor: AppColors.bg, useMaterial3: true),
-      home: const MainShell(),
+      home: MainShell(),
     );
   }
 }
 
+final mainShellKey = GlobalKey<_MainShellState>();
+
+void navigateToChallenge(int year, int month) {
+  mainShellKey.currentState?.switchToChallenge(year, month);
+}
+
 /// Home · Streak · Settings tabs. The game launches full-screen on top.
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  MainShell() : super(key: mainShellKey);
   @override
   State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   int _tab = 0;
+  int? _challengeYear;
+  int? _challengeMonth;
+
+  void switchToChallenge(int year, int month) {
+    setState(() {
+      _challengeYear = year;
+      _challengeMonth = month;
+      _tab = 1;
+    });
+  }
   late final AnimationController _navSlideCtrl;
 
   @override
@@ -101,7 +117,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
         index: _tab,
         children: [
           HomeScreen(onPlay: _play),
-          const SizedBox.shrink(), // Level 20 placeholder (locked)
+          MonthDetailScreen(
+            key: ValueKey('$_challengeYear-$_challengeMonth'),
+            initialYear: _challengeYear ?? DateTime.now().year,
+            initialMonth: _challengeMonth ?? DateTime.now().month,
+          ),
           const CollectionScreen(),
           const SettingsScreen(),
         ],

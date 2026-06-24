@@ -665,48 +665,51 @@ class TrophyPainter extends CustomPainter {
     final w = size.width, h = size.height;
     final cx = w / 2;
 
-    final gold1 = unlocked ? const Color(0xFFFFD54F) : const Color(0xFFD5D8EA);
-    final gold2 = unlocked ? const Color(0xFFFFC020) : const Color(0xFFC2C7DE);
-    final gold3 = unlocked ? const Color(0xFFE8A010) : const Color(0xFFB0B6D0);
-    final gold4 = unlocked ? const Color(0xFFD08A08) : const Color(0xFFA0A6C4);
-    final hi    = unlocked ? const Color(0xFFFFE893) : const Color(0xFFECEDF6);
+    final c1 = unlocked ? _goldHi   : const Color(0xFFD0D4E6);
+    final c2 = unlocked ? _goldMid  : const Color(0xFFBEC3D8);
+    final c3 = unlocked ? _goldDark : const Color(0xFFADB3CC);
+    final c4 = unlocked ? const Color(0xFFD88A18) : const Color(0xFF9DA3BE);
+    final hi = unlocked ? const Color(0xFFFFE080) : const Color(0xFFE4E6F0);
 
     // ── thick handles (drawn behind cup)
     for (final side in [-1.0, 1.0]) {
-      final ax = cx + side * w * 0.30;
-      final ay = h * 0.18;
-      final outX = cx + side * w * 0.52;
-      final midY = h * 0.38;
-      final bx = cx + side * w * 0.22;
-      final by = h * 0.54;
+      // top attach: just under the rim corner of the cup
+      final ax = cx + side * w * 0.31;
+      final ay = h * 0.21;
+      // outer bulge of the handle (pulled in for a smaller handle)
+      final outX = cx + side * w * 0.41;
+      final midY = h * 0.35;
+      // bottom attach: on the lower cup side
+      final bx = cx + side * w * 0.25;
+      final by = h * 0.47;
 
       final outer = Path()
         ..moveTo(ax, ay)
-        ..cubicTo(ax + side * w * 0.12, ay - h * 0.04,
-                  outX + side * w * 0.04, midY - h * 0.12,
+        ..cubicTo(ax + side * w * 0.08, ay - h * 0.02,
+                  outX + side * w * 0.02, midY - h * 0.08,
                   outX, midY)
-        ..cubicTo(outX - side * w * 0.02, midY + h * 0.14,
-                  bx + side * w * 0.08, by + h * 0.04,
+        ..cubicTo(outX - side * w * 0.02, midY + h * 0.08,
+                  bx + side * w * 0.05, by + h * 0.03,
                   bx, by);
 
       canvas.drawPath(outer, Paint()
-        ..color = gold3
+        ..color = c3
         ..style = PaintingStyle.stroke
-        ..strokeWidth = w * 0.10
+        ..strokeWidth = w * 0.075
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round);
       canvas.drawPath(outer, Paint()
         ..color = hi.withValues(alpha: 0.35)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = w * 0.04
+        ..strokeWidth = w * 0.03
         ..strokeCap = StrokeCap.round);
     }
 
     // ── cup body — wide rounded trapezoid
-    final cupT = h * 0.06;
+    final cupT = h * 0.10;
     final cupB = h * 0.60;
-    final topW = w * 0.42;
-    final botW = w * 0.18;
+    final topW = w * 0.36;
+    final botW = w * 0.17;
 
     final cup = Path()
       ..moveTo(cx - topW, cupT + h * 0.06)
@@ -720,7 +723,7 @@ class TrophyPainter extends CustomPainter {
     canvas.drawPath(cup, Paint()
       ..shader = LinearGradient(
         begin: Alignment.topLeft, end: Alignment.bottomRight,
-        colors: [gold1, gold2, gold3],
+        colors: [c1, c2, c3],
         stops: const [0.0, 0.5, 1.0],
       ).createShader(cup.getBounds()));
 
@@ -729,7 +732,7 @@ class TrophyPainter extends CustomPainter {
       ..moveTo(cx - topW + 6, cupT + h * 0.08)
       ..quadraticBezierTo(cx, cupT + h * 0.14, cx + topW - 6, cupT + h * 0.08);
     canvas.drawPath(rimInner, Paint()
-      ..color = gold3.withValues(alpha: 0.4)
+      ..color = c3.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3);
 
@@ -738,7 +741,7 @@ class TrophyPainter extends CustomPainter {
       ..moveTo(cx - topW - 2, cupT + h * 0.06)
       ..quadraticBezierTo(cx, cupT - h * 0.02, cx + topW + 2, cupT + h * 0.06);
     canvas.drawPath(rimOuter, Paint()
-      ..color = gold1
+      ..color = c1
       ..style = PaintingStyle.stroke
       ..strokeWidth = w * 0.07
       ..strokeCap = StrokeCap.round);
@@ -765,7 +768,7 @@ class TrophyPainter extends CustomPainter {
       RRect.fromRectAndRadius(
         Rect.fromLTRB(cx - w * 0.06, stemT, cx + w * 0.06, stemB),
         Radius.circular(w * 0.03)),
-      Paint()..color = gold3);
+      Paint()..color = c3);
 
     // ── base — wide flat oval
     final baseT = stemB - 2;
@@ -777,7 +780,7 @@ class TrophyPainter extends CustomPainter {
     canvas.drawRRect(baseR, Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [gold2, gold4],
+        colors: [c2, c4],
       ).createShader(baseR.outerRect));
     // base top highlight
     canvas.drawRRect(
@@ -791,7 +794,7 @@ class TrophyPainter extends CustomPainter {
       Rect.fromCenter(
         center: Offset(cx, baseB + 3),
         width: baseW * 1.6, height: 6),
-      Paint()..color = gold4.withValues(alpha: 0.22)
+      Paint()..color = c4.withValues(alpha: 0.22)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
   }
 
