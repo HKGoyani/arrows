@@ -1192,17 +1192,31 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
         }
       }
     }
+    // current month with every day up to today already completed → there's
+    // nothing to play; show the countdown and select nothing by default.
+    var allCaughtUp = isCurrentMonth;
+    if (allCaughtUp) {
+      for (var d = 1; d <= now.day; d++) {
+        if (!played.contains(dayStr(d))) {
+          allCaughtUp = false;
+          break;
+        }
+      }
+    }
+    final noSelection = allCaughtUp && _selectedDay == null;
+
     final activeDay = _selectedDay ?? defaultDay;
     final activeDate = DateTime(_year, _month, activeDay);
     final selectedPlayed =
         played.contains('$_year-${_month.toString().padLeft(2, '0')}'
             '-${activeDay.toString().padLeft(2, '0')}');
-    final selectedIsToday = isCurrentMonth && activeDay == now.day;
-    // button label: Replay (done past day), Continue (in progress), else Play.
-    // When today's challenge is done, show a countdown instead of a button.
+    // an active in-progress attempt on the selected day (first play or replay)
     final inProgress = ChallengeService.hasProgress(activeDate);
-    final showCountdown = selectedPlayed && selectedIsToday;
-    final btnLabel = selectedPlayed ? 'Replay' : (inProgress ? 'Continue' : 'Play');
+    // completed day → Replay (or Continue if a replay is mid-way);
+    // un-played day → Play (or Continue if mid-way)
+    final btnLabel = inProgress
+        ? 'Continue'
+        : (selectedPlayed ? 'Replay' : 'Play');
 
     return SafeArea(
       child: Column(
@@ -1270,17 +1284,17 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
               playedDays: played,
               isCurrentMonth: isCurrentMonth,
               today: now.day,
-              selectedDay: activeDay,
+              selectedDay: noSelection ? -1 : activeDay,
               onSelect: (d) => setState(() => _selectedDay = d),
             ),
           ),
           // flexible filler keeps the Play button anchored at a fixed
           // distance from the bottom regardless of how many calendar rows
           const Expanded(child: SizedBox()),
-          // Play/Continue/Replay button — or a countdown once today is done
+          // countdown when fully caught up, else Play/Continue/Replay button
           Padding(
             padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
-            child: showCountdown
+            child: noSelection
                 ? Container(
                     width: double.infinity,
                     height: 62,
@@ -1406,9 +1420,8 @@ class _CalendarGrid extends StatelessWidget {
     }
     for (var d = 1; d <= totalDays; d++) {
       final wasPlayed = playedDays.contains(_dateStr(d));
-      final progress = wasPlayed
-          ? 0.0
-          : ChallengeService.progressFor(DateTime(year, month, d));
+      // a completed day can carry a mid-way replay attempt too
+      final progress = ChallengeService.progressFor(DateTime(year, month, d));
       final isFuture = isCurrentMonth && d > today;
       final selectable = !isFuture; // completed days are selectable (replay)
 
@@ -1453,86 +1466,65 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasRing = progress > 0 && progress < 1;
-    Widget content;
-
+    // base circle colour
+    final Color bg;
+    final Color textColor;
     if (played) {
-      // completed day → green dot; when selected, a larger green circle
-      // showing the day number (tap to replay)
-      if (isSelected) {
-        content = Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-              color: Color(0xFF28E588), shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: Transform.translate(
-            offset: const Offset(0, 1),
-            child: Text('$day',
-                style: poppins(17, FontWeight.w900, Colors.white, height: 1.0)),
-          ),
-        );
-      } else {
-        content = Container(
-          width: 36,
-          height: 36,
-          decoration: const BoxDecoration(
-              color: Color(0xFF28E588), shape: BoxShape.circle),
-        );
-      }
+      bg = const Color(0xFF28E588); // green = completed
+      textColor = Colors.white;
+    } else if (isSelected) {
+      bg = AppColors.blue;
+      textColor = Colors.white;
+    } else if (isFuture) {
+      bg = Colors.transparent;
+      textColor = const Color(0xFFCDD2E4);
     } else {
-      final Color bg;
-      final Color textColor;
-      if (isSelected) {
-        bg = AppColors.blue;
-        textColor = Colors.white;
-      } else if (isFuture) {
-        bg = Colors.transparent;
-        textColor = const Color(0xFFCDD2E4);
-      } else {
-        bg = const Color(0xFFEDEFF7);
-        textColor = const Color(0xFF5E658B);
-      }
+      bg = const Color(0xFFEDEFF7);
+      textColor = const Color(0xFF5E658B);
+    }
 
-      // the selected day is drawn a touch larger to stand out
-      final size = isSelected ? 40.0 : 36.0;
-      final circle = Container(
+    // show the number only when selected, or for an un-played non-future day.
+    // A completed day shows a bare dot unless it's the selected one.
+    final showNumber = (!played && !isFuture) || isSelected;
+    final size = isSelected ? 38.0 : 34.0;
+
+    final circle = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: showNumber
+          ? Transform.translate(
+              offset: const Offset(0, 1),
+              child: Text('$day',
+                  style: poppins(isSelected ? 17 : 16, FontWeight.w900,
+                      textColor, height: 1.0)),
+            )
+          : null,
+    );
+
+    Widget content = circle;
+    if (hasRing) {
+      // selected → white inner arc; not selected → blue arc around the circle
+      content = SizedBox(
         width: size,
         height: size,
-        decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-        alignment: Alignment.center,
-        child: Transform.translate(
-          offset: const Offset(0, 1),
-          child: Text('$day',
-              style: poppins(isSelected ? 17 : 16, FontWeight.w900, textColor,
-                  height: 1.0)),
-        ),
-      );
-
-      if (hasRing) {
-        // selected → blue circle + white inner arc;
-        // not selected → default circle + blue outer arc
-        content = SizedBox(
-          width: size,
-          height: size,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              circle,
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _RingPainter(
-                    progress,
-                    color: isSelected ? Colors.white : AppColors.blue,
-                    inset: isSelected ? 4 : 1,
-                  ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            circle,
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _RingPainter(
+                  progress,
+                  color: isSelected ? Colors.white : AppColors.blue,
+                  inset: isSelected ? 4 : 1,
                 ),
               ),
-            ],
-          ),
-        );
-      } else {
-        content = circle;
-      }
+            ),
+          ],
+        ),
+      );
     }
 
     return GestureDetector(
