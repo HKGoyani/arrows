@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'audio.dart';
+import 'challenge.dart';
 import 'collection_icons.dart';
 import 'collection_screen.dart';
 import 'config.dart';
@@ -138,11 +139,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
           index: _tab,
           level: level,
           onTap: (i) {
-            if (i == 2 && LevelLegend.hasUnseen) {
-              // don't clear yet — clear when they view the detail
-            }
+            if (i == 1) ChallengeService.markSeen(); // clear Challenge red dot
             setState(() => _tab = i);
           },
+          showChallengeBadge: ChallengeService.hasUnseen,
           showCollectionBadge: LevelLegend.hasUnseen || PerfectPlay.hasUnseen || Unstoppable.hasUnseen,
         ),
       ),

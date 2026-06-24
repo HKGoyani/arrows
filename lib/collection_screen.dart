@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'challenge.dart';
 import 'collection_icons.dart';
 import 'config.dart';
 import 'level_legend.dart';
@@ -107,15 +108,19 @@ class CollectionScreen extends StatelessWidget {
     );
   }
 
+  // The app's first season — never show trophy years before this.
+  static const _startYear = 2026;
+
   static List<Widget> _buildTrophyYears() {
     final played = Prefs.playedDays.toSet();
     final now = DateTime.now();
     final years = <int>{now.year};
     for (final d in played) {
       final y = int.tryParse(d.split('-').first);
-      if (y != null) years.add(y);
+      if (y != null && y >= _startYear) years.add(y);
     }
-    final sorted = years.toList()..sort((a, b) => b.compareTo(a));
+    final sorted = years.where((y) => y >= _startYear).toList()
+      ..sort((a, b) => b.compareTo(a));
 
     final widgets = <Widget>[];
     for (final year in sorted) {
@@ -1081,11 +1086,16 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
   }
 
   void _prev() {
+    if (!_canGoPrev) return;
     setState(() {
       _month--;
       if (_month < 1) { _month = 12; _year--; }
     });
   }
+
+  static const _startYear = 2026;
+  bool get _canGoPrev =>
+      _year > _startYear || (_year == _startYear && _month > 1);
 
   void _next() {
     final now = DateTime.now();
@@ -1134,17 +1144,19 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     return SafeArea(
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           // trophy + nav arrows
           Row(
             children: [
               const SizedBox(width: 16),
-              _NavArrow(pointLeft: true, onTap: _prev),
+              _canGoPrev
+                  ? _NavArrow(pointLeft: true, onTap: _prev)
+                  : const SizedBox(width: 44),
               Expanded(
                 child: Center(
                   child: SizedBox(
-                    width: 150,
-                    height: 150,
+                    width: 128,
+                    height: 128,
                     child: CustomPaint(
                       painter: TrophyPainter(unlocked: completed),
                     ),
@@ -1163,11 +1175,11 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 70),
             child: _AwardProgress(current: playedCount, target: totalDays),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 16),
           // month title
           Text('${_monthNames[_month - 1]} $_year',
               style: poppins(22, FontWeight.w900, AppColors.blue)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           // weekday headers
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -1197,10 +1209,12 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
               today: now.day,
             ),
           ),
-          const Spacer(),
-          // Play button — centered between calendar and bottom nav
+          // flexible filler keeps the Play button anchored at a fixed
+          // distance from the bottom regardless of how many calendar rows
+          const Expanded(child: SizedBox()),
+          // Play button — fixed bottom anchor
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
             child: _PressButton(
               onTap: () {
                 // TODO: navigate to daily challenge for this month
@@ -1218,7 +1232,6 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
               ),
             ),
           ),
-          const Spacer(),
         ],
       ),
     );
@@ -1298,25 +1311,42 @@ class _CalendarGrid extends StatelessWidget {
     required this.today,
   });
 
+  String _dateStr(int d) =>
+      '$year-${month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
+
+  /// The active "play next" day: today for the current month, otherwise the
+  /// first un-played day of the month (the month's starting point).
+  int? get _activeDay {
+    if (isCurrentMonth) return today;
+    for (var d = 1; d <= totalDays; d++) {
+      if (!playedDays.contains(_dateStr(d))) return d;
+    }
+    return null; // whole month completed
+  }
+
   @override
   Widget build(BuildContext context) {
+    final active = _activeDay;
     final cells = <Widget>[];
     // empty cells before first day
     for (var i = 1; i < firstWeekday; i++) {
       cells.add(const SizedBox());
     }
     for (var d = 1; d <= totalDays; d++) {
-      final dateStr =
-          '$year-${month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
-      final wasPlayed = playedDays.contains(dateStr);
-      final isToday = isCurrentMonth && d == today;
-      final isFuture = isCurrentMonth && d > today;
+      final wasPlayed = playedDays.contains(_dateStr(d));
+      final isActive = d == active && !wasPlayed;
+      final isFuture = isCurrentMonth && d > today && !isActive;
+      // progress ring for the active day if a daily challenge is mid-way
+      final progress = (isActive && isCurrentMonth && d == today)
+          ? ChallengeService.todayProgress
+          : 0.0;
 
       cells.add(_DayCell(
         day: d,
         played: wasPlayed,
-        isToday: isToday,
+        isActive: isActive,
         isFuture: isFuture,
+        progress: progress,
       ));
     }
 
@@ -1334,27 +1364,37 @@ class _CalendarGrid extends StatelessWidget {
 class _DayCell extends StatelessWidget {
   final int day;
   final bool played;
-  final bool isToday;
+  final bool isActive;
   final bool isFuture;
+  final double progress; // 0..1 arrows fired on the active day
 
   const _DayCell({
     required this.day,
     required this.played,
-    required this.isToday,
+    required this.isActive,
     required this.isFuture,
+    this.progress = 0.0,
   });
 
   @override
   Widget build(BuildContext context) {
+    // a completed day shows a solid green dot with NO number
+    if (played) {
+      return Center(
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+            color: Color(0xFF28E588),
+            shape: BoxShape.circle,
+          ),
+        ),
+      );
+    }
+
     Color bg;
     Color textColor;
-    // a played (non-today) day shows a solid green dot with NO number
-    final showNumber = !(played && !isToday);
-
-    if (played && !isToday) {
-      bg = const Color(0xFF28E588);
-      textColor = Colors.white;
-    } else if (isToday) {
+    if (isActive) {
       bg = AppColors.blue;
       textColor = Colors.white;
     } else if (isFuture) {
@@ -1365,23 +1405,58 @@ class _DayCell extends StatelessWidget {
       textColor = const Color(0xFF5E658B);
     }
 
-    return Center(
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: bg,
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: showNumber
-            ? Transform.translate(
-                offset: const Offset(0, 1),
-                child: Text('$day',
-                    style: poppins(16, FontWeight.w900, textColor, height: 1.0)),
-              )
-            : const SizedBox.shrink(),
+    final circle = Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: Transform.translate(
+        offset: const Offset(0, 1),
+        child: Text('$day',
+            style: poppins(16, FontWeight.w900, textColor, height: 1.0)),
       ),
     );
+
+    // active day mid-way: draw an arc ring around the blue circle
+    if (isActive && progress > 0 && progress < 1) {
+      return Center(
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: CustomPaint(
+            painter: _RingPainter(progress),
+            child: Center(child: circle),
+          ),
+        ),
+      );
+    }
+
+    return Center(child: circle);
   }
+}
+
+class _RingPainter extends CustomPainter {
+  final double progress;
+  const _RingPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    final r = size.width / 2 - 2;
+    final track = Paint()
+      ..color = const Color(0xFFE0E3F2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5;
+    final arc = Paint()
+      ..color = AppColors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(c, r, track);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r),
+        -1.5708, 6.2832 * progress.clamp(0.0, 1.0), false, arc);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingPainter old) => old.progress != progress;
 }

@@ -267,6 +267,7 @@ class AppBottomNav extends StatelessWidget {
   final int index;
   final int level;
   final bool showCollectionBadge;
+  final bool showChallengeBadge;
   final ValueChanged<int> onTap;
   const AppBottomNav({
     super.key,
@@ -274,6 +275,7 @@ class AppBottomNav extends StatelessWidget {
     required this.level,
     required this.onTap,
     this.showCollectionBadge = false,
+    this.showChallengeBadge = false,
   });
 
   @override
@@ -323,7 +325,8 @@ class AppBottomNav extends StatelessWidget {
                     clipBehavior: Clip.none,
                     children: [
                       Icon(items[i].$1, size: 28, color: color),
-                      if (i == 2 && collectionUnlocked && showCollectionBadge)
+                      if ((i == 2 && collectionUnlocked && showCollectionBadge) ||
+                          (i == 1 && level20Unlocked && showChallengeBadge))
                         Positioned(
                           right: -4,
                           top: -4,

@@ -64,6 +64,17 @@ class Prefs {
   static bool get unstoppableUnseen => _p?.getBool('unstoppableUnseen') ?? false;
   static Future<void> setUnstoppableUnseen(bool v) async => _p?.setBool('unstoppableUnseen', v);
 
+  // --- daily challenge ---
+  static String get lastChallengeDate => _p?.getString('lastChallengeDate') ?? '';
+  static Future<void> setLastChallengeDate(String v) async =>
+      _p?.setString('lastChallengeDate', v);
+  static String get challengeProgressDate => _p?.getString('challengeProgressDate') ?? '';
+  static Future<void> setChallengeProgressDate(String v) async =>
+      _p?.setString('challengeProgressDate', v);
+  static double get challengeProgress => _p?.getDouble('challengeProgress') ?? 0.0;
+  static Future<void> setChallengeProgress(double v) async =>
+      _p?.setDouble('challengeProgress', v);
+
   // --- perfect play unseen badge ---
   static bool get perfectUnseen => _p?.getBool('perfectUnseen') ?? false;
   static Future<void> setPerfectUnseen(bool v) async => _p?.setBool('perfectUnseen', v);
@@ -93,6 +104,9 @@ class Prefs {
     await _p?.remove('unstoppableDates');
     await _p?.remove('unstoppableUnseen');
     await _p?.remove('legendUnseen');
+    await _p?.remove('lastChallengeDate');
+    await _p?.remove('challengeProgressDate');
+    await _p?.remove('challengeProgress');
     await _p?.remove('perfectUnseen');
     await _p?.remove('perfectCount');
     await _p?.remove('perfectLevel');
