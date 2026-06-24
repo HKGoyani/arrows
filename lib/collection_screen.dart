@@ -1375,7 +1375,11 @@ class _DayCell extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: showNumber
-            ? Text('$day', style: poppins(16, FontWeight.w900, textColor))
+            ? Transform.translate(
+                offset: const Offset(0, 1),
+                child: Text('$day',
+                    style: poppins(16, FontWeight.w900, textColor, height: 1.0)),
+              )
             : const SizedBox.shrink(),
       ),
     );
