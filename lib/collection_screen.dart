@@ -1077,6 +1077,7 @@ class MonthDetailScreen extends StatefulWidget {
 class _MonthDetailScreenState extends State<MonthDetailScreen> {
   late int _year;
   late int _month;
+  int? _selectedDay; // user-tapped selection; null = use default
 
   @override
   void initState() {
@@ -1090,6 +1091,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     setState(() {
       _month--;
       if (_month < 1) { _month = 12; _year--; }
+      _selectedDay = null; // reset selection on month change
     });
   }
 
@@ -1106,6 +1108,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     setState(() {
       _month = adjM;
       _year = nextY;
+      _selectedDay = null;
     });
   }
 
@@ -1141,25 +1144,26 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     final firstWeekday = DateTime(_year, _month, 1).weekday; // 1=Mon
     final isCurrentMonth = _year == now.year && _month == now.month;
 
-    // the day the Play button starts: a partly-played day if any, else today
-    // (current month) / the first un-played day (past month)
-    int activeDay = isCurrentMonth ? now.day : 1;
+    // default selected day: first partly-played day, else today (current month)
+    // / the first un-played day (past month)
+    int defaultDay = isCurrentMonth ? now.day : 1;
     if (!isCurrentMonth) {
       for (var d = 1; d <= totalDays; d++) {
         if (!played.contains(
             '$_year-${_month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}')) {
-          activeDay = d;
+          defaultDay = d;
           break;
         }
       }
     }
     for (var d = 1; d <= totalDays; d++) {
       if (ChallengeService.hasProgress(DateTime(_year, _month, d))) {
-        activeDay = d;
+        defaultDay = d;
         break;
       }
     }
-    // "Continue" when the active day's challenge is partly done
+    final activeDay = _selectedDay ?? defaultDay;
+    // "Continue" when the selected day's challenge is partly done
     final inProgress =
         ChallengeService.hasProgress(DateTime(_year, _month, activeDay));
 
@@ -1229,6 +1233,8 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
               playedDays: played,
               isCurrentMonth: isCurrentMonth,
               today: now.day,
+              selectedDay: activeDay,
+              onSelect: (d) => setState(() => _selectedDay = d),
             ),
           ),
           // flexible filler keeps the Play button anchored at a fixed
@@ -1241,7 +1247,10 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
               onTap: () async {
                 await startDailyChallenge(
                     context, DateTime(_year, _month, activeDay));
-                if (context.mounted) setState(() {}); // refresh on return
+                // drop the manual selection so the default re-picks the
+                // lowest day that still has progress (a restarted day is
+                // cleared and no longer auto-selected)
+                if (context.mounted) setState(() => _selectedDay = null);
               },
               child: Container(
                 width: double.infinity,
@@ -1321,9 +1330,10 @@ class _NavArrow extends StatelessWidget {
 }
 
 class _CalendarGrid extends StatelessWidget {
-  final int year, month, totalDays, firstWeekday, today;
+  final int year, month, totalDays, firstWeekday, today, selectedDay;
   final Set<String> playedDays;
   final bool isCurrentMonth;
+  final ValueChanged<int> onSelect;
 
   const _CalendarGrid({
     required this.year,
@@ -1333,24 +1343,15 @@ class _CalendarGrid extends StatelessWidget {
     required this.playedDays,
     required this.isCurrentMonth,
     required this.today,
+    required this.selectedDay,
+    required this.onSelect,
   });
 
   String _dateStr(int d) =>
       '$year-${month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
 
-  /// The active "play next" day: today for the current month, otherwise the
-  /// first un-played day of the month (the month's starting point).
-  int? get _activeDay {
-    if (isCurrentMonth) return today;
-    for (var d = 1; d <= totalDays; d++) {
-      if (!playedDays.contains(_dateStr(d))) return d;
-    }
-    return null; // whole month completed
-  }
-
   @override
   Widget build(BuildContext context) {
-    final active = _activeDay;
     final cells = <Widget>[];
     // empty cells before first day
     for (var i = 1; i < firstWeekday; i++) {
@@ -1358,20 +1359,19 @@ class _CalendarGrid extends StatelessWidget {
     }
     for (var d = 1; d <= totalDays; d++) {
       final wasPlayed = playedDays.contains(_dateStr(d));
-      // any day with a saved partly-played board shows a progress ring
       final progress = wasPlayed
           ? 0.0
           : ChallengeService.progressFor(DateTime(year, month, d));
-      final hasRing = progress > 0 && progress < 1;
-      final isActive = (d == active || hasRing) && !wasPlayed;
-      final isFuture = isCurrentMonth && d > today && !isActive;
+      final isFuture = isCurrentMonth && d > today;
+      final selectable = !wasPlayed && !isFuture;
 
       cells.add(_DayCell(
         day: d,
         played: wasPlayed,
-        isActive: isActive,
+        isSelected: d == selectedDay && selectable,
         isFuture: isFuture,
         progress: progress,
+        onTap: selectable ? () => onSelect(d) : null,
       ));
     }
 
@@ -1389,90 +1389,109 @@ class _CalendarGrid extends StatelessWidget {
 class _DayCell extends StatelessWidget {
   final int day;
   final bool played;
-  final bool isActive;
+  final bool isSelected;
   final bool isFuture;
-  final double progress; // 0..1 arrows fired on the active day
+  final double progress; // 0..1 arrows fired on this day
+  final VoidCallback? onTap;
 
   const _DayCell({
     required this.day,
     required this.played,
-    required this.isActive,
+    required this.isSelected,
     required this.isFuture,
     this.progress = 0.0,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // a completed day shows a solid green dot with NO number
+    final hasRing = progress > 0 && progress < 1;
+    Widget content;
+
     if (played) {
-      return Center(
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: const BoxDecoration(
-            color: Color(0xFF28E588),
-            shape: BoxShape.circle,
-          ),
+      // completed day → solid green dot, no number
+      content = Container(
+        width: 36,
+        height: 36,
+        decoration: const BoxDecoration(
+            color: Color(0xFF28E588), shape: BoxShape.circle),
+      );
+    } else {
+      final Color bg;
+      final Color textColor;
+      if (isSelected) {
+        bg = AppColors.blue;
+        textColor = Colors.white;
+      } else if (isFuture) {
+        bg = Colors.transparent;
+        textColor = const Color(0xFFCDD2E4);
+      } else {
+        bg = const Color(0xFFEDEFF7);
+        textColor = const Color(0xFF5E658B);
+      }
+
+      // the selected day is drawn a touch larger to stand out
+      final size = isSelected ? 40.0 : 36.0;
+      final circle = Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+        alignment: Alignment.center,
+        child: Transform.translate(
+          offset: const Offset(0, 1),
+          child: Text('$day',
+              style: poppins(isSelected ? 17 : 16, FontWeight.w900, textColor,
+                  height: 1.0)),
         ),
       );
-    }
 
-    Color bg;
-    Color textColor;
-    if (isActive) {
-      bg = AppColors.blue;
-      textColor = Colors.white;
-    } else if (isFuture) {
-      bg = Colors.transparent;
-      textColor = const Color(0xFFCDD2E4);
-    } else {
-      bg = const Color(0xFFEDEFF7);
-      textColor = const Color(0xFF5E658B);
-    }
-
-    final circle = Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-      alignment: Alignment.center,
-      child: Transform.translate(
-        offset: const Offset(0, 1),
-        child: Text('$day',
-            style: poppins(16, FontWeight.w900, textColor, height: 1.0)),
-      ),
-    );
-
-    // active day mid-way: full blue circle with a white progress arc inside
-    if (isActive && progress > 0 && progress < 1) {
-      return Center(
-        child: SizedBox(
-          width: 36,
-          height: 36,
+      if (hasRing) {
+        // selected → blue circle + white inner arc;
+        // not selected → default circle + blue outer arc
+        content = SizedBox(
+          width: size,
+          height: size,
           child: Stack(
             alignment: Alignment.center,
             children: [
               circle,
-              Positioned.fill(child: CustomPaint(painter: _RingPainter(progress))),
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _RingPainter(
+                    progress,
+                    color: isSelected ? Colors.white : AppColors.blue,
+                    inset: isSelected ? 4 : 1,
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
-      );
+        );
+      } else {
+        content = circle;
+      }
     }
 
-    return Center(child: circle);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Center(child: content),
+    );
   }
 }
 
 class _RingPainter extends CustomPainter {
   final double progress;
-  const _RingPainter(this.progress);
+  final Color color;
+  final double inset; // distance from the circle edge
+  const _RingPainter(this.progress, {this.color = Colors.white, this.inset = 4});
 
   @override
   void paint(Canvas canvas, Size size) {
     final c = size.center(Offset.zero);
-    final r = size.width / 2 - 4; // sit inside the blue circle's edge
+    final r = size.width / 2 - inset;
     final arc = Paint()
-      ..color = Colors.white
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
@@ -1481,5 +1500,6 @@ class _RingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _RingPainter old) => old.progress != progress;
+  bool shouldRepaint(covariant _RingPainter old) =>
+      old.progress != progress || old.color != color || old.inset != inset;
 }
