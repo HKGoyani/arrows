@@ -3,7 +3,7 @@ import 'challenge.dart';
 import 'collection_icons.dart';
 import 'config.dart';
 import 'level_legend.dart';
-import 'main.dart' show navigateToChallenge;
+import 'main.dart' show navigateToChallenge, startDailyChallenge;
 import 'perfect.dart';
 import 'prefs.dart';
 import 'streak.dart';
@@ -1141,6 +1141,21 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     final firstWeekday = DateTime(_year, _month, 1).weekday; // 1=Mon
     final isCurrentMonth = _year == now.year && _month == now.month;
 
+    // the day the Play button starts: today, else first un-played day
+    int activeDay = isCurrentMonth ? now.day : 1;
+    if (!isCurrentMonth) {
+      for (var d = 1; d <= totalDays; d++) {
+        if (!played.contains(
+            '$_year-${_month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}')) {
+          activeDay = d;
+          break;
+        }
+      }
+    }
+    // "Continue" when the active day's challenge is partly done
+    final activeProgress = isCurrentMonth ? ChallengeService.todayProgress : 0.0;
+    final inProgress = activeProgress > 0 && activeProgress < 1;
+
     return SafeArea(
       child: Column(
         children: [
@@ -1216,8 +1231,10 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
             child: _PressButton(
-              onTap: () {
-                // TODO: navigate to daily challenge for this month
+              onTap: () async {
+                await startDailyChallenge(
+                    context, DateTime(_year, _month, activeDay));
+                if (context.mounted) setState(() {}); // refresh on return
               },
               child: Container(
                 width: double.infinity,
@@ -1227,7 +1244,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                   borderRadius: BorderRadius.circular(31),
                 ),
                 alignment: Alignment.center,
-                child: Text('Play',
+                child: Text(inProgress ? 'Continue' : 'Play',
                     style: poppins(23, FontWeight.w900, Colors.white)),
               ),
             ),
@@ -1417,15 +1434,27 @@ class _DayCell extends StatelessWidget {
       ),
     );
 
-    // active day mid-way: draw an arc ring around the blue circle
+    // active day mid-way: thin progress arc sitting just outside the circle
     if (isActive && progress > 0 && progress < 1) {
+      final innerCircle = Container(
+        width: 30,
+        height: 30,
+        decoration: const BoxDecoration(
+            color: AppColors.blue, shape: BoxShape.circle),
+        alignment: Alignment.center,
+        child: Transform.translate(
+          offset: const Offset(0, 1),
+          child: Text('$day',
+              style: poppins(13, FontWeight.w900, Colors.white, height: 1.0)),
+        ),
+      );
       return Center(
         child: SizedBox(
-          width: 42,
-          height: 42,
+          width: 40,
+          height: 40,
           child: CustomPaint(
             painter: _RingPainter(progress),
-            child: Center(child: circle),
+            child: Center(child: innerCircle),
           ),
         ),
       );
@@ -1444,9 +1473,9 @@ class _RingPainter extends CustomPainter {
     final c = size.center(Offset.zero);
     final r = size.width / 2 - 2;
     final track = Paint()
-      ..color = const Color(0xFFE0E3F2)
+      ..color = const Color(0xFFE5E8F5)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5;
+      ..strokeWidth = 3;
     final arc = Paint()
       ..color = AppColors.blue
       ..style = PaintingStyle.stroke

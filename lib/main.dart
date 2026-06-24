@@ -150,10 +150,34 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   }
 }
 
+/// Launches today's (or [date]'s) daily challenge full-screen.
+/// Completes when the player leaves the challenge.
+Future<void> startDailyChallenge(BuildContext context, DateTime date) {
+  return Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder(
+      pageBuilder: (_, __, ___) => GameFlow(challengeDate: date),
+      transitionsBuilder: (_, anim, __, child) =>
+          FadeTransition(opacity: anim, child: child),
+      transitionDuration: const Duration(milliseconds: 250),
+    ),
+  );
+}
+
+/// A deterministic, moderate-difficulty puzzle for a given calendar day.
+int dailyLevelFor(DateTime date) {
+  final ord = DateTime(date.year, date.month, date.day)
+      .difference(DateTime(2026, 1, 1))
+      .inDays;
+  return 10 + (ord % 9); // 10..18 — varied but consistent per day
+}
+
 /// Immersive game flow (full-screen, no nav): intro card → gameplay, advancing
 /// through levels. Back returns to the shell; the level is persisted on win.
+/// When [challengeDate] is set, runs that day's daily challenge instead of the
+/// main progression (completion is recorded against the date, not Prefs.level).
 class GameFlow extends StatefulWidget {
-  const GameFlow({super.key});
+  final DateTime? challengeDate;
+  const GameFlow({super.key, this.challengeDate});
   @override
   State<GameFlow> createState() => _GameFlowState();
 }
@@ -162,16 +186,48 @@ class _GameFlowState extends State<GameFlow> {
   final GameController _controller = GameController();
   late int _level;
 
+  bool get _isDaily => widget.challengeDate != null;
+
   @override
   void initState() {
     super.initState();
-    _level = Prefs.level;
+    _level = _isDaily ? dailyLevelFor(widget.challengeDate!) : Prefs.level;
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
+    _controller.dispose();
+  }
+
+  static String _fmt(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  bool get _isToday {
+    final n = DateTime.now();
+    final d = widget.challengeDate!;
+    return d.year == n.year && d.month == n.month && d.day == n.day;
+  }
+
+  /// Saves partial progress when leaving an unfinished daily (drives the ring).
+  void _saveDailyProgress() {
+    if (!_isDaily || !_isToday) return;
+    final total = _controller.total;
+    if (total == 0) return;
+    final prog = 1 - _controller.arrows.length / total;
+    if (prog > 0 && prog < 1) ChallengeService.setTodayProgress(prog);
+  }
+
+  void _completeDaily() {
+    final date = widget.challengeDate!;
+    // record the day so the trophy count + green dot update
+    final days = List<String>.from(Prefs.playedDays);
+    final key = _fmt(date);
+    if (!days.contains(key)) {
+      days.add(key);
+      Prefs.setPlayedDays(days);
+    }
+    if (_isToday) ChallengeService.completeToday();
   }
 
   void _showLevelLegendCelebration(int newLevel) {
@@ -202,8 +258,16 @@ class _GameFlowState extends State<GameFlow> {
       key: ValueKey('game_$_level'),
       controller: _controller,
       level: _level,
-      onBack: () => Navigator.of(context).maybePop(),
+      onBack: () {
+        if (_isDaily) _saveDailyProgress();
+        Navigator.of(context).maybePop();
+      },
       onWin: (next) {
+        if (_isDaily) {
+          _completeDaily();
+          if (mounted) Navigator.of(context).maybePop();
+          return;
+        }
         Prefs.setLevel(next);
         LevelLegend.onWin(next);
         if (!mounted) return;

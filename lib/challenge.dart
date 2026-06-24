@@ -18,16 +18,19 @@ class ChallengeService {
     return Prefs.challengeProgress.clamp(0.0, 1.0);
   }
 
-  /// Records partial progress on today's challenge.
-  static Future<void> setTodayProgress(double v) async {
-    await Prefs.setChallengeProgressDate(_fmt(DateTime.now()));
-    await Prefs.setChallengeProgress(v.clamp(0.0, 1.0));
+  /// Records partial progress on today's challenge. The Prefs setters update
+  /// the in-memory cache synchronously, so getters reflect this immediately
+  /// (no await between them, or the calendar would rebuild before the value
+  /// is visible).
+  static void setTodayProgress(double v) {
+    Prefs.setChallengeProgressDate(_fmt(DateTime.now()));
+    Prefs.setChallengeProgress(v.clamp(0.0, 1.0));
   }
 
   /// Marks today's challenge complete (also clears the red dot).
-  static Future<void> completeToday() async {
-    await Prefs.setLastChallengeDate(_fmt(DateTime.now()));
-    await markSeen();
+  static void completeToday() {
+    Prefs.setLastChallengeDate(_fmt(DateTime.now()));
+    _seenThisSession = true;
   }
 
   // ── red-dot badge ──
@@ -37,7 +40,7 @@ class ChallengeService {
 
   static bool get hasUnseen => !completedToday && !_seenThisSession;
 
-  static Future<void> markSeen() async {
+  static void markSeen() {
     _seenThisSession = true;
   }
 }
