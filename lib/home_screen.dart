@@ -94,14 +94,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               ),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
                                 // gray flame until today's challenge is done
-                                SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CustomPaint(
-                                      painter: FlamePainter(
-                                          active: ChallengeService.completedToday)),
-                                ),
-                                const SizedBox(width: 6),
+                                streakFlame(
+                                    size: 26,
+                                    active: ChallengeService.completedToday),
+                                const SizedBox(width: 5),
                                 Text('$streak',
                                     style: poppins(15, FontWeight.w800, AppColors.ink)),
                               ]),
