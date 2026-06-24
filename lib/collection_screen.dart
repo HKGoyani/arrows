@@ -1008,7 +1008,7 @@ class _TrophyDetailScreen extends StatelessWidget {
                     current: played, target: totalDays),
               ),
               const Spacer(flex: 5),
-              GestureDetector(
+              _PressButton(
                 onTap: () {
                   navigateToChallenge(year, month);
                   Navigator.of(context).pop();
@@ -1027,7 +1027,7 @@ class _TrophyDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              GestureDetector(
+              _PressButton(
                 onTap: () => Navigator.of(context).pop(),
                 child: Container(
                   width: double.infinity,
@@ -1134,111 +1134,150 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     return SafeArea(
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           // trophy + nav arrows
           Row(
             children: [
-              const SizedBox(width: 8),
-              _NavArrow(icon: Icons.arrow_back_ios_rounded, onTap: _prev),
+              const SizedBox(width: 16),
+              _NavArrow(pointLeft: true, onTap: _prev),
               Expanded(
-                child: SizedBox(
-                  height: 140,
-                  child: CustomPaint(
-                    painter: TrophyPainter(unlocked: completed),
+                child: Center(
+                  child: SizedBox(
+                    width: 150,
+                    height: 150,
+                    child: CustomPaint(
+                      painter: TrophyPainter(unlocked: completed),
+                    ),
                   ),
                 ),
               ),
               _canGoNext
-                  ? _NavArrow(icon: Icons.arrow_forward_ios_rounded, onTap: _next)
-                  : const SizedBox(width: 48),
-              const SizedBox(width: 8),
+                  ? _NavArrow(pointLeft: false, onTap: _next)
+                  : const SizedBox(width: 44),
+              const SizedBox(width: 16),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           // progress bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 50),
+            padding: const EdgeInsets.symmetric(horizontal: 70),
             child: _AwardProgress(current: playedCount, target: totalDays),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           // month title
           Text('${_monthNames[_month - 1]} $_year',
-              style: poppins(22, FontWeight.w800, AppColors.ink)),
+              style: poppins(22, FontWeight.w900, AppColors.blue)),
           const SizedBox(height: 16),
           // weekday headers
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Row(
               children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
                   .map((d) => Expanded(
                         child: Center(
                           child: Text(d,
-                              style: poppins(13, FontWeight.w700, AppColors.muted)),
+                              style: poppins(15, FontWeight.w900,
+                                  const Color(0xFFB4B9CF))),
                         ),
                       ))
                   .toList(),
             ),
           ),
-          const SizedBox(height: 8),
-          // calendar grid
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _CalendarGrid(
-                year: _year,
-                month: _month,
-                totalDays: totalDays,
-                firstWeekday: firstWeekday,
-                playedDays: played,
-                isCurrentMonth: isCurrentMonth,
-                today: now.day,
-              ),
+          const SizedBox(height: 6),
+          // calendar grid (sizes to content)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: _CalendarGrid(
+              year: _year,
+              month: _month,
+              totalDays: totalDays,
+              firstWeekday: firstWeekday,
+              playedDays: played,
+              isCurrentMonth: isCurrentMonth,
+              today: now.day,
             ),
           ),
-          // Play button
+          const Spacer(),
+          // Play button — centered between calendar and bottom nav
           Padding(
-            padding: const EdgeInsets.fromLTRB(40, 8, 40, 16),
-            child: GestureDetector(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: _PressButton(
               onTap: () {
                 // TODO: navigate to daily challenge for this month
               },
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
+                height: 62,
                 decoration: BoxDecoration(
                   color: AppColors.blue,
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(31),
                 ),
                 alignment: Alignment.center,
                 child: Text('Play',
-                    style: poppins(18, FontWeight.w800, Colors.white)),
+                    style: poppins(23, FontWeight.w900, Colors.white)),
               ),
             ),
           ),
+          const Spacer(),
         ],
       ),
     );
   }
 }
 
-class _NavArrow extends StatelessWidget {
-  final IconData icon;
+/// Wraps a tappable child with a quick scale-down press animation.
+class _PressButton extends StatefulWidget {
+  final Widget child;
   final VoidCallback onTap;
-  const _NavArrow({required this.icon, required this.onTap});
+  const _PressButton({required this.child, required this.onTap});
+
+  @override
+  State<_PressButton> createState() => _PressButtonState();
+}
+
+class _PressButtonState extends State<_PressButton> {
+  bool _down = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
       behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapUp: (_) => setState(() => _down = false),
+      onTapCancel: () => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _NavArrow extends StatelessWidget {
+  final bool pointLeft;
+  final VoidCallback onTap;
+  const _NavArrow({required this.pointLeft, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return _PressButton(
+      onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8EAF4),
+        width: 44,
+        height: 44,
+        decoration: const BoxDecoration(
+          color: Color(0xFFD5DAF6),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 18, color: AppColors.ink),
+        alignment: Alignment.center,
+        child: Transform.rotate(
+          angle: pointLeft ? 3.14159 : 0,
+          child: const Icon(Icons.play_arrow_rounded,
+              size: 38, color: Color(0xFF555B83)),
+        ),
       ),
     );
   }
@@ -1283,8 +1322,9 @@ class _CalendarGrid extends StatelessWidget {
 
     return GridView.count(
       crossAxisCount: 7,
+      shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
+      mainAxisSpacing: 2,
       crossAxisSpacing: 0,
       children: cells,
     );
@@ -1308,6 +1348,8 @@ class _DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     Color bg;
     Color textColor;
+    // a played (non-today) day shows a solid green dot with NO number
+    final showNumber = !(played && !isToday);
 
     if (played && !isToday) {
       bg = const Color(0xFF28E588);
@@ -1320,20 +1362,21 @@ class _DayCell extends StatelessWidget {
       textColor = const Color(0xFFCDD2E4);
     } else {
       bg = const Color(0xFFEDEFF7);
-      textColor = AppColors.ink;
+      textColor = const Color(0xFF5E658B);
     }
 
     return Center(
       child: Container(
-        width: 38,
-        height: 38,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: bg,
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: Text('$day',
-            style: poppins(14, FontWeight.w800, textColor)),
+        child: showNumber
+            ? Text('$day', style: poppins(16, FontWeight.w900, textColor))
+            : const SizedBox.shrink(),
       ),
     );
   }
