@@ -21,9 +21,13 @@ class GameController extends ChangeNotifier {
 
   double get progress {
     if (total == 0) return 0;
-    final remaining = arrows.where((a) => a.state != ArrowState.leaving).length;
-    return (total - remaining) / total;
+    return (total - liveArrows.length) / total;
   }
+
+  /// Arrows still on the board — excludes those mid-flight (already committed
+  /// as fired). Used to snapshot/restore a daily challenge.
+  List<Arrow> get liveArrows =>
+      arrows.where((a) => a.state != ArrowState.leaving).toList();
 
   void loadLevel(int lvl) {
     level = lvl;
@@ -40,6 +44,22 @@ class GameController extends ChangeNotifier {
     hearts = 3;
     total = arrows.length;
     status = GameStatus.playing;
+    notifyListeners();
+  }
+
+  /// Restores a partly-played board: keeps only the [remainingIds] arrows
+  /// (the rest are treated as already fired). [total] is left at the full
+  /// count so the progress bar stays accurate. Call right after [loadLevel].
+  void restoreState(Set<int> remainingIds, int savedHearts) {
+    arrows.removeWhere((a) => !remainingIds.contains(a.id));
+    occ = {};
+    for (final a in arrows) {
+      for (final c in a.cells) {
+        occ[c] = a.id;
+      }
+    }
+    hearts = savedHearts.clamp(1, 3);
+    status = arrows.isEmpty ? GameStatus.won : GameStatus.playing;
     notifyListeners();
   }
 

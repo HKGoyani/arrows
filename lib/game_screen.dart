@@ -20,12 +20,20 @@ class GameScreen extends StatefulWidget {
   final int level;
   final VoidCallback onBack;
   final void Function(int nextLevel) onWin;
+  // daily-challenge mode: skips main-progression award tracking and lets the
+  // caller restore a saved board right after the level loads.
+  final bool isDaily;
+  final void Function(GameController c)? onLoaded;
+  final VoidCallback? onDidRestart;
   const GameScreen({
     super.key,
     required this.controller,
     required this.level,
     required this.onBack,
     required this.onWin,
+    this.isDaily = false,
+    this.onLoaded,
+    this.onDidRestart,
   });
 
   @override
@@ -84,7 +92,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ..addListener(_rebuild);
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
-    PerfectPlay.onLevelStart(widget.level);
+    if (widget.isDaily) {
+      widget.onLoaded?.call(c); // restore saved board if any
+    } else {
+      PerfectPlay.onLevelStart(widget.level);
+    }
     _resetHintTimer();
   }
 
@@ -255,8 +267,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _handleWin() {
     if (_winHandled) return;
     _winHandled = true;
-    PerfectPlay.onWin(c.level);
-    Unstoppable.onWin(c.level);
+    if (!widget.isDaily) {
+      PerfectPlay.onWin(c.level);
+      Unstoppable.onWin(c.level);
+    }
     _hintTimer?.cancel();
     _showHint = false;
     _showGrid = false;
@@ -269,7 +283,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _restart() {
-    PerfectPlay.onRestart(); // manual restart → attempt no longer perfect
+    if (!widget.isDaily) {
+      PerfectPlay.onRestart(); // manual restart → attempt no longer perfect
+    }
     _clashFlashCtrl.reset();
     _lurchCtrl.reset();
     _flashBlocker = null;
@@ -288,6 +304,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _showWinText = false;
     _showWinConfetti = false;
     c.loadLevel(c.level);
+    if (widget.isDaily) widget.onDidRestart?.call(); // wipe saved daily board
     _resetHintTimer();
   }
 

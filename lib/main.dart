@@ -209,25 +209,54 @@ class _GameFlowState extends State<GameFlow> {
     return d.year == n.year && d.month == n.month && d.day == n.day;
   }
 
-  /// Saves partial progress when leaving an unfinished daily (drives the ring).
-  void _saveDailyProgress() {
-    if (!_isDaily || !_isToday) return;
-    final total = _controller.total;
-    if (total == 0) return;
-    final prog = 1 - _controller.arrows.length / total;
-    if (prog > 0 && prog < 1) ChallengeService.setTodayProgress(prog);
+  /// Restores a partly-played daily board for this challenge's date.
+  void _restoreDaily(GameController c) {
+    final date = widget.challengeDate!;
+    final remaining = ChallengeService.remainingFor(date);
+    if (remaining == null || remaining.isEmpty) return;
+    c.restoreState(remaining.toSet(), ChallengeService.heartsFor(date));
   }
 
-  void _completeDaily() {
+  /// Wipes this date's saved board (after an in-game restart).
+  void _clearDailyState() {
+    ChallengeService.clearFor(widget.challengeDate!);
+  }
+
+  /// Saves the partly-played board when leaving an unfinished daily so
+  /// "Continue" resumes from the last state (and drives the calendar ring).
+  /// A fresh/reset board (progress 0) clears any stale saved state instead.
+  /// Awaited before popping so it survives an app kill.
+  Future<void> _saveDailyProgress() async {
+    if (!_isDaily) return;
+    final date = widget.challengeDate!;
+    final total = _controller.total;
+    if (total == 0) return;
+    // exclude arrows mid-flight — they're committed as fired
+    final remainingArrows = _controller.liveArrows;
+    final prog = 1 - remainingArrows.length / total;
+    if (prog > 0 && prog < 1) {
+      await ChallengeService.saveFor(
+        date,
+        remainingIds: remainingArrows.map((a) => a.id).toList(),
+        hearts: _controller.hearts,
+        progress: prog,
+      );
+    } else {
+      await ChallengeService.clearFor(date); // fresh board → no ring
+    }
+  }
+
+  Future<void> _completeDaily() async {
     final date = widget.challengeDate!;
     // record the day so the trophy count + green dot update
     final days = List<String>.from(Prefs.playedDays);
     final key = _fmt(date);
     if (!days.contains(key)) {
       days.add(key);
-      Prefs.setPlayedDays(days);
+      await Prefs.setPlayedDays(days);
     }
-    if (_isToday) ChallengeService.completeToday();
+    await ChallengeService.clearFor(date); // no leftover progress
+    if (_isToday) await ChallengeService.completeToday();
   }
 
   void _showLevelLegendCelebration(int newLevel) {
@@ -258,14 +287,19 @@ class _GameFlowState extends State<GameFlow> {
       key: ValueKey('game_$_level'),
       controller: _controller,
       level: _level,
-      onBack: () {
-        if (_isDaily) _saveDailyProgress();
-        Navigator.of(context).maybePop();
+      isDaily: _isDaily,
+      onLoaded: _isDaily ? _restoreDaily : null,
+      onDidRestart: _isDaily ? _clearDailyState : null,
+      onBack: () async {
+        final nav = Navigator.of(context);
+        if (_isDaily) await _saveDailyProgress();
+        nav.maybePop();
       },
-      onWin: (next) {
+      onWin: (next) async {
         if (_isDaily) {
-          _completeDaily();
-          if (mounted) Navigator.of(context).maybePop();
+          final nav = Navigator.of(context);
+          await _completeDaily();
+          nav.maybePop();
           return;
         }
         Prefs.setLevel(next);

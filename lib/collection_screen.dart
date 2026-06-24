@@ -1141,7 +1141,8 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     final firstWeekday = DateTime(_year, _month, 1).weekday; // 1=Mon
     final isCurrentMonth = _year == now.year && _month == now.month;
 
-    // the day the Play button starts: today, else first un-played day
+    // the day the Play button starts: a partly-played day if any, else today
+    // (current month) / the first un-played day (past month)
     int activeDay = isCurrentMonth ? now.day : 1;
     if (!isCurrentMonth) {
       for (var d = 1; d <= totalDays; d++) {
@@ -1152,9 +1153,15 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
         }
       }
     }
+    for (var d = 1; d <= totalDays; d++) {
+      if (ChallengeService.hasProgress(DateTime(_year, _month, d))) {
+        activeDay = d;
+        break;
+      }
+    }
     // "Continue" when the active day's challenge is partly done
-    final activeProgress = isCurrentMonth ? ChallengeService.todayProgress : 0.0;
-    final inProgress = activeProgress > 0 && activeProgress < 1;
+    final inProgress =
+        ChallengeService.hasProgress(DateTime(_year, _month, activeDay));
 
     return SafeArea(
       child: Column(
@@ -1351,12 +1358,13 @@ class _CalendarGrid extends StatelessWidget {
     }
     for (var d = 1; d <= totalDays; d++) {
       final wasPlayed = playedDays.contains(_dateStr(d));
-      final isActive = d == active && !wasPlayed;
+      // any day with a saved partly-played board shows a progress ring
+      final progress = wasPlayed
+          ? 0.0
+          : ChallengeService.progressFor(DateTime(year, month, d));
+      final hasRing = progress > 0 && progress < 1;
+      final isActive = (d == active || hasRing) && !wasPlayed;
       final isFuture = isCurrentMonth && d > today && !isActive;
-      // progress ring for the active day if a daily challenge is mid-way
-      final progress = (isActive && isCurrentMonth && d == today)
-          ? ChallengeService.todayProgress
-          : 0.0;
 
       cells.add(_DayCell(
         day: d,
@@ -1434,27 +1442,18 @@ class _DayCell extends StatelessWidget {
       ),
     );
 
-    // active day mid-way: thin progress arc sitting just outside the circle
+    // active day mid-way: full blue circle with a white progress arc inside
     if (isActive && progress > 0 && progress < 1) {
-      final innerCircle = Container(
-        width: 30,
-        height: 30,
-        decoration: const BoxDecoration(
-            color: AppColors.blue, shape: BoxShape.circle),
-        alignment: Alignment.center,
-        child: Transform.translate(
-          offset: const Offset(0, 1),
-          child: Text('$day',
-              style: poppins(13, FontWeight.w900, Colors.white, height: 1.0)),
-        ),
-      );
       return Center(
         child: SizedBox(
-          width: 40,
-          height: 40,
-          child: CustomPaint(
-            painter: _RingPainter(progress),
-            child: Center(child: innerCircle),
+          width: 36,
+          height: 36,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              circle,
+              Positioned.fill(child: CustomPaint(painter: _RingPainter(progress))),
+            ],
           ),
         ),
       );
@@ -1471,17 +1470,12 @@ class _RingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final c = size.center(Offset.zero);
-    final r = size.width / 2 - 2;
-    final track = Paint()
-      ..color = const Color(0xFFE5E8F5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+    final r = size.width / 2 - 4; // sit inside the blue circle's edge
     final arc = Paint()
-      ..color = AppColors.blue
+      ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
+      ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
-    canvas.drawCircle(c, r, track);
     canvas.drawArc(Rect.fromCircle(center: c, radius: r),
         -1.5708, 6.2832 * progress.clamp(0.0, 1.0), false, arc);
   }
