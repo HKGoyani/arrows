@@ -653,3 +653,148 @@ class SkullShieldPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant SkullShieldPainter old) => old.unlocked != unlocked;
 }
+
+// ─────────────── Challenge Trophy ───────────────
+
+class TrophyPainter extends CustomPainter {
+  final bool unlocked;
+  const TrophyPainter({required this.unlocked});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final cx = w / 2;
+
+    final gold1 = unlocked ? const Color(0xFFFFD54F) : const Color(0xFFD5D8EA);
+    final gold2 = unlocked ? const Color(0xFFFFC020) : const Color(0xFFC2C7DE);
+    final gold3 = unlocked ? const Color(0xFFE8A010) : const Color(0xFFB0B6D0);
+    final gold4 = unlocked ? const Color(0xFFD08A08) : const Color(0xFFA0A6C4);
+    final hi    = unlocked ? const Color(0xFFFFE893) : const Color(0xFFECEDF6);
+
+    // ── thick handles (drawn behind cup)
+    for (final side in [-1.0, 1.0]) {
+      final ax = cx + side * w * 0.30;
+      final ay = h * 0.18;
+      final outX = cx + side * w * 0.52;
+      final midY = h * 0.38;
+      final bx = cx + side * w * 0.22;
+      final by = h * 0.54;
+
+      final outer = Path()
+        ..moveTo(ax, ay)
+        ..cubicTo(ax + side * w * 0.12, ay - h * 0.04,
+                  outX + side * w * 0.04, midY - h * 0.12,
+                  outX, midY)
+        ..cubicTo(outX - side * w * 0.02, midY + h * 0.14,
+                  bx + side * w * 0.08, by + h * 0.04,
+                  bx, by);
+
+      canvas.drawPath(outer, Paint()
+        ..color = gold3
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.10
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round);
+      canvas.drawPath(outer, Paint()
+        ..color = hi.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.04
+        ..strokeCap = StrokeCap.round);
+    }
+
+    // ── cup body — wide rounded trapezoid
+    final cupT = h * 0.06;
+    final cupB = h * 0.60;
+    final topW = w * 0.42;
+    final botW = w * 0.18;
+
+    final cup = Path()
+      ..moveTo(cx - topW, cupT + h * 0.06)
+      ..quadraticBezierTo(cx - topW, cupT, cx, cupT)
+      ..quadraticBezierTo(cx + topW, cupT, cx + topW, cupT + h * 0.06)
+      ..lineTo(cx + botW, cupB - h * 0.04)
+      ..quadraticBezierTo(cx + botW, cupB + h * 0.02, cx, cupB + h * 0.02)
+      ..quadraticBezierTo(cx - botW, cupB + h * 0.02, cx - botW, cupB - h * 0.04)
+      ..close();
+
+    canvas.drawPath(cup, Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [gold1, gold2, gold3],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(cup.getBounds()));
+
+    // inner rim shadow
+    final rimInner = Path()
+      ..moveTo(cx - topW + 6, cupT + h * 0.08)
+      ..quadraticBezierTo(cx, cupT + h * 0.14, cx + topW - 6, cupT + h * 0.08);
+    canvas.drawPath(rimInner, Paint()
+      ..color = gold3.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3);
+
+    // cup rim — thick rounded top edge
+    final rimOuter = Path()
+      ..moveTo(cx - topW - 2, cupT + h * 0.06)
+      ..quadraticBezierTo(cx, cupT - h * 0.02, cx + topW + 2, cupT + h * 0.06);
+    canvas.drawPath(rimOuter, Paint()
+      ..color = gold1
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.07
+      ..strokeCap = StrokeCap.round);
+    canvas.drawPath(rimOuter, Paint()
+      ..color = hi.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.025
+      ..strokeCap = StrokeCap.round);
+
+    // left-side highlight strip
+    canvas.drawPath(
+      Path()
+        ..moveTo(cx - topW + 10, cupT + h * 0.12)
+        ..lineTo(cx - botW + 6, cupB - h * 0.06)
+        ..lineTo(cx - botW + 12, cupB - h * 0.06)
+        ..lineTo(cx - topW + 18, cupT + h * 0.12)
+        ..close(),
+      Paint()..color = hi.withValues(alpha: 0.35));
+
+    // ── stem
+    final stemT = cupB;
+    final stemB = h * 0.74;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTRB(cx - w * 0.06, stemT, cx + w * 0.06, stemB),
+        Radius.circular(w * 0.03)),
+      Paint()..color = gold3);
+
+    // ── base — wide flat oval
+    final baseT = stemB - 2;
+    final baseB = h * 0.86;
+    final baseW = w * 0.26;
+    final baseR = RRect.fromRectAndRadius(
+      Rect.fromLTRB(cx - baseW, baseT, cx + baseW, baseB),
+      Radius.circular((baseB - baseT) * 0.5));
+    canvas.drawRRect(baseR, Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [gold2, gold4],
+      ).createShader(baseR.outerRect));
+    // base top highlight
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTRB(cx - baseW + 4, baseT + 1, cx + baseW - 4, baseT + (baseB - baseT) * 0.45),
+        Radius.circular((baseB - baseT) * 0.4)),
+      Paint()..color = hi.withValues(alpha: 0.35));
+
+    // ── shadow under base
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(cx, baseB + 3),
+        width: baseW * 1.6, height: 6),
+      Paint()..color = gold4.withValues(alpha: 0.22)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
+  }
+
+  @override
+  bool shouldRepaint(covariant TrophyPainter old) => old.unlocked != unlocked;
+}

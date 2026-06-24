@@ -99,15 +99,31 @@ class CollectionScreen extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             _SectionHeader(title: 'Challenge Trophies'),
-            const SizedBox(height: 8),
-            Text('${now.year}',
-                style: poppins(18, FontWeight.w900, AppColors.ink)),
-            const SizedBox(height: 16),
-            _TrophyGrid(year: now.year),
+            ..._buildTrophyYears(),
           ],
         ),
       ),
     );
+  }
+
+  static List<Widget> _buildTrophyYears() {
+    final played = Prefs.playedDays.toSet();
+    final now = DateTime.now();
+    final years = <int>{now.year};
+    for (final d in played) {
+      final y = int.tryParse(d.split('-').first);
+      if (y != null) years.add(y);
+    }
+    final sorted = years.toList()..sort((a, b) => b.compareTo(a));
+
+    final widgets = <Widget>[];
+    for (final year in sorted) {
+      widgets.add(const SizedBox(height: 10));
+      widgets.add(Text('$year', style: poppins(18, FontWeight.w900, AppColors.ink)));
+      widgets.add(const SizedBox(height: 12));
+      widgets.add(_TrophyGrid(year: year, playedDays: played));
+    }
+    return widgets;
   }
 
   static String _formatDate(DateTime d) {
@@ -320,13 +336,23 @@ class _AwardCard extends StatelessWidget {
 
 class _TrophyGrid extends StatelessWidget {
   final int year;
-  const _TrophyGrid({required this.year});
+  final Set<String> playedDays;
+  const _TrophyGrid({required this.year, required this.playedDays});
 
   static const _monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
   static const _daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  int _countPlayed(int month) {
+    var count = 0;
+    final prefix = '$year-${month.toString().padLeft(2, '0')}-';
+    for (final d in playedDays) {
+      if (d.startsWith(prefix)) count++;
+    }
+    return count;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -343,18 +369,24 @@ class _TrophyGrid extends StatelessWidget {
       itemBuilder: (_, i) {
         final days = (i == 1 && year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
             ? 29 : _daysInMonth[i];
+        final played = _countPlayed(i + 1);
+        final completed = played >= days;
         return Column(
           children: [
             _IconBox(
-              child: Center(
-                child: Icon(Icons.emoji_events_rounded,
-                    color: AppColors.lock, size: 46),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: SizedBox.expand(
+                  child: CustomPaint(
+                    painter: TrophyPainter(unlocked: completed),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
             Text(_monthNames[i],
                 style: poppins(12, FontWeight.w800, AppColors.ink)),
-            Text('0 of $days',
+            Text('$played of $days',
                 style: poppins(10.5, FontWeight.w700, AppColors.muted)),
           ],
         );

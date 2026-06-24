@@ -26,7 +26,6 @@ class StreakService {
     Prefs.setLastPlayed(today);
     final days = List<String>.from(Prefs.playedDays);
     if (!days.contains(today)) days.add(today);
-    if (days.length > 60) days.removeRange(0, days.length - 60);
     Prefs.setPlayedDays(days);
   }
 
