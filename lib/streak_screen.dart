@@ -6,6 +6,9 @@ import 'ui_kit.dart';
 const _flameOrange = Color(0xFFF7941D);
 const _flameGray = Color(0xFFBFC4D8);
 
+/// Streak Freezers ship in v2 — flip to true to re-enable the card.
+const _showFreezers = false;
+
 /// Material flame used across the streak UI. [active] = warm orange, else gray.
 Widget streakFlame({double size = 140, bool active = true}) => Icon(
       Icons.local_fire_department_rounded,
@@ -235,57 +238,59 @@ class StreakDetailSheet extends StatelessWidget {
             const SizedBox(height: 24),
             const StreakWeekRow(),
             const Spacer(flex: 2),
-            // Streak Freezers card — title centred, (i) in the top-right corner
-            Container(
-              // match the week row width (StreakWeekRow: 42 × 7 = 294)
-              width: 294,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE9EBF4)),
-              ),
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                    child: Column(
-                      children: [
-                        Text('Streak Freezers',
-                            style: poppins(17, FontWeight.w900,
-                                const Color(0xFF535B83))),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            for (var i = 0; i < 3; i++)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 11),
-                                child: const DottedCircle(
-                                  size: 46,
-                                  child: _ThickPlus(
-                                      size: 21, color: Color(0xFFD8D8DC)),
+            // Streak Freezers card — hidden for now, ships in v2.
+            if (_showFreezers) ...[
+              Container(
+                // match the week row width (StreakWeekRow: 42 × 7 = 294)
+                width: 294,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE9EBF4)),
+                ),
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                      child: Column(
+                        children: [
+                          Text('Streak Freezers',
+                              style: poppins(17, FontWeight.w900,
+                                  const Color(0xFF535B83))),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (var i = 0; i < 3; i++)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 11),
+                                  child: const DottedCircle(
+                                    size: 46,
+                                    child: _ThickPlus(
+                                        size: 21, color: Color(0xFFD8D8DC)),
+                                  ),
                                 ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text('0/3 Equipped',
-                            style: poppins(
-                                13.5, FontWeight.w800, const Color(0xFF535B83))),
-                      ],
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text('0/3 Equipped',
+                              style: poppins(13.5, FontWeight.w800,
+                                  const Color(0xFF535B83))),
+                        ],
+                      ),
                     ),
-                  ),
-                  const Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Icon(Icons.info_outline_rounded,
-                        size: 17, color: Color(0xFFB4B9CF)),
-                  ),
-                ],
+                    const Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Icon(Icons.info_outline_rounded,
+                          size: 17, color: Color(0xFFB4B9CF)),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 18),
+              const SizedBox(height: 18),
+            ],
             Padding(
               padding: const EdgeInsets.only(bottom: 26),
               child: Pressable(
