@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'challenge.dart';
 import 'collection_icons.dart';
@@ -1078,12 +1079,31 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
   late int _year;
   late int _month;
   int? _selectedDay; // user-tapped selection; null = use default
+  Timer? _tick;
 
   @override
   void initState() {
     super.initState();
     _year = widget.initialYear;
     _month = widget.initialMonth;
+    // refresh the "New level in …" countdown each minute
+    _tick = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  /// Time remaining until midnight, formatted "Xh Ym".
+  String _untilMidnight() {
+    final now = DateTime.now();
+    final next = DateTime(now.year, now.month, now.day + 1);
+    final d = next.difference(now);
+    return '${d.inHours}h ${d.inMinutes % 60}m';
   }
 
   void _prev() {
@@ -1144,28 +1164,45 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     final firstWeekday = DateTime(_year, _month, 1).weekday; // 1=Mon
     final isCurrentMonth = _year == now.year && _month == now.month;
 
-    // default selected day: first partly-played day, else today (current month)
-    // / the first un-played day (past month)
-    int defaultDay = isCurrentMonth ? now.day : 1;
-    if (!isCurrentMonth) {
+    String dayStr(int d) =>
+        '$_year-${_month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
+    final todayDone = isCurrentMonth && played.contains(dayStr(now.day));
+
+    // default selection:
+    //  - current month with today still pending/in-progress → today
+    //  - otherwise → lowest day with progress, else lowest un-played day
+    int defaultDay;
+    if (isCurrentMonth && !todayDone) {
+      defaultDay = now.day;
+    } else {
+      defaultDay = isCurrentMonth ? now.day : 1;
+      // lowest pending (un-played, not future) day
+      final maxDay = isCurrentMonth ? now.day : totalDays;
+      for (var d = 1; d <= maxDay; d++) {
+        if (!played.contains(dayStr(d))) {
+          defaultDay = d;
+          break;
+        }
+      }
+      // lowest day with saved progress takes priority
       for (var d = 1; d <= totalDays; d++) {
-        if (!played.contains(
-            '$_year-${_month.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}')) {
+        if (ChallengeService.hasProgress(DateTime(_year, _month, d))) {
           defaultDay = d;
           break;
         }
       }
     }
-    for (var d = 1; d <= totalDays; d++) {
-      if (ChallengeService.hasProgress(DateTime(_year, _month, d))) {
-        defaultDay = d;
-        break;
-      }
-    }
     final activeDay = _selectedDay ?? defaultDay;
-    // "Continue" when the selected day's challenge is partly done
-    final inProgress =
-        ChallengeService.hasProgress(DateTime(_year, _month, activeDay));
+    final activeDate = DateTime(_year, _month, activeDay);
+    final selectedPlayed =
+        played.contains('$_year-${_month.toString().padLeft(2, '0')}'
+            '-${activeDay.toString().padLeft(2, '0')}');
+    final selectedIsToday = isCurrentMonth && activeDay == now.day;
+    // button label: Replay (done past day), Continue (in progress), else Play.
+    // When today's challenge is done, show a countdown instead of a button.
+    final inProgress = ChallengeService.hasProgress(activeDate);
+    final showCountdown = selectedPlayed && selectedIsToday;
+    final btnLabel = selectedPlayed ? 'Replay' : (inProgress ? 'Continue' : 'Play');
 
     return SafeArea(
       child: Column(
@@ -1240,30 +1277,40 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
           // flexible filler keeps the Play button anchored at a fixed
           // distance from the bottom regardless of how many calendar rows
           const Expanded(child: SizedBox()),
-          // Play button — fixed bottom anchor
+          // Play/Continue/Replay button — or a countdown once today is done
           Padding(
             padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
-            child: _PressButton(
-              onTap: () async {
-                await startDailyChallenge(
-                    context, DateTime(_year, _month, activeDay));
-                // drop the manual selection so the default re-picks the
-                // lowest day that still has progress (a restarted day is
-                // cleared and no longer auto-selected)
-                if (context.mounted) setState(() => _selectedDay = null);
-              },
-              child: Container(
-                width: double.infinity,
-                height: 62,
-                decoration: BoxDecoration(
-                  color: AppColors.blue,
-                  borderRadius: BorderRadius.circular(31),
-                ),
-                alignment: Alignment.center,
-                child: Text(inProgress ? 'Continue' : 'Play',
-                    style: poppins(23, FontWeight.w900, Colors.white)),
-              ),
-            ),
+            child: showCountdown
+                ? Container(
+                    width: double.infinity,
+                    height: 62,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F2F8),
+                      borderRadius: BorderRadius.circular(31),
+                    ),
+                    child: Text('New level in ${_untilMidnight()}',
+                        style: poppins(18, FontWeight.w900, AppColors.blue)),
+                  )
+                : _PressButton(
+                    onTap: () async {
+                      await startDailyChallenge(context, activeDate);
+                      // drop the manual selection so the default re-picks the
+                      // lowest day that still has progress
+                      if (context.mounted) setState(() => _selectedDay = null);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 62,
+                      decoration: BoxDecoration(
+                        color: AppColors.blue,
+                        borderRadius: BorderRadius.circular(31),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(btnLabel,
+                          style: poppins(23, FontWeight.w900, Colors.white)),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -1363,7 +1410,7 @@ class _CalendarGrid extends StatelessWidget {
           ? 0.0
           : ChallengeService.progressFor(DateTime(year, month, d));
       final isFuture = isCurrentMonth && d > today;
-      final selectable = !wasPlayed && !isFuture;
+      final selectable = !isFuture; // completed days are selectable (replay)
 
       cells.add(_DayCell(
         day: d,
@@ -1409,13 +1456,29 @@ class _DayCell extends StatelessWidget {
     Widget content;
 
     if (played) {
-      // completed day → solid green dot, no number
-      content = Container(
-        width: 36,
-        height: 36,
-        decoration: const BoxDecoration(
-            color: Color(0xFF28E588), shape: BoxShape.circle),
-      );
+      // completed day → green dot; when selected, a larger green circle
+      // showing the day number (tap to replay)
+      if (isSelected) {
+        content = Container(
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(
+              color: Color(0xFF28E588), shape: BoxShape.circle),
+          alignment: Alignment.center,
+          child: Transform.translate(
+            offset: const Offset(0, 1),
+            child: Text('$day',
+                style: poppins(17, FontWeight.w900, Colors.white, height: 1.0)),
+          ),
+        );
+      } else {
+        content = Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+              color: Color(0xFF28E588), shape: BoxShape.circle),
+        );
+      }
     } else {
       final Color bg;
       final Color textColor;

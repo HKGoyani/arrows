@@ -14,6 +14,7 @@ import 'unstoppable.dart';
 import 'prefs.dart';
 import 'settings_screen.dart';
 import 'streak.dart';
+import 'streak_screen.dart';
 import 'ui_kit.dart';
 
 Future<void> main() async {
@@ -256,7 +257,10 @@ class _GameFlowState extends State<GameFlow> {
       await Prefs.setPlayedDays(days);
     }
     await ChallengeService.clearFor(date); // no leftover progress
-    if (_isToday) await ChallengeService.completeToday();
+    if (_isToday) {
+      StreakService.registerPlayToday(); // extend the daily streak
+      await ChallengeService.completeToday();
+    }
   }
 
   void _showLevelLegendCelebration(int newLevel) {
@@ -299,7 +303,21 @@ class _GameFlowState extends State<GameFlow> {
         if (_isDaily) {
           final nav = Navigator.of(context);
           await _completeDaily();
-          nav.maybePop();
+          if (!mounted) return;
+          if (_isToday) {
+            // celebrate the extended streak, then return to the challenge
+            nav.pushReplacement(PageRouteBuilder(
+              pageBuilder: (ctx, __, ___) => StreakCelebration(
+                streak: StreakService.current,
+                onContinue: () => Navigator.of(ctx).maybePop(),
+              ),
+              transitionsBuilder: (_, anim, __, child) =>
+                  FadeTransition(opacity: anim, child: child),
+              transitionDuration: const Duration(milliseconds: 300),
+            ));
+          } else {
+            nav.maybePop();
+          }
           return;
         }
         Prefs.setLevel(next);

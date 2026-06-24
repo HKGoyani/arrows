@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'challenge.dart';
 import 'config.dart';
 import 'prefs.dart';
 import 'streak.dart';
+import 'streak_screen.dart';
 import 'ui_kit.dart';
 import 'widgets.dart';
 
@@ -77,20 +79,34 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 FadeTransition(
                   opacity: appearAnim,
                   child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.local_fire_department_rounded,
-                            color: AppColors.flame, size: 19),
-                        const SizedBox(width: 5),
-                        Text('$streak', style: poppins(15, FontWeight.w800, AppColors.ink)),
-                      ]),
-                    ),
+                    // hidden entirely when there's no streak yet
+                    child: streak == 0
+                        ? const SizedBox(height: 19)
+                        : GestureDetector(
+                            onTap: () => showStreakDetail(context, streak),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: AppColors.cardBorder),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                // gray flame until today's challenge is done
+                                SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CustomPaint(
+                                      painter: FlamePainter(
+                                          active: ChallengeService.completedToday)),
+                                ),
+                                const SizedBox(width: 6),
+                                Text('$streak',
+                                    style: poppins(15, FontWeight.w800, AppColors.ink)),
+                              ]),
+                            ),
+                          ),
                   ),
                 ),
                 const Spacer(flex: 4),
