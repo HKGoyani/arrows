@@ -123,8 +123,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
             initialYear: _challengeYear ?? DateTime.now().year,
             initialMonth: _challengeMonth ?? DateTime.now().month,
           ),
-          // non-const so it rebuilds (fresh records/awards) on each tab switch
-          CollectionScreen(),
+          CollectionScreen(onBadgeCleared: () => setState(() {})),
           const SettingsScreen(),
         ],
       ),

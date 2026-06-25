@@ -13,9 +13,14 @@ import 'streak_screen.dart';
 import 'ui_kit.dart';
 import 'unstoppable.dart';
 
-class CollectionScreen extends StatelessWidget {
-  const CollectionScreen({super.key});
+class CollectionScreen extends StatefulWidget {
+  final VoidCallback? onBadgeCleared;
+  const CollectionScreen({super.key, this.onBadgeCleared});
+  @override
+  State<CollectionScreen> createState() => _CollectionScreenState();
+}
 
+class _CollectionScreenState extends State<CollectionScreen> {
   @override
   Widget build(BuildContext context) {
     final bestStreak = StreakService.best;
@@ -107,7 +112,13 @@ class CollectionScreen extends StatelessWidget {
                       ? '${LevelLegend.tier} of ${LevelLegend.milestones.length}'
                       : null,
                   showBadge: LevelLegend.hasUnseen,
-                  onTap: () => showLevelLegendDetail(context),
+                  onTap: () async {
+                    await showLevelLegendDetail(context);
+                    if (mounted) {
+                      setState(() {});
+                      widget.onBadgeCleared?.call();
+                    }
+                  },
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _AwardCard(
@@ -120,7 +131,13 @@ class CollectionScreen extends StatelessWidget {
                       ? '${PerfectPlay.tier} of ${PerfectPlay.milestones.length}'
                       : null,
                   showBadge: PerfectPlay.hasUnseen,
-                  onTap: () => showPerfectPlayDetail(context),
+                  onTap: () async {
+                    await showPerfectPlayDetail(context);
+                    if (mounted) {
+                      setState(() {});
+                      widget.onBadgeCleared?.call();
+                    }
+                  },
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _AwardCard(
@@ -133,7 +150,13 @@ class CollectionScreen extends StatelessWidget {
                       ? '${Unstoppable.tier} of ${Unstoppable.milestones.length}'
                       : null,
                   showBadge: Unstoppable.hasUnseen,
-                  onTap: () => showUnstoppableDetail(context),
+                  onTap: () async {
+                    await showUnstoppableDetail(context);
+                    if (mounted) {
+                      setState(() {});
+                      widget.onBadgeCleared?.call();
+                    }
+                  },
                 )),
               ],
             ),
@@ -778,9 +801,9 @@ class _AwardProgress extends StatelessWidget {
 
 // ───────────────────── Level Legend detail (tap) ──────────────────────
 
-void showLevelLegendDetail(BuildContext context) {
+Future<void> showLevelLegendDetail(BuildContext context) {
   LevelLegend.markSeen();
-  showGeneralDialog(
+  return showGeneralDialog(
     context: context,
     barrierLabel: 'Level Legend',
     barrierColor: Colors.black.withValues(alpha: 0.0),
@@ -890,8 +913,9 @@ class _LevelLegendDetailScreen extends StatelessWidget {
 
 /// Tiered award detail: hexagon dartboard medal, milestone badge, earned date,
 /// and progress toward the next milestone.
-void showPerfectPlayDetail(BuildContext context) {
-  showGeneralDialog(
+Future<void> showPerfectPlayDetail(BuildContext context) {
+  PerfectPlay.markSeen();
+  return showGeneralDialog(
     context: context,
     barrierLabel: 'Perfect Play',
     barrierColor: Colors.black.withValues(alpha: 0.0),
@@ -902,7 +926,6 @@ void showPerfectPlayDetail(BuildContext context) {
       child: child,
     ),
   );
-  PerfectPlay.markSeen();
 }
 
 class _PerfectPlayDetailScreen extends StatelessWidget {
@@ -1009,9 +1032,9 @@ class _DatePill extends StatelessWidget {
 
 // ───────────────────── Unstoppable detail (tap) ──────────────────────
 
-void showUnstoppableDetail(BuildContext context) {
+Future<void> showUnstoppableDetail(BuildContext context) {
   Unstoppable.markSeen();
-  showGeneralDialog(
+  return showGeneralDialog(
     context: context,
     barrierLabel: 'Unstoppable',
     barrierColor: Colors.black.withValues(alpha: 0.0),
