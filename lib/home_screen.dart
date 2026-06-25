@@ -165,41 +165,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   width: labelW + numW,
                                   height: lineH,
                                   child: Stack(
+                                    clipBehavior: Clip.none,
                                     children: [
                                       Positioned(
                                         left: 0,
                                         top: 0,
                                         child: Text('Level ', style: style),
                                       ),
+                                      // old number slides down, fades out
                                       Positioned(
                                         left: labelW,
-                                        top: 0,
-                                        width: numW,
-                                        height: lineH,
-                                        child: ClipRect(
-                                          child: Stack(
-                                            children: [
-                                              Positioned(
-                                                left: 0,
-                                                top: lineH * t,
-                                                child: Opacity(
-                                                  opacity:
-                                                      (1 - t).clamp(0.0, 1.0),
-                                                  child: Text('$_prevLevel',
-                                                      style: style),
-                                                ),
-                                              ),
-                                              Positioned(
-                                                left: 0,
-                                                top: -lineH * (1 - t),
-                                                child: Opacity(
-                                                  opacity: t.clamp(0.0, 1.0),
-                                                  child: Text('$_currLevel',
-                                                      style: style),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                        top: lineH * t,
+                                        child: Opacity(
+                                          opacity: (1 - t).clamp(0.0, 1.0),
+                                          child: Text('$_prevLevel',
+                                              style: style),
+                                        ),
+                                      ),
+                                      // new number slides in from above
+                                      Positioned(
+                                        left: labelW,
+                                        top: -lineH * (1 - t),
+                                        child: Opacity(
+                                          opacity: t.clamp(0.0, 1.0),
+                                          child: Text('$_currLevel',
+                                              style: style),
                                         ),
                                       ),
                                     ],
