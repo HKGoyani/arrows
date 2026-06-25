@@ -50,7 +50,6 @@ class CollectionScreen extends StatelessWidget {
                           date: dateOr(
                               _recordDate(Prefs.bestStreakDate), bestStreak),
                           text: 'You reached a $bestStreak day streak!',
-                          badgeAlign: 0.82,
                           primaryLabel: 'Current Streak',
                           onPrimary: () =>
                               showStreakDetail(context, StreakService.current))
@@ -201,7 +200,7 @@ void showRecordDetail(
   String? currentText,
   String? primaryLabel,
   VoidCallback? onPrimary,
-  double badgeAlign = 0.78,
+  double badgeAlign = 0.80,
   Color textColor = const Color(0xFF5E658B),
 }) {
   showGeneralDialog(
@@ -238,7 +237,7 @@ class _RecordDetailScreen extends StatelessWidget {
     this.currentText,
     this.primaryLabel,
     this.onPrimary,
-    this.badgeAlign = 0.78,
+    this.badgeAlign = 0.80,
     this.textColor = const Color(0xFF5E658B),
   });
 
