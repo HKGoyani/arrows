@@ -109,7 +109,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   void _startHintTimer() {
     _hintTimer?.cancel();
-    _hintTimer = Timer(const Duration(seconds: 2), () {
+    _hintTimer = Timer(const Duration(seconds: 10), () {
       if (mounted && c.status == GameStatus.playing) {
         setState(() => _showHint = true);
       }
