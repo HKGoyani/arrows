@@ -178,9 +178,9 @@ class GameTopBar extends StatelessWidget {
 
   (String, Color) get _difficultyInfo {
     final lvl = c.level;
-    if (lvl < 4) return ('Easy', AppColors.blueSoft);
-    if (lvl < 6) return ('Medium', AppColors.blueSoft);
-    if (lvl < 9) return ('Hard', const Color(0xFF38ADF2));
+    // 4 tiers (Normal → Hard → Super Hard → Nightmare), escalating heat-map.
+    if (lvl < 6) return ('Normal', const Color(0xFF27C281));
+    if (lvl < 15) return ('Hard', const Color(0xFF38ADF2));
     if (lvl < 35) return ('Super Hard', const Color(0xFFDE63FB));
     return ('Nightmare', const Color(0xFFE53935));
   }
@@ -210,9 +210,13 @@ class GameTopBar extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                Text(label,
-                    style: poppins(14, FontWeight.w900, color)),
-                const SizedBox(height: 4),
+                // Normal tier shows no label (just hearts), matching the
+                // reference — the tier name only surfaces at Hard and above.
+                if (label != 'Normal') ...[
+                  Text(label,
+                      style: poppins(14, FontWeight.w900, color)),
+                  const SizedBox(height: 4),
+                ],
                 HeartsRow(hearts: c.hearts),
               ],
             ),
