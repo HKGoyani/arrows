@@ -1278,7 +1278,7 @@ class MonthDetailScreen extends StatefulWidget {
 }
 
 class _MonthDetailScreenState extends State<MonthDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late int _year;
   late int _month;
   int? _selectedDay; // user-tapped selection; null = use default
