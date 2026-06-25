@@ -124,50 +124,50 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 14),
                 SizedBox(
                   height: 32,
+                  // The whole "Level N" slides up as one unit on a level change
+                  // (old slides out the top, new slides in from below). Sliding
+                  // the full label keeps it robust for any digit count.
                   child: showCounter
-                      ? AnimatedBuilder(
-                          animation: levelBumpAnim,
-                          builder: (_, __) {
-                            final t = levelBumpAnim.value;
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Level ', style: poppins(20, FontWeight.w900, AppColors.blue)),
-                                ClipRect(
-                                  child: SizedBox(
-                                    width: 30,
-                                    height: 32,
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        Transform.translate(
-                                          offset: Offset(0, 30 * t),
-                                          child: Opacity(
-                                            opacity: (1 - t).clamp(0.0, 1.0),
-                                            child: Text('$_prevLevel',
-                                                style: poppins(20, FontWeight.w900, AppColors.blue)),
-                                          ),
-                                        ),
-                                        Transform.translate(
-                                          offset: Offset(0, -30 * (1 - t)),
-                                          child: Opacity(
-                                            opacity: t.clamp(0.0, 1.0),
-                                            child: Text('$_currLevel',
-                                                style: poppins(20, FontWeight.w900, AppColors.blue)),
-                                          ),
-                                        ),
-                                      ],
+                      ? ClipRect(
+                          child: AnimatedBuilder(
+                            animation: levelBumpAnim,
+                            builder: (_, __) {
+                              final t =
+                                  Curves.easeOut.transform(levelBumpAnim.value);
+                              final style = poppins(
+                                  20, FontWeight.w900, AppColors.blue);
+                              const h = 32.0;
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Transform.translate(
+                                    offset: Offset(0, h * t),
+                                    child: Opacity(
+                                      opacity: (1 - t).clamp(0.0, 1.0),
+                                      child: Text('Level $_prevLevel',
+                                          style: style),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
-                          },
+                                  Transform.translate(
+                                    offset: Offset(0, -h * (1 - t)),
+                                    child: Opacity(
+                                      opacity: t.clamp(0.0, 1.0),
+                                      child: Text('Level $_currLevel',
+                                          style: style),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                         )
-                      : FadeTransition(
-                          opacity: appearAnim,
-                          child: Text('Level $_currLevel',
-                              style: poppins(20, FontWeight.w900, AppColors.blue)),
+                      : Center(
+                          child: FadeTransition(
+                            opacity: appearAnim,
+                            child: Text('Level $_currLevel',
+                                style: poppins(
+                                    20, FontWeight.w900, AppColors.blue)),
+                          ),
                         ),
                 ),
                 const Spacer(flex: 3),
