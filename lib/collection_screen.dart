@@ -1277,18 +1277,29 @@ class MonthDetailScreen extends StatefulWidget {
   State<MonthDetailScreen> createState() => _MonthDetailScreenState();
 }
 
-class _MonthDetailScreenState extends State<MonthDetailScreen> {
+class _MonthDetailScreenState extends State<MonthDetailScreen>
+    with SingleTickerProviderStateMixin {
   late int _year;
   late int _month;
   int? _selectedDay; // user-tapped selection; null = use default
   Timer? _tick;
+
+  // ── completion animation state ──
+  AnimationController? _animCtrl;
+  bool _animating = false;
+  int _animDay = 0; // the day whose dot flies up
+  int _animOldCount = 0; // played count before this completion
+  Offset? _dotStart; // calendar-cell position (in Stack coords)
+  Offset? _dotEnd; // progress-bar landing position
+  final _progressKey = GlobalKey();
+  final _calendarKey = GlobalKey();
+  final _stackKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _year = widget.initialYear;
     _month = widget.initialMonth;
-    // refresh the "New level in …" countdown each minute
     _tick = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -1297,6 +1308,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
   @override
   void dispose() {
     _tick?.cancel();
+    _animCtrl?.dispose();
     super.dispose();
   }
 
@@ -1340,6 +1352,65 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     final nextY = nextM > 12 ? _year + 1 : _year;
     final adjM = nextM > 12 ? 1 : nextM;
     return nextY < now.year || (nextY == now.year && adjM <= now.month);
+  }
+
+  /// Compute the center of a calendar day cell in global coordinates.
+  Offset? _dayCellCenter(int day) {
+    final calBox = _calendarKey.currentContext?.findRenderObject() as RenderBox?;
+    if (calBox == null) return null;
+    final firstWeekday = DateTime(_year, _month, 1).weekday;
+    final idx = firstWeekday - 1 + day - 1; // 0-based index in grid
+    final col = idx % 7;
+    final row = idx ~/ 7;
+    // _calendarKey is on the Padding(horizontal:30), so inner grid
+    // starts at x=30 with width = calBox.width - 60
+    const pad = 30.0;
+    final gridW = calBox.size.width - pad * 2;
+    final cellW = gridW / 7;
+    // GridView.count with aspectRatio 1.0: cell height = cell width
+    // mainAxisSpacing = 2
+    const spacing = 2.0;
+    final cellH = cellW;
+    final x = pad + col * cellW + cellW / 2;
+    final y = row * (cellH + spacing) + cellH / 2;
+    return calBox.localToGlobal(Offset(x, y));
+  }
+
+  /// Progress-bar green pill center-left in global coordinates.
+  Offset? _progressBarLeft() {
+    final box = _progressKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return null;
+    // _progressKey is on the Padding(horizontal:70), inner bar starts at x=70
+    return box.localToGlobal(Offset(70 + 18, box.size.height / 2));
+  }
+
+  void _startCompletionAnim(int day, int oldCount) {
+    _animDay = day;
+    _animOldCount = oldCount;
+    _animCtrl?.dispose();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    _animating = true;
+    _animCtrl!.addListener(() => setState(() {}));
+    _animCtrl!.addStatusListener((s) {
+      if (s == AnimationStatus.completed) {
+        setState(() => _animating = false);
+      }
+    });
+    // rebuild first so the calendar renders the day, then read positions
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dotStart = _dayCellCenter(day);
+      _dotEnd = _progressBarLeft();
+      if (_dotStart == null || _dotEnd == null) {
+        _animating = false;
+        setState(() {});
+        return;
+      }
+      _animCtrl!.forward();
+    });
   }
 
   static const _monthNames = [
@@ -1420,116 +1491,244 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
         ? 'Continue'
         : (selectedPlayed ? 'Replay' : 'Play');
 
+    // ── animation phases ──
+    // 0.0-0.20: day shows as blue selected, overlay transitions blue→green
+    // 0.20-0.62: green dot flies up in a curve to progress bar
+    // 0.62-0.72: dot merges, count increments
+    // 0.78-0.95: button slides up
+    final double aT = _animCtrl?.value ?? 0;
+    final colorT = _animating ? Curves.easeOut.transform(
+        ((aT - 0.0) / 0.20).clamp(0.0, 1.0)) : 0.0;
+    final flyT = _animating ? Curves.easeInOut.transform(
+        ((aT - 0.20) / 0.42).clamp(0.0, 1.0)) : 0.0;
+    final countLanded = _animating && flyT >= 1.0;
+    final btnT = _animating ? Curves.easeOut.transform(
+        ((aT - 0.78) / 0.17).clamp(0.0, 1.0)) : 0.0;
+
+    // During animation:
+    // - Before color done: remove from played, overlay draws blue→green on top
+    // - After color done: ADD to played (green stays on cell), copy flies up
+    final Set<String> effectivePlayed;
+    if (_animating && _animDay > 0) {
+      final key = dayStr(_animDay);
+      if (colorT >= 1.0) {
+        // day stays green in the calendar; a copy flies
+        effectivePlayed = Set<String>.from(played)..add(key);
+      } else {
+        // day shows as gray underneath; overlay draws the blue→green dot
+        effectivePlayed = Set<String>.from(played)..remove(key);
+      }
+    } else {
+      effectivePlayed = played;
+    }
+    // progress bar: show old count until dot lands, then new count
+    final displayCount = _animating
+        ? (countLanded ? _animOldCount + 1 : _animOldCount)
+        : playedCount;
+    // in-place overlay: only during color phase (before fly starts)
+    // flying copy: during fly phase
+    final showInPlaceDot = _animating && colorT < 1.0;
+    final showFlyingCopy = _animating && colorT >= 1.0 && flyT > 0 && flyT < 1.0;
+
+    // button visibility
+    final showButton = !_animating || aT >= 0.78;
+    final buttonSlide = _animating ? (1 - btnT) * 80 : 0.0;
+
     return SafeArea(
-      child: Column(
+      child: Stack(
+        key: _stackKey,
         children: [
-          const SizedBox(height: 12),
-          // trophy + nav arrows
-          Row(
+          Column(
             children: [
-              const SizedBox(width: 16),
-              _canGoPrev
-                  ? _NavArrow(pointLeft: true, onTap: _prev)
-                  : const SizedBox(width: 44),
-              Expanded(
-                child: Center(
-                  child: SizedBox(
-                    width: 128,
-                    height: 128,
-                    child: CustomPaint(
-                      painter: TrophyPainter(unlocked: completed),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const SizedBox(width: 16),
+                  _canGoPrev
+                      ? _NavArrow(pointLeft: true, onTap: _prev)
+                      : const SizedBox(width: 44),
+                  Expanded(
+                    child: Center(
+                      child: SizedBox(
+                        width: 128,
+                        height: 128,
+                        child: CustomPaint(
+                          painter: TrophyPainter(unlocked: completed),
+                        ),
+                      ),
+                    ),
+                  ),
+                  _canGoNext
+                      ? _NavArrow(pointLeft: false, onTap: _next)
+                      : const SizedBox(width: 44),
+                  const SizedBox(width: 16),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                key: _progressKey,
+                padding: const EdgeInsets.symmetric(horizontal: 70),
+                child: _AwardProgress(
+                  current: displayCount,
+                  target: totalDays,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('${_monthNames[_month - 1]} $_year',
+                  style: poppins(22, FontWeight.w900, AppColors.blue)),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: Row(
+                  children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+                      .map((d) => Expanded(
+                            child: Center(
+                              child: Text(d,
+                                  style: poppins(15, FontWeight.w900,
+                                      const Color(0xFFB4B9CF))),
+                            ),
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                key: _calendarKey,
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: _CalendarGrid(
+                  year: _year,
+                  month: _month,
+                  totalDays: totalDays,
+                  firstWeekday: firstWeekday,
+                  playedDays: effectivePlayed,
+                  isCurrentMonth: isCurrentMonth,
+                  today: now.day,
+                  selectedDay: noSelection ? -1 : activeDay,
+                  onSelect: _animating ? null : (d) => setState(() => _selectedDay = d),
+                ),
+              ),
+              const Expanded(child: SizedBox()),
+              if (showButton)
+                Transform.translate(
+                  offset: Offset(0, buttonSlide),
+                  child: Opacity(
+                    opacity: _animating ? btnT : 1.0,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
+                      child: noSelection
+                          ? Container(
+                              width: double.infinity,
+                              height: 62,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F2F8),
+                                borderRadius: BorderRadius.circular(31),
+                              ),
+                              child: Text('New level in ${_untilMidnight()}',
+                                  style: poppins(
+                                      18, FontWeight.w900, AppColors.blue)),
+                            )
+                          : _PressButton(
+                              onTap: () async {
+                                final wasPlayed =
+                                    played.contains(dayStr(activeDay));
+                                final oldCount = playedCount;
+                                await startDailyChallenge(context, activeDate);
+                                if (!context.mounted) return;
+                                final nowPlayed = Prefs.playedDays.toSet()
+                                    .contains(dayStr(activeDay));
+                                if (!wasPlayed && nowPlayed) {
+                                  _selectedDay = null;
+                                  _startCompletionAnim(activeDay, oldCount);
+                                } else {
+                                  setState(() => _selectedDay = null);
+                                }
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                height: 62,
+                                decoration: BoxDecoration(
+                                  color: AppColors.blue,
+                                  borderRadius: BorderRadius.circular(31),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(btnLabel,
+                                    style: poppins(
+                                        23, FontWeight.w900, Colors.white)),
+                              ),
+                            ),
                     ),
                   ),
                 ),
-              ),
-              _canGoNext
-                  ? _NavArrow(pointLeft: false, onTap: _next)
-                  : const SizedBox(width: 44),
-              const SizedBox(width: 16),
+              if (!showButton) const SizedBox(height: 90),
             ],
           ),
-          const SizedBox(height: 6),
-          // progress bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 70),
-            child: _AwardProgress(current: playedCount, target: totalDays),
-          ),
-          const SizedBox(height: 16),
-          // month title
-          Text('${_monthNames[_month - 1]} $_year',
-              style: poppins(22, FontWeight.w900, AppColors.blue)),
-          const SizedBox(height: 14),
-          // weekday headers
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
-            child: Row(
-              children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
-                  .map((d) => Expanded(
-                        child: Center(
-                          child: Text(d,
-                              style: poppins(15, FontWeight.w900,
-                                  const Color(0xFFB4B9CF))),
-                        ),
-                      ))
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 6),
-          // calendar grid (sizes to content)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
-            child: _CalendarGrid(
-              year: _year,
-              month: _month,
-              totalDays: totalDays,
-              firstWeekday: firstWeekday,
-              playedDays: played,
-              isCurrentMonth: isCurrentMonth,
-              today: now.day,
-              selectedDay: noSelection ? -1 : activeDay,
-              onSelect: (d) => setState(() => _selectedDay = d),
-            ),
-          ),
-          // flexible filler keeps the Play button anchored at a fixed
-          // distance from the bottom regardless of how many calendar rows
-          const Expanded(child: SizedBox()),
-          // countdown when fully caught up, else Play/Continue/Replay button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
-            child: noSelection
-                ? Container(
-                    width: double.infinity,
-                    height: 62,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F2F8),
-                      borderRadius: BorderRadius.circular(31),
-                    ),
-                    child: Text('New level in ${_untilMidnight()}',
-                        style: poppins(18, FontWeight.w900, AppColors.blue)),
-                  )
-                : _PressButton(
-                    onTap: () async {
-                      await startDailyChallenge(context, activeDate);
-                      // drop the manual selection so the default re-picks the
-                      // lowest day that still has progress
-                      if (context.mounted) setState(() => _selectedDay = null);
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 62,
-                      decoration: BoxDecoration(
-                        color: AppColors.blue,
-                        borderRadius: BorderRadius.circular(31),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(btnLabel,
-                          style: poppins(23, FontWeight.w900, Colors.white)),
-                    ),
-                  ),
-          ),
+          // in-place blue→green overlay (before fly)
+          if (showInPlaceDot && _dotStart != null)
+            _buildInPlaceDot(colorT),
+          // flying green copy (during fly)
+          if (showFlyingCopy && _dotStart != null && _dotEnd != null)
+            _buildFlyingCopy(flyT),
         ],
       ),
+    );
+  }
+
+  /// In-place overlay: blue→green transition sitting on the calendar cell.
+  Widget _buildInPlaceDot(double colorT) {
+    final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (stackBox == null) return const SizedBox();
+    final s = stackBox.globalToLocal(_dotStart!);
+    const dotSize = 34.0;
+    final color = Color.lerp(AppColors.blue, const Color(0xFF28E588), colorT)!;
+    return Positioned(
+      left: s.dx - dotSize / 2,
+      top: s.dy - dotSize / 2,
+      child: Container(
+        width: dotSize,
+        height: dotSize,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+    );
+  }
+
+  /// Flying green copy: lifts off the day cell and curves up to progress bar.
+  Widget _buildFlyingCopy(double flyT) {
+    final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (stackBox == null) return const SizedBox();
+    final s = stackBox.globalToLocal(_dotStart!);
+    final e = stackBox.globalToLocal(_dotEnd!);
+    const dotSize = 34.0;
+    final ctrl = Offset(
+      s.dx + (e.dx - s.dx) * 0.4,
+      e.dy + (s.dy - e.dy) * 0.15,
+    );
+    final pos = _quadBezier(s, ctrl, e, flyT);
+    final opacity = flyT > 0.85 ? (1 - flyT) / 0.15 : 1.0;
+    return Positioned(
+      left: pos.dx - dotSize / 2,
+      top: pos.dy - dotSize / 2,
+      child: Opacity(
+        opacity: opacity.clamp(0.0, 1.0),
+        child: const SizedBox(
+          width: dotSize,
+          height: dotSize,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Color(0xFF28E588),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Offset _quadBezier(Offset a, Offset ctrl, Offset b, double t) {
+    final u = 1 - t;
+    return Offset(
+      u * u * a.dx + 2 * u * t * ctrl.dx + t * t * b.dx,
+      u * u * a.dy + 2 * u * t * ctrl.dy + t * t * b.dy,
     );
   }
 }
@@ -1596,7 +1795,7 @@ class _CalendarGrid extends StatelessWidget {
   final int year, month, totalDays, firstWeekday, today, selectedDay;
   final Set<String> playedDays;
   final bool isCurrentMonth;
-  final ValueChanged<int> onSelect;
+  final ValueChanged<int>? onSelect;
 
   const _CalendarGrid({
     required this.year,
@@ -1633,7 +1832,7 @@ class _CalendarGrid extends StatelessWidget {
         isSelected: d == selectedDay && selectable,
         isFuture: isFuture,
         progress: progress,
-        onTap: selectable ? () => onSelect(d) : null,
+        onTap: selectable && onSelect != null ? () => onSelect!(d) : null,
       ));
     }
 
