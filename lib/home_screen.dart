@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'config.dart';
 import 'prefs.dart';
@@ -124,51 +125,134 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 14),
                 SizedBox(
                   height: 32,
-                  // The whole "Level N" slides up as one unit on a level change
-                  // (old slides out the top, new slides in from below). Sliding
-                  // the full label keeps it robust for any digit count.
+                  // "Level " stays fixed; only the number slides (old slides
+                  // down and out, new drops in from above). The clip box is
+                  // measured to the number's real width + height, so it works
+                  // for any digit count (1–5+ digits) with no clipping.
                   child: showCounter
-                      ? ClipRect(
-                          child: AnimatedBuilder(
-                            animation: levelBumpAnim,
-                            builder: (_, __) {
-                              final t =
-                                  Curves.easeOut.transform(levelBumpAnim.value);
-                              final style = poppins(
-                                  20, FontWeight.w900, AppColors.blue);
-                              const h = 32.0;
-                              return Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Transform.translate(
-                                    offset: Offset(0, h * t),
-                                    child: Opacity(
-                                      opacity: (1 - t).clamp(0.0, 1.0),
-                                      child: Text('Level $_prevLevel',
-                                          style: style),
-                                    ),
+                      ? Builder(builder: (_) {
+                          final style =
+                              poppins(20, FontWeight.w900, AppColors.blue);
+                          double measure(String s) {
+                            final tp = TextPainter(
+                              text: TextSpan(text: s, style: style),
+                              textDirection: TextDirection.ltr,
+                            )..layout();
+                            return tp.width;
+                          }
+                          double measureH(String s) {
+                            final tp = TextPainter(
+                              text: TextSpan(text: s, style: style),
+                              textDirection: TextDirection.ltr,
+                            )..layout();
+                            return tp.height;
+                          }
+                          final labelW = measure('Level ');
+                          final numW =
+                              max(measure('$_prevLevel'), measure('$_currLevel'));
+                          final lineH = measureH('Level $_currLevel');
+                          // "Level " and the number both start at top:0 in the
+                          // same Stack, so they share the exact baseline. Only
+                          // the number is clipped + slides. Width is measured,
+                          // so it stays aligned for any digit count.
+                          return Center(
+                            child: AnimatedBuilder(
+                              animation: levelBumpAnim,
+                              builder: (_, __) {
+                                final t = Curves.easeOut
+                                    .transform(levelBumpAnim.value);
+                                return SizedBox(
+                                  width: labelW + numW,
+                                  height: lineH,
+                                  child: Stack(
+                                    children: [
+                                      Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Text('Level ', style: style),
+                                      ),
+                                      Positioned(
+                                        left: labelW,
+                                        top: 0,
+                                        width: numW,
+                                        height: lineH,
+                                        child: ClipRect(
+                                          child: Stack(
+                                            children: [
+                                              Positioned(
+                                                left: 0,
+                                                top: lineH * t,
+                                                child: Opacity(
+                                                  opacity:
+                                                      (1 - t).clamp(0.0, 1.0),
+                                                  child: Text('$_prevLevel',
+                                                      style: style),
+                                                ),
+                                              ),
+                                              Positioned(
+                                                left: 0,
+                                                top: -lineH * (1 - t),
+                                                child: Opacity(
+                                                  opacity: t.clamp(0.0, 1.0),
+                                                  child: Text('$_currLevel',
+                                                      style: style),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Transform.translate(
-                                    offset: Offset(0, -h * (1 - t)),
-                                    child: Opacity(
-                                      opacity: t.clamp(0.0, 1.0),
-                                      child: Text('Level $_currLevel',
-                                          style: style),
+                                );
+                              },
+                            ),
+                          );
+                        })
+                      : Builder(builder: (_) {
+                          final style =
+                              poppins(20, FontWeight.w900, AppColors.blue);
+                          double measure(String s) {
+                            final tp = TextPainter(
+                              text: TextSpan(text: s, style: style),
+                              textDirection: TextDirection.ltr,
+                            )..layout();
+                            return tp.width;
+                          }
+                          double measureH(String s) {
+                            final tp = TextPainter(
+                              text: TextSpan(text: s, style: style),
+                              textDirection: TextDirection.ltr,
+                            )..layout();
+                            return tp.height;
+                          }
+                          final labelW = measure('Level ');
+                          final numW = measure('$_currLevel');
+                          final lineH = measureH('Level $_currLevel');
+                          return Center(
+                            child: FadeTransition(
+                              opacity: appearAnim,
+                              child: SizedBox(
+                                width: labelW + numW,
+                                height: lineH,
+                                child: Stack(
+                                  children: [
+                                    Positioned(
+                                      left: 0,
+                                      top: 0,
+                                      child: Text('Level ', style: style),
                                     ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        )
-                      : Center(
-                          child: FadeTransition(
-                            opacity: appearAnim,
-                            child: Text('Level $_currLevel',
-                                style: poppins(
-                                    20, FontWeight.w900, AppColors.blue)),
-                          ),
-                        ),
+                                    Positioned(
+                                      left: labelW,
+                                      top: 0,
+                                      child: Text('$_currLevel', style: style),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
                 ),
                 const Spacer(flex: 3),
                 AnimatedBuilder(
