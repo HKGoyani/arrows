@@ -54,11 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.dark_mode_rounded,
                     tint: AppColors.navInk,
                     title: 'Dark mode',
-                    trailing: ThemeSwitch(
-                      value: Prefs.darkMode,
-                      onChanged: (v) { Prefs.setDarkMode(v); setState(() {}); },
-                    ),
-                    onTap: () { Prefs.setDarkMode(!Prefs.darkMode); setState(() {}); },
+                    trailing: _comingSoon(),
                   ),
                 ],
               ),
@@ -70,11 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.person_rounded,
                 tint: AppColors.navInk,
                 title: 'Account Connection',
-                trailing: ThemeSwitch(
-                  value: Prefs.accountConnection,
-                  onChanged: (v) { Prefs.setAccountConnection(v); setState(() {}); },
-                ),
-                onTap: () { Prefs.setAccountConnection(!Prefs.accountConnection); setState(() {}); },
+                trailing: _comingSoon(),
               ),
             ),
             const SizedBox(height: 16),
@@ -102,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // How to play, Reset progress
+            // How to play, Restore progress, Reset progress
             _SettingsCard(
               child: Column(
                 children: [
@@ -112,6 +104,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'How to play',
                     trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
                     onTap: () => _howToPlay(context),
+                  ),
+                  const _Divider(),
+                  SettingsTile(
+                    icon: Icons.cloud_download_rounded,
+                    tint: AppColors.navInk,
+                    title: 'Restore Progress',
+                    trailing: _comingSoon(),
                   ),
                   const _Divider(),
                   SettingsTile(
@@ -140,7 +139,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.edit_rounded,
                     tint: AppColors.navInk,
                     title: 'Write us',
-                    onTap: _openEmail,
+                    trailing: _comingSoon(),
                   ),
                 ],
               ),
@@ -173,6 +172,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 
 
+  static Widget _comingSoon() => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: const Color(0xFFE0E3F0),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text('Coming Soon',
+        style: poppins(11, FontWeight.w800, const Color(0xFF8B90AE))),
+  );
+
   Widget _toggle(ValueNotifier<bool> n, IconData icon, Color tint, String title,
       String? subtitle, Future<void> Function(bool) setter) {
     return ValueListenableBuilder<bool>(
@@ -199,15 +208,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : 'https://play.google.com/store/apps/details?id=$_playStoreId',
     );
     launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  void _openEmail() {
-    final uri = Uri(
-      scheme: 'mailto',
-      path: _supportEmail,
-      queryParameters: {'subject': 'Arrow Escape Feedback'},
-    );
-    launchUrl(uri);
   }
 
   static const _languages = [

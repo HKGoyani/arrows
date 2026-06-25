@@ -48,7 +48,11 @@ class AudioService {
         HapticFeedback.mediumImpact();
         break;
       case Haptic.heavy:
+        // double-buzz for wrong moves: heavy + delayed medium
         HapticFeedback.heavyImpact();
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (vibrationOn.value) HapticFeedback.mediumImpact();
+        });
         break;
     }
   }
