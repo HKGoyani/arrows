@@ -25,9 +25,6 @@ class StreakService {
     Prefs.setCurrentStreak(cur);
     Prefs.setBestStreak(best);
     Prefs.setLastPlayed(today);
-    final days = List<String>.from(Prefs.playedDays);
-    if (!days.contains(today)) days.add(today);
-    Prefs.setPlayedDays(days);
   }
 
   /// Live current streak — 0 if the chain is broken (missed yesterday & today).
@@ -48,13 +45,24 @@ class StreakService {
   static const _labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   /// The last 7 days (oldest→today) with played markers.
+  /// Derives played days from the streak length + lastPlayed (consecutive).
   static List<DayInfo> lastSevenDays() {
     final now = DateTime.now();
-    final played = Prefs.playedDays.toSet();
+    final streak = current;
+    final lastDate = Prefs.lastPlayed;
+    final streakDays = <String>{};
+    if (lastDate.isNotEmpty && streak > 0) {
+      final base = lastDate == _fmt(now)
+          ? now
+          : now.subtract(const Duration(days: 1));
+      for (var i = 0; i < streak; i++) {
+        streakDays.add(_fmt(base.subtract(Duration(days: i))));
+      }
+    }
     final out = <DayInfo>[];
     for (var i = 6; i >= 0; i--) {
       final d = now.subtract(Duration(days: i));
-      out.add(DayInfo(_labels[d.weekday - 1], played.contains(_fmt(d)), i == 0));
+      out.add(DayInfo(_labels[d.weekday - 1], streakDays.contains(_fmt(d)), i == 0));
     }
     return out;
   }

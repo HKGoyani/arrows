@@ -42,11 +42,22 @@ List<_WeekDay> _currentWeek() {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final monday = today.subtract(Duration(days: now.weekday - 1));
-  final played = Prefs.playedDays.toSet();
+  // derive played days from streak length (consecutive days)
+  final streak = StreakService.current;
+  final lastPlayed = Prefs.lastPlayed;
+  final streakDays = <String>{};
+  if (lastPlayed.isNotEmpty && streak > 0) {
+    final base = lastPlayed == fmt(now)
+        ? now
+        : now.subtract(const Duration(days: 1));
+    for (var i = 0; i < streak; i++) {
+      streakDays.add(fmt(base.subtract(Duration(days: i))));
+    }
+  }
   final out = <_WeekDay>[];
   for (var i = 0; i < 7; i++) {
     final d = monday.add(Duration(days: i));
-    out.add(_WeekDay(labels[i], played.contains(fmt(d)), d == today));
+    out.add(_WeekDay(labels[i], streakDays.contains(fmt(d)), d == today));
   }
   return out;
 }
