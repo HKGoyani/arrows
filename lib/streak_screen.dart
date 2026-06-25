@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'config.dart';
 import 'prefs.dart';
+import 'streak.dart';
 import 'ui_kit.dart';
 
 const _flameOrange = Color(0xFFF7941D);
@@ -67,7 +68,11 @@ class StreakWeekRow extends StatelessWidget {
                   child: Center(
                     child: Text(d.label,
                         style: poppins(13, FontWeight.w900,
-                            d.done ? _flameOrange : const Color(0xFFC2C7DE))),
+                            d.done
+                                ? _flameOrange
+                                : d.isToday
+                                    ? const Color(0xFF7A89FB)
+                                    : const Color(0xFFC2C7DE))),
                   ),
                 ),
             ],
@@ -110,11 +115,16 @@ class StreakWeekRow extends StatelessWidget {
   }
 
   Widget _checkCircle(_WeekDay d) {
+    final color = d.done
+        ? _flameOrange
+        : d.isToday
+            ? const Color(0xFFB8BFE0)
+            : const Color(0xFFEDEFF7);
     final circle = Container(
       width: _circle,
       height: _circle,
       decoration: BoxDecoration(
-        color: d.done ? _flameOrange : const Color(0xFFEDEFF7),
+        color: color,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
@@ -237,6 +247,11 @@ class StreakDetailSheet extends StatelessWidget {
                 style: poppins(25, FontWeight.w900, const Color(0xFF535B83))),
             const SizedBox(height: 24),
             const StreakWeekRow(),
+            if (!StreakService.playedToday) ...[
+              const SizedBox(height: 18),
+              Text('Win a level today to extend your streak!',
+                  style: poppins(14, FontWeight.w800, const Color(0xFF5E658B))),
+            ],
             const Spacer(flex: 2),
             // Streak Freezers card — hidden for now, ships in v2.
             if (_showFreezers) ...[
