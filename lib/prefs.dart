@@ -32,6 +32,24 @@ class Prefs {
   static Future<void> setPlayedDays(List<String> v) async =>
       _p?.setStringList('playedDays', v);
 
+  // --- records (highest win streak + most wins in a day) ---
+  static String get bestStreakDate => _p?.getString('bestStreakDate') ?? '';
+  static Future<void> setBestStreakDate(String v) async => _p?.setString('bestStreakDate', v);
+  static int get winStreakCur => _p?.getInt('winStreakCur') ?? 0;
+  static Future<void> setWinStreakCur(int v) async => _p?.setInt('winStreakCur', v);
+  static int get winStreakBest => _p?.getInt('winStreakBest') ?? 0;
+  static Future<void> setWinStreakBest(int v) async => _p?.setInt('winStreakBest', v);
+  static String get winStreakBestDate => _p?.getString('winStreakBestDate') ?? '';
+  static Future<void> setWinStreakBestDate(String v) async => _p?.setString('winStreakBestDate', v);
+  static int get winsTodayCount => _p?.getInt('winsTodayCount') ?? 0;
+  static Future<void> setWinsTodayCount(int v) async => _p?.setInt('winsTodayCount', v);
+  static String get winsTodayDate => _p?.getString('winsTodayDate') ?? '';
+  static Future<void> setWinsTodayDate(String v) async => _p?.setString('winsTodayDate', v);
+  static int get mostWinsBest => _p?.getInt('mostWinsBest') ?? 0;
+  static Future<void> setMostWinsBest(int v) async => _p?.setInt('mostWinsBest', v);
+  static String get mostWinsBestDate => _p?.getString('mostWinsBestDate') ?? '';
+  static Future<void> setMostWinsBestDate(String v) async => _p?.setString('mostWinsBestDate', v);
+
   // --- language ---
   static String get language => _p?.getString('language') ?? 'English';
   static Future<void> setLanguage(String v) async => _p?.setString('language', v);
@@ -97,6 +115,14 @@ class Prefs {
     await _p?.remove('bestStreak');
     await _p?.remove('lastPlayed');
     await _p?.remove('playedDays');
+    await _p?.remove('bestStreakDate');
+    await _p?.remove('winStreakCur');
+    await _p?.remove('winStreakBest');
+    await _p?.remove('winStreakBestDate');
+    await _p?.remove('winsTodayCount');
+    await _p?.remove('winsTodayDate');
+    await _p?.remove('mostWinsBest');
+    await _p?.remove('mostWinsBestDate');
     await _p?.remove('legendDates');
     await _p?.remove('unstoppableCount');
     await _p?.remove('unstoppableDates');

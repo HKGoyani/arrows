@@ -9,6 +9,7 @@ import 'fly_off.dart';
 import 'game_controller.dart';
 import 'models.dart';
 import 'perfect.dart';
+import 'records.dart';
 import 'unstoppable.dart';
 import 'prefs.dart';
 import 'rng.dart';
@@ -181,6 +182,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _hintTimer?.cancel();
         _showHint = false;
         PerfectPlay.onFail(); // lost all hearts → attempt no longer perfect
+        RecordsService.onLoss(); // breaks the win streak
       }
       _lurchArrow = a;
       _lurchDist = _calcBlockerDist(a);
@@ -271,6 +273,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       PerfectPlay.onWin(c.level);
       Unstoppable.onWin(c.level);
     }
+    RecordsService.onWin(); // win-streak + most-wins-in-a-day (main + daily)
     _hintTimer?.cancel();
     _showHint = false;
     _showGrid = false;

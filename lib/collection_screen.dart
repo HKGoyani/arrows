@@ -7,7 +7,9 @@ import 'level_legend.dart';
 import 'main.dart' show navigateToChallenge, startDailyChallenge;
 import 'perfect.dart';
 import 'prefs.dart';
+import 'records.dart';
 import 'streak.dart';
+import 'streak_screen.dart';
 import 'ui_kit.dart';
 import 'unstoppable.dart';
 
@@ -16,10 +18,14 @@ class CollectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final best = StreakService.best;
-    final solved = (Prefs.level - 1).clamp(0, 9999);
-    final current = StreakService.current;
-    final now = DateTime.now();
+    final bestStreak = StreakService.best;
+    final winStreak = RecordsService.highestWinStreak;
+    final mostWins = RecordsService.mostWins;
+    // a record with a value but no stored date (set before date-tracking) falls
+    // back to today so the card never shows a blank date
+    final todayStr = _recordDate(_isoToday());
+    String dateOr(String stored, int value) =>
+        stored.isNotEmpty ? stored : (value > 0 ? todayStr : '');
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -34,23 +40,55 @@ class CollectionScreen extends StatelessWidget {
               children: [
                 Expanded(child: _RecordCard(
                   iconWidget: const FlameOnPedestal(),
-                  value: '$current',
+                  value: '$bestStreak',
                   label: 'Longest Streak',
-                  date: _formatDate(now),
+                  date: dateOr(_recordDate(Prefs.bestStreakDate), bestStreak),
+                  onTap: bestStreak > 0
+                      ? () => showRecordDetail(context,
+                          iconWidget: const FlameOnPedestal(),
+                          value: '$bestStreak',
+                          date: dateOr(
+                              _recordDate(Prefs.bestStreakDate), bestStreak),
+                          text: 'You reached a $bestStreak day streak!',
+                          badgeAlign: 0.82,
+                          primaryLabel: 'Current Streak',
+                          onPrimary: () =>
+                              showStreakDetail(context, StreakService.current))
+                      : null,
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _RecordCard(
                   painter: CrownPainter(),
-                  value: '$best',
+                  value: '$winStreak',
                   label: 'Highest Win\nStreak',
-                  date: _formatDate(now),
+                  date: dateOr(RecordsService.highestWinStreakDate, winStreak),
+                  onTap: winStreak > 0
+                      ? () => showRecordDetail(context,
+                          painter: CrownPainter(),
+                          value: '$winStreak',
+                          date: dateOr(
+                              RecordsService.highestWinStreakDate, winStreak),
+                          text: 'You won $winStreak levels in a row!',
+                          currentText:
+                              "You're on ${RecordsService.currentWinStreak} "
+                              'wins in a row.')
+                      : null,
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _RecordCard(
                   painter: WingArrowPainter(),
-                  value: '$solved',
+                  value: '$mostWins',
                   label: 'Most Wins',
-                  date: _formatDate(now),
+                  date: dateOr(RecordsService.mostWinsDate, mostWins),
+                  onTap: mostWins > 0
+                      ? () => showRecordDetail(context,
+                          painter: WingArrowPainter(),
+                          value: '$mostWins',
+                          date: dateOr(RecordsService.mostWinsDate, mostWins),
+                          text: 'You won $mostWins levels in a day!',
+                          currentText:
+                              'You won ${RecordsService.winsToday} levels today.')
+                      : null,
                 )),
               ],
             ),
@@ -133,10 +171,169 @@ class CollectionScreen extends StatelessWidget {
     return widgets;
   }
 
-  static String _formatDate(DateTime d) {
+  /// Formats an ISO date ("2026-04-12") as "Apr 12 2026", or '' if unset.
+  static String _recordDate(String iso) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[d.month - 1]} ${d.day} ${d.year}';
+    final p = iso.split('-');
+    if (p.length != 3) return '';
+    final m = int.tryParse(p[1]) ?? 1;
+    return '${months[m - 1]} ${int.parse(p[2])} ${p[0]}';
+  }
+
+  static String _isoToday() {
+    final d = DateTime.now();
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+}
+
+/// Full-screen record detail: large icon + number, date, a line of text and a
+/// Close button. Optionally a "Current …" line (Highest Win Streak, Most Wins)
+/// or a primary action button (Longest Streak → Current Streak).
+void showRecordDetail(
+  BuildContext context, {
+  CustomPainter? painter,
+  Widget? iconWidget,
+  required String value,
+  required String date,
+  required String text,
+  String? currentText,
+  String? primaryLabel,
+  VoidCallback? onPrimary,
+  double badgeAlign = 0.78,
+  Color textColor = const Color(0xFF5E658B),
+}) {
+  showGeneralDialog(
+    context: context,
+    barrierLabel: 'Record',
+    barrierColor: Colors.black.withValues(alpha: 0.0),
+    transitionDuration: const Duration(milliseconds: 240),
+    pageBuilder: (_, __, ___) => _RecordDetailScreen(
+        painter: painter, iconWidget: iconWidget, value: value, date: date,
+        text: text, currentText: currentText, primaryLabel: primaryLabel,
+        onPrimary: onPrimary, badgeAlign: badgeAlign, textColor: textColor),
+    transitionBuilder: (_, anim, __, child) => FadeTransition(
+      opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+      child: child,
+    ),
+  );
+}
+
+class _RecordDetailScreen extends StatelessWidget {
+  final CustomPainter? painter;
+  final Widget? iconWidget;
+  final String value, date, text;
+  final String? currentText;
+  final String? primaryLabel;
+  final VoidCallback? onPrimary;
+  final double badgeAlign;
+  final Color textColor;
+  const _RecordDetailScreen({
+    this.painter,
+    this.iconWidget,
+    required this.value,
+    required this.date,
+    required this.text,
+    this.currentText,
+    this.primaryLabel,
+    this.onPrimary,
+    this.badgeAlign = 0.78,
+    this.textColor = const Color(0xFF5E658B),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // The bottom section (Current line, or the primary button) lives in a
+    // fixed-height, bottom-aligned slot so the icon/date/text up top and the
+    // Close button at the bottom sit at identical positions on all 3 screens.
+    final bottomSlot = SizedBox(
+      height: 84,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (currentText != null) ...[
+            const _DatePill('Current'),
+            const SizedBox(height: 10),
+            Text(currentText!,
+                textAlign: TextAlign.center,
+                style: poppins(16, FontWeight.w800, const Color(0xFF7A809C))),
+          ],
+          if (primaryLabel != null)
+            Pressable(
+              onTap: onPrimary ?? () {},
+              child: Container(
+                width: 250,
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.blue,
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: Text(primaryLabel!,
+                    style: poppins(17, FontWeight.w900, Colors.white)),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: [
+              const Spacer(flex: 3),
+              SizedBox(
+                width: 215,
+                height: 215,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: iconWidget ?? CustomPaint(painter: painter),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment(0, badgeAlign),
+                      child: _NumberBadge(value, fontSize: 34),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (date.isNotEmpty) _DatePill(date),
+              const SizedBox(height: 18),
+              Text(text,
+                  textAlign: TextAlign.center,
+                  style: poppins(18, FontWeight.w900, textColor)),
+              const Spacer(flex: 4),
+              bottomSlot,
+              const SizedBox(height: 14),
+              Pressable(
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Container(
+                  width: 250,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(color: const Color(0xFFE4E6F1), width: 1.5),
+                  ),
+                  child: Text('Close',
+                      style: poppins(17, FontWeight.w900, const Color(0xFF8C90A6))),
+                ),
+              ),
+              const SizedBox(height: 28),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -208,12 +405,14 @@ class _RecordCard extends StatelessWidget {
   final String value;
   final String label;
   final String date;
+  final VoidCallback? onTap;
   const _RecordCard({
     this.painter,
     this.iconWidget,
     required this.value,
     required this.label,
     required this.date,
+    this.onTap,
   });
   @override
   Widget build(BuildContext context) {
@@ -230,29 +429,33 @@ class _RecordCard extends StatelessWidget {
               child: CustomPaint(painter: painter),
             ),
           );
-    return Column(
-      children: [
-        _IconBox(
-          child: Stack(
-            children: [
-              iconContent,
-              Align(
-                alignment: const Alignment(0, 0.6),
-                child: _NumberBadge(value),
-              ),
-            ],
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          _IconBox(
+            child: Stack(
+              children: [
+                iconContent,
+                Align(
+                  alignment: const Alignment(0, 0.6),
+                  child: _NumberBadge(value),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: poppins(12, FontWeight.w800, AppColors.ink)),
-        const SizedBox(height: 2),
-        Text(date,
-            style: poppins(10.5, FontWeight.w700, AppColors.muted)),
-      ],
+          const SizedBox(height: 10),
+          Text(label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: poppins(12, FontWeight.w800, AppColors.ink)),
+          const SizedBox(height: 2),
+          Text(date,
+              style: poppins(10.5, FontWeight.w700, AppColors.muted)),
+        ],
+      ),
     );
   }
 }
@@ -795,12 +998,12 @@ class _DatePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F2F8),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
       ),
-      child: Text(text, style: poppins(13.5, FontWeight.w700, AppColors.muted)),
+      child: Text(text, style: poppins(13, FontWeight.w800, const Color(0xFF535B83))),
     );
   }
 }

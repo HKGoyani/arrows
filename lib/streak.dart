@@ -21,6 +21,7 @@ class StreakService {
     var cur = Prefs.currentStreak;
     cur = (Prefs.lastPlayed == yesterday) ? cur + 1 : 1; // continue or restart
     final best = cur > Prefs.bestStreak ? cur : Prefs.bestStreak;
+    if (cur > Prefs.bestStreak) Prefs.setBestStreakDate(today); // record date
     Prefs.setCurrentStreak(cur);
     Prefs.setBestStreak(best);
     Prefs.setLastPlayed(today);
