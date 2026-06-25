@@ -15,6 +15,9 @@ class GameController extends ChangeNotifier {
   int cols = 9, rows = 11;
   List<Arrow> arrows = [];
   Map<String, int> occ = {};
+  // Every cell any arrow occupies on the initial board. Dots are drawn only on
+  // these "track" cells (revealed as arrows vacate them) — never in empty space.
+  Set<String> trackCells = {};
   int hearts = 3;
   int total = 0;
   GameStatus status = GameStatus.playing;
@@ -36,9 +39,11 @@ class GameController extends ChangeNotifier {
     cols = g.cols;
     rows = g.rows;
     occ = {};
+    trackCells = {};
     for (final a in arrows) {
       for (final c in a.cells) {
         occ[c] = a.id;
+        trackCells.add(c);
       }
     }
     hearts = 3;

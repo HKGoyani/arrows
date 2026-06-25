@@ -7,7 +7,8 @@ class AppColors {
   static const bg = Color(0xFFFFFFFF); // screen + board background
   static const arrow = Color(0xFF11142E); // default arrow (navy)
   static const arrowBlue = Color(0xFF586FFE); // arrow while firing/leaving
-  static const red = Color(0xFFF23A5C); // clashed arrow + filled heart
+  static const red = Color(0xFFF23A5C); // clashed arrow
+  static const heart = Color(0xFFFD4A5C); // filled heart (softer than clash red)
   static const ink = Color(0xFF2B2E4F); // logo + headings
   static const blue = Color(0xFF667CFF); // "Level N" + Play button
   static const blueSoft = Color(0xFF0EADF0); // difficulty subtitle

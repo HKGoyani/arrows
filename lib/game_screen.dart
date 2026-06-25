@@ -7,6 +7,7 @@ import 'config.dart';
 import 'confetti.dart';
 import 'fly_off.dart';
 import 'game_controller.dart';
+import 'hand_levels.dart';
 import 'models.dart';
 import 'perfect.dart';
 import 'records.dart';
@@ -71,6 +72,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   double _scale = 1;
   bool _winHandled = false;
 
+  // Tutorial (level 1): minimal UI + "Tap to move" prompt with a finger that
+  // bounces over an arrow. Both disappear after the player's first move.
+  late final AnimationController _fingerCtrl;
+  bool _tutorialDone = false;
+  bool get _isTutorial => !widget.isDaily && widget.level == tutorialLevel;
+
   GameController get c => widget.controller;
 
   @override
@@ -91,6 +98,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _heartCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1200))
       ..addListener(_rebuild);
+    _fingerCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1100))
+      ..addListener(_rebuild)
+      ..repeat();
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
     if (widget.isDaily) {
@@ -145,6 +156,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _clashFlashCtrl.dispose();
     _lurchCtrl.dispose();
     _hintPulseCtrl.dispose();
+    _fingerCtrl.dispose();
     for (final f in _flights) {
       _disposeFlight(f);
     }
@@ -169,6 +181,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _spawnRipple(a);
     if (c.isClear(a)) {
       if (a.state == ArrowState.clashed) a.state = ArrowState.idle;
+      _tutorialDone = true; // first successful move ends the prompt
       _showGrid = false;
       if (_hintArrow != null && a.id == _hintArrow!.id) {
         _hintArrow = null;
@@ -329,12 +342,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     opacity: (1.0 - _heartCtrl.value * 3.0).clamp(0.0, 1.0),
                     child: child,
                   ),
-                  child: Column(
-                    children: [
-                      GameTopBar(c: c, onBack: widget.onBack, onRestart: _restart),
-                      ProgressBar(progress: c.progress),
-                    ],
-                  ),
+                  // Tutorial hides the header (back/restart/progress) and shows
+                  // only the hearts, matching the reference onboarding.
+                  child: _isTutorial
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 18, 0, 8),
+                          child: Center(child: HeartsRow(hearts: c.hearts)),
+                        )
+                      : Column(
+                          children: [
+                            GameTopBar(
+                                c: c, onBack: widget.onBack, onRestart: _restart),
+                            ProgressBar(progress: c.progress),
+                          ],
+                        ),
                 ),
                 Expanded(
                   child: ClipRect(
@@ -348,7 +369,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            if (_showHint && c.status == GameStatus.playing)
+            if (_showHint && c.status == GameStatus.playing && !_isTutorial)
               Positioned(
                 right: 0,
                 top: 14,
@@ -414,7 +435,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         ),
                 ),
               ),
-            Positioned(
+            if (!_isTutorial)
+              Positioned(
               right: 14,
               bottom: 10 + MediaQuery.of(context).padding.bottom,
               child: AnimatedBuilder(
@@ -442,6 +464,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
+            if (_isTutorial)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: _tutorialDone ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOut,
+                    child: _tutorialOverlay(),
+                  ),
+                ),
+              ),
             if (_showWinText || _showWinConfetti) _winOverlay(),
             if (c.status == GameStatus.lost) _loseOverlay(),
           ],
@@ -472,7 +505,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       return Center(
         child: SizedBox.fromSize(
           size: boardPx,
-          child: GestureDetector(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapUp: _onTapUp,
             child: CustomPaint(
@@ -497,10 +534,77 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     : 0,
               ),
             ),
+              ),
+              ),
+              if (_isTutorial) _tutorialFinger(boardPx),
+            ],
           ),
         ),
       );
     });
+  }
+
+  /// Pointing finger anchored to the middle arrow's actual board position so
+  /// it lands exactly on the arrow on any screen size. Fades out on first move.
+  Widget _tutorialFinger(Size boardPx) {
+    Arrow? mid;
+    var best = double.infinity;
+    for (final a in c.arrows) {
+      final d = (a.head.x - c.cols / 2).abs().toDouble();
+      if (d < best) {
+        best = d;
+        mid = a;
+      }
+    }
+    if (mid == null) return const SizedBox.shrink();
+    // a point on the lower part of the arrow's shaft
+    final idx = (mid.pts.length * 0.62).floor().clamp(0, mid.pts.length - 1);
+    final p = mid.pts[idx];
+    final fx = (Cfg.margin + p.x * Cfg.cell) * _scale;
+    final fy = (Cfg.margin + p.y * Cfg.cell) * _scale;
+    final t = _fingerCtrl.value;
+    final bounce = (sin(t * 2 * pi - pi / 2) + 1) / 2; // 0 → 1 → 0
+    final dy = 12 * bounce;
+    final scale = 1.0 - 0.12 * bounce;
+    const iconSize = 58.0;
+    // touch_app's fingertip sits ~(17,10) up-left of the icon centre after the
+    // −45° rotation, so offset the icon to land the fingertip on (fx, fy).
+    return Positioned(
+      left: fx - iconSize / 2 + 17,
+      top: fy - iconSize / 2 + 10 + dy,
+      child: IgnorePointer(
+        child: AnimatedOpacity(
+          opacity: _tutorialDone ? 0.0 : 1.0,
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOut,
+          child: Transform.rotate(
+            angle: -pi / 4,
+            child: Transform.scale(
+              scale: scale,
+              child: const Icon(Icons.touch_app,
+                  size: iconSize, color: AppColors.arrow),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tutorialOverlay() {
+    // "Tap to move" prompt (the finger is rendered in the board, anchored to
+    // the middle arrow — see _tutorialFinger).
+    return Align(
+      alignment: const Alignment(0, 0.62),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 38, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEDEFF7),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text('Tap to move',
+            style: poppins(20, FontWeight.w900, AppColors.blue)),
+      ),
+    );
   }
 
   Widget _clashFlashOverlay() {

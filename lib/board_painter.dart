@@ -18,6 +18,7 @@ class BoardPainter extends CustomPainter {
   final double lurchDist;
   final double clashTint;
   final bool showGrid;
+  final bool hideDots;
   final Arrow? hintArrow;
   final double hintPulse;
   final Set<int> hintedIds;
@@ -34,6 +35,7 @@ class BoardPainter extends CustomPainter {
     this.lurchDist = 0,
     this.clashTint = 0,
     this.showGrid = false,
+    this.hideDots = false,
     this.hintArrow,
     this.hintPulse = 0,
     this.hintedIds = const {},
@@ -46,19 +48,23 @@ class BoardPainter extends CustomPainter {
     final scale = size.width / vbW;
     canvas.scale(scale);
 
-    // dot grid (revealed in empty/cleared cells)
-    if (heartT > 0) {
+    // dots are drawn only on arrow-track cells (revealed as arrows vacate
+    // them) — never in empty space around the puzzle.
+    if (hideDots) {
+      // no dots
+    } else if (heartT > 0) {
       _drawHeartDots(canvas);
     } else {
       final dotPaint = Paint()..color = AppColors.dot;
-      for (var i = 0; i <= c.cols; i++) {
-        for (var j = 0; j <= c.rows; j++) {
-          canvas.drawCircle(
-            Offset(Cfg.margin + i * Cfg.cell, Cfg.margin + j * Cfg.cell),
-            Cfg.dotR,
-            dotPaint,
-          );
-        }
+      for (final key in c.trackCells) {
+        final ci = key.indexOf(',');
+        final i = int.parse(key.substring(0, ci));
+        final j = int.parse(key.substring(ci + 1));
+        canvas.drawCircle(
+          Offset(Cfg.margin + i * Cfg.cell, Cfg.margin + j * Cfg.cell),
+          Cfg.dotR,
+          dotPaint,
+        );
       }
     }
 

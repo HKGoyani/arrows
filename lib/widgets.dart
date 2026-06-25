@@ -119,15 +119,15 @@ class _HeartsRowState extends State<HeartsRow> with SingleTickerProviderStateMix
             scale = filled ? 1 : 0.92;
           }
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.5),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Transform.scale(
               scale: scale,
               child: Icon(Icons.favorite,
                   size: 24,
                   color: isLosing
-                      ? Color.lerp(AppColors.red, AppColors.heartEmpty, _bounceCtrl.value)!
+                      ? Color.lerp(AppColors.heart, AppColors.heartEmpty, _bounceCtrl.value)!
                       : filled
-                          ? AppColors.red
+                          ? AppColors.heart
                           : AppColors.heartEmpty),
             ),
           );

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'hand_levels.dart';
 import 'models.dart';
 import 'rng.dart';
 
@@ -149,10 +150,24 @@ class LevelGenerator {
   }
 
   GeneratedLevel genLevel(int level) {
-    cols = min(2 + level, 11);
-    rows = min(3 + level, 13);
-    maxSeg = max(2, min(4, min(cols, rows) ~/ 2));
-    final count = min(1 + level * 2, 32);
+    // Hand-authored onboarding levels (1–5), validated for solvability.
+    // Falls through to procedural generation if a board ever fails the solver.
+    final hand = handLevel(level);
+    if (hand != null && greedySolvable(hand.arrows)) {
+      cols = hand.cols;
+      rows = hand.rows;
+      return GeneratedLevel(hand.arrows, hand.cols, hand.rows);
+    }
+
+    cols = min(2 + level, 13);
+    rows = min(3 + level, 16);
+    // Shorter arrows at higher tiers pack more pieces → denser, harder boards
+    // (matches the reference's many-short-arrows Nightmare layouts).
+    maxSeg = level < 6
+        ? max(2, min(4, min(cols, rows) ~/ 2))
+        : (level < 25 ? 3 : 2);
+    // Target scales with level; the packer fills the grid and early-exits.
+    final count = min(3 + level * 3, 60);
     final seed = (0x9E37 + level * 2654435761) & 0xFFFFFFFF;
 
     int score(List<Arrow> arr) {
