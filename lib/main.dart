@@ -95,7 +95,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   }
 
   Future<void> _play() async {
-    StreakService.registerPlayToday();
     await Navigator.of(context)
         .push(PageRouteBuilder(
           pageBuilder: (_, __, ___) => const GameFlow(),
@@ -259,7 +258,6 @@ class _GameFlowState extends State<GameFlow> {
     }
     await ChallengeService.clearFor(date); // no leftover progress
     if (_isToday) {
-      StreakService.registerPlayToday(); // extend the daily streak
       await ChallengeService.completeToday();
     }
   }
@@ -301,32 +299,29 @@ class _GameFlowState extends State<GameFlow> {
         nav.maybePop();
       },
       onWin: (next) async {
+        final streakExtended = !StreakService.playedToday;
+        StreakService.registerPlayToday();
         if (_isDaily) {
-          final nav = Navigator.of(context);
           await _completeDaily();
           if (!mounted) return;
-          if (_isToday) {
-            // celebrate the extended streak, then return to the challenge
-            nav.pushReplacement(PageRouteBuilder(
-              pageBuilder: (ctx, __, ___) => StreakCelebration(
-                streak: StreakService.current,
-                onContinue: () => Navigator.of(ctx).maybePop(),
-              ),
-              transitionsBuilder: (_, anim, __, child) =>
-                  FadeTransition(opacity: anim, child: child),
-              transitionDuration: const Duration(milliseconds: 300),
-            ));
-          } else {
-            nav.maybePop();
-          }
-          return;
+        } else {
+          Prefs.setLevel(next);
+          LevelLegend.onWin(next);
+          if (!mounted) return;
         }
-        Prefs.setLevel(next);
-        LevelLegend.onWin(next);
-        if (!mounted) return;
-        if (LevelLegend.justUnlockedMilestone(next)) {
+        if (streakExtended) {
+          Navigator.of(context).pushReplacement(PageRouteBuilder(
+            pageBuilder: (ctx, __, ___) => StreakCelebration(
+              streak: StreakService.current,
+              onContinue: () => Navigator.of(ctx).maybePop(),
+            ),
+            transitionsBuilder: (_, anim, __, child) =>
+                FadeTransition(opacity: anim, child: child),
+            transitionDuration: const Duration(milliseconds: 300),
+          ));
+        } else if (!_isDaily && LevelLegend.justUnlockedMilestone(next)) {
           _showLevelLegendCelebration(next);
-        } else if (PerfectPlay.justUnlockedMilestone()) {
+        } else if (!_isDaily && PerfectPlay.justUnlockedMilestone()) {
           _showPerfectPlayCelebration();
         } else {
           Navigator.of(context).maybePop();

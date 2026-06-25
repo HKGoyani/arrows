@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'challenge.dart';
 import 'config.dart';
 import 'prefs.dart';
 import 'streak.dart';
@@ -86,21 +85,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             onTap: () => showStreakDetail(context, streak),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
+                                  horizontal: 11, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.cardBorder),
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(16),
                               ),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                // gray flame until today's challenge is done
-                                streakFlame(
-                                    size: 26,
-                                    active: ChallengeService.completedToday),
-                                const SizedBox(width: 5),
-                                Text('$streak',
-                                    style: poppins(15, FontWeight.w800, AppColors.ink)),
-                              ]),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  streakFlame(
+                                      size: 28,
+                                      active: StreakService.playedToday),
+                                  const SizedBox(width: 4),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 1),
+                                    child: Text('$streak',
+                                        style: poppins(20, FontWeight.w900,
+                                            const Color(0xFF535B83))),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                   ),

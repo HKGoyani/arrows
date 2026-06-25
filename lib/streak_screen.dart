@@ -1,11 +1,21 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'config.dart';
 import 'prefs.dart';
 import 'streak.dart';
 import 'ui_kit.dart';
 
-const _flameOrange = Color(0xFFF7941D);
+const _pendingBlue = Color(0xFFB8BFE0); // today, not-yet-earned circle
+const _pendingLabel = Color(0xFF7A89FB); // today label (pending)
+
+const _flameOrange = Color(0xFFFF9800);
 const _flameGray = Color(0xFFBFC4D8);
+
+/// Gradient used for the streak flame fill (matches the Longest Streak icon).
+const _flameGradient = LinearGradient(
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+  colors: [Color(0xFFFFD15C), Color(0xFFFFA838), Color(0xFFF8842B)],
+);
 
 /// Streak Freezers ship in v2 — flip to true to re-enable the card.
 const _showFreezers = false;
@@ -142,8 +152,12 @@ class StreakWeekRow extends StatelessWidget {
   }
 }
 
-/// Streak celebration shown after completing today's challenge. The flame
-/// scales in, the streak number pops up, and today's check animates in.
+/// Streak celebration shown after winning a level that extends the streak.
+/// Sequenced to match the reference:
+///   1. cream progress bar extends from the existing run out to today
+///   2. simultaneously — today's circle flips+zooms to an orange check,
+///      the count rolls old→new, and the flame fills orange bottom→top
+///   3. the Continue button slides up ~1s later
 class StreakCelebration extends StatefulWidget {
   final int streak;
   final VoidCallback onContinue;
@@ -157,24 +171,31 @@ class StreakCelebration extends StatefulWidget {
 class _StreakCelebrationState extends State<StreakCelebration>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
-  late final Animation<double> _flame; // scale + fade
-  late final Animation<double> _number; // pop
-  late final Animation<double> _check; // today's check pop
-  late final Animation<double> _button;
+  late final Animation<double> _enter; // initial fade-in (resting state)
+  late final Animation<double> _bar; // progress bar Mo→today
+  late final Animation<double> _flip; // today circle flip+zoom
+  late final Animation<double> _roll; // count roll old→new
+  late final Animation<double> _fill; // flame orange fill bottom→top
+  late final Animation<double> _button; // Continue slide-up
 
   @override
   void initState() {
     super.initState();
     _c = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1400));
-    _flame = CurvedAnimation(
-        parent: _c, curve: const Interval(0.0, 0.45, curve: Curves.elasticOut));
-    _number = CurvedAnimation(
-        parent: _c, curve: const Interval(0.35, 0.6, curve: Curves.easeOutBack));
-    _check = CurvedAnimation(
-        parent: _c, curve: const Interval(0.55, 0.8, curve: Curves.elasticOut));
+        vsync: this, duration: const Duration(milliseconds: 2600));
+    _enter = CurvedAnimation(
+        parent: _c, curve: const Interval(0.0, 0.12, curve: Curves.easeOut));
+    _bar = CurvedAnimation(
+        parent: _c, curve: const Interval(0.16, 0.40, curve: Curves.easeInOut));
+    // the three simultaneous beats, once the bar reaches today
+    _flip = CurvedAnimation(
+        parent: _c, curve: const Interval(0.40, 0.62, curve: Curves.easeOutBack));
+    _roll = CurvedAnimation(
+        parent: _c, curve: const Interval(0.40, 0.60, curve: Curves.easeOut));
+    _fill = CurvedAnimation(
+        parent: _c, curve: const Interval(0.40, 0.64, curve: Curves.easeInOut));
     _button = CurvedAnimation(
-        parent: _c, curve: const Interval(0.75, 1.0, curve: Curves.easeOut));
+        parent: _c, curve: const Interval(0.82, 1.0, curve: Curves.easeOut));
     _c.forward();
   }
 
@@ -186,46 +207,286 @@ class _StreakCelebrationState extends State<StreakCelebration>
 
   @override
   Widget build(BuildContext context) {
+    final oldStreak = widget.streak - 1;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            const Spacer(flex: 3),
-            ScaleTransition(
-              scale: _flame,
-              child: FadeTransition(
-                opacity: _c.drive(CurveTween(curve: const Interval(0, 0.3))),
-                child: streakFlame(size: 150),
-              ),
-            ),
-            const SizedBox(height: 18),
-            ScaleTransition(
-              scale: Tween(begin: 0.6, end: 1.0).animate(_number),
-              child: FadeTransition(
-                opacity: _number,
-                child: Text('${widget.streak} day streak',
-                    style: poppins(28, FontWeight.w900, AppColors.ink)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            StreakWeekRow(todayPop: _check),
-            const Spacer(flex: 4),
-            FadeTransition(
-              opacity: _button,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
-                child: PrimaryButton(
-                    label: 'Continue',
-                    onTap: widget.onContinue,
-                    width: double.infinity),
-              ),
-            ),
-          ],
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (context, _) {
+            return Column(
+              children: [
+                const Spacer(flex: 3),
+                Opacity(
+                  opacity: _enter.value,
+                  child: _FillFlame(size: 150, fill: _fill.value),
+                ),
+                const SizedBox(height: 18),
+                Opacity(
+                  opacity: _enter.value,
+                  child: _RollingStreakText(
+                    oldStreak: oldStreak,
+                    newStreak: widget.streak,
+                    t: _roll.value,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Opacity(
+                  opacity: _enter.value,
+                  child: _CelebrationWeekRow(
+                    barExtend: _bar.value,
+                    todayFlip: _flip.value,
+                  ),
+                ),
+                const Spacer(flex: 4),
+                Transform.translate(
+                  offset: Offset(0, (1 - _button.value) * 80),
+                  child: Opacity(
+                    opacity: _button.value,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
+                      child: PrimaryButton(
+                          label: 'Continue',
+                          onTap: widget.onContinue,
+                          width: double.infinity),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
+}
+
+/// Flame icon that fills orange from the bottom up over a gray base.
+class _FillFlame extends StatelessWidget {
+  final double size;
+  final double fill; // 0 = all gray, 1 = all orange
+  const _FillFlame({required this.size, required this.fill});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        children: [
+          Icon(Icons.local_fire_department_rounded,
+              size: size, color: _flameGray),
+          ClipRect(
+            clipper: _BottomReveal(fill.clamp(0.0, 1.0)),
+            child: ShaderMask(
+              shaderCallback: (b) => _flameGradient.createShader(b),
+              blendMode: BlendMode.srcIn,
+              child: Icon(Icons.local_fire_department_rounded,
+                  size: size, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BottomReveal extends CustomClipper<Rect> {
+  final double fill;
+  _BottomReveal(this.fill);
+  @override
+  Rect getClip(Size s) =>
+      Rect.fromLTRB(0, s.height * (1 - fill), s.width, s.height);
+  @override
+  bool shouldReclip(covariant _BottomReveal old) => old.fill != fill;
+}
+
+/// "N day streak" where the leading number rolls old→new (old slides down and
+/// out, new slides in from the top).
+class _RollingStreakText extends StatelessWidget {
+  final int oldStreak;
+  final int newStreak;
+  final double t; // 0 = old, 1 = new
+  const _RollingStreakText(
+      {required this.oldStreak, required this.newStreak, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final style = poppins(25, FontWeight.w900, const Color(0xFF535B83));
+    const h = 34.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: h,
+          child: ClipRect(
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                Transform.translate(
+                  offset: Offset(0, t * h),
+                  child: Opacity(
+                      opacity: (1 - t).clamp(0.0, 1.0),
+                      child: Text('$oldStreak', style: style)),
+                ),
+                Transform.translate(
+                  offset: Offset(0, (t - 1) * h),
+                  child: Opacity(
+                      opacity: t.clamp(0.0, 1.0),
+                      child: Text('$newStreak', style: style)),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Text(' day streak', style: style),
+      ],
+    );
+  }
+}
+
+/// Mo–Su row for the celebration: the cream pill extends out to today
+/// ([barExtend]) and today's circle flips+zooms to an orange check ([todayFlip]).
+class _CelebrationWeekRow extends StatelessWidget {
+  final double barExtend; // 0 = bar covers prior run, 1 = reaches today
+  final double todayFlip; // 0 = pending blue, 1 = orange check
+  const _CelebrationWeekRow(
+      {required this.barExtend, required this.todayFlip});
+
+  static const _cell = 42.0;
+  static const _circle = 34.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final week = _currentWeek();
+    final todayIdx = week.indexWhere((d) => d.isToday);
+    final oldDone = [
+      for (var i = 0; i < 7; i++)
+        if (week[i].done && !week[i].isToday) i
+    ];
+    final firstIdx = oldDone.isEmpty ? todayIdx : oldDone.first;
+    final oldLastIdx = oldDone.isEmpty ? todayIdx : oldDone.last;
+    final barLastCenter =
+        (oldLastIdx + (todayIdx - oldLastIdx) * barExtend) * _cell + _cell / 2;
+    final barLeft = firstIdx * _cell + _cell / 2 - 6;
+
+    return Center(
+      child: Column(
+        children: [
+          // labels
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < 7; i++)
+                SizedBox(
+                  width: _cell,
+                  child: Center(child: _label(week[i], i == todayIdx)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: _cell * 7,
+            height: _circle,
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                // connecting pill (extends Mo→today)
+                Positioned(
+                  left: barLeft,
+                  top: (_circle - 24) / 2,
+                  child: Container(
+                    width: (barLastCenter - 6) - barLeft,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFBE3C8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < 7; i++)
+                      SizedBox(
+                          width: _cell,
+                          child: Center(child: _circleFor(week[i], i == todayIdx))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _label(_WeekDay d, bool isToday) {
+    final Color color;
+    if (isToday) {
+      color = Color.lerp(_pendingLabel, _flameOrange, todayFlip)!;
+    } else if (d.done) {
+      color = _flameOrange;
+    } else {
+      color = const Color(0xFFC2C7DE);
+    }
+    return Text(d.label, style: poppins(13, FontWeight.w900, color));
+  }
+
+  Widget _circleFor(_WeekDay d, bool isToday) {
+    if (isToday) {
+      // pending blue base, with the orange check flipping in over it
+      final angle = (1 - todayFlip) * (math.pi / 2);
+      return SizedBox(
+        width: _circle,
+        height: _circle,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            if (todayFlip < 1)
+              Container(
+                width: _circle,
+                height: _circle,
+                decoration: const BoxDecoration(
+                    color: _pendingBlue, shape: BoxShape.circle),
+              ),
+            Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.0015)
+                ..rotateY(angle)
+                ..scaleByDouble(
+                    0.6 + 0.4 * todayFlip.clamp(0.0, 1.0),
+                    0.6 + 0.4 * todayFlip.clamp(0.0, 1.0),
+                    1.0,
+                    1.0),
+              child: Opacity(
+                opacity: todayFlip.clamp(0.0, 1.0),
+                child: _orangeCheck(),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (d.done) return _orangeCheck();
+    return Container(
+      width: _circle,
+      height: _circle,
+      decoration: const BoxDecoration(
+          color: Color(0xFFEDEFF7), shape: BoxShape.circle),
+    );
+  }
+
+  Widget _orangeCheck() => Container(
+        width: _circle,
+        height: _circle,
+        decoration:
+            const BoxDecoration(color: _flameOrange, shape: BoxShape.circle),
+        alignment: Alignment.center,
+        child: const SizedBox(
+            width: 20, height: 20, child: CustomPaint(painter: _CheckPainter())),
+      );
 }
 
 /// Streak detail (from the home streak pill): adds the Freezers card + Close.
