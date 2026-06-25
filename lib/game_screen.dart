@@ -126,6 +126,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _startHintTimer();
       return;
     }
+    Prefs.setHintsUsed(Prefs.hintsUsed + 1);
     setState(() {
       _hintArrow = safe.first;
       _hintedIds.add(safe.first.id);
@@ -354,24 +355,63 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 child: Pressable(
                   onTap: _useHint,
                   alignment: Alignment.centerRight,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.blue,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(22),
-                        bottomLeft: Radius.circular(22),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
-                        const SizedBox(width: 6),
-                        Text('Hint', style: poppins(16, FontWeight.w900, Colors.white)),
-                      ],
-                    ),
-                  ),
+                  child: Prefs.hasFreeHint
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 9),
+                          decoration: const BoxDecoration(
+                            color: AppColors.btnBg,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(22),
+                              bottomLeft: Radius.circular(22),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.lightbulb_rounded,
+                                  color: AppColors.btnInk, size: 20),
+                              const SizedBox(width: 5),
+                              Text('Hint',
+                                  style: poppins(
+                                      16, FontWeight.w900, AppColors.btnInk)),
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDFE2F0),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text('${Prefs.freeHintsLeft}',
+                                    style: poppins(12, FontWeight.w900,
+                                        AppColors.btnInk)),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.blue,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(22),
+                              bottomLeft: Radius.circular(22),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.videocam_rounded,
+                                  color: Colors.white, size: 20),
+                              const SizedBox(width: 6),
+                              Text('Hint',
+                                  style: poppins(
+                                      16, FontWeight.w900, Colors.white)),
+                            ],
+                          ),
+                        ),
                 ),
               ),
             Positioned(

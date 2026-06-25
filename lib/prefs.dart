@@ -62,6 +62,13 @@ class Prefs {
   static bool get removeAds => _p?.getBool('removeAds') ?? false;
   static Future<void> setRemoveAds(bool v) async => _p?.setBool('removeAds', v);
 
+  // --- hints ---
+  static const int freeHints = 5;
+  static int get hintsUsed => _p?.getInt('hintsUsed') ?? 0;
+  static Future<void> setHintsUsed(int v) async => _p?.setInt('hintsUsed', v);
+  static bool get hasFreeHint => hintsUsed < freeHints;
+  static int get freeHintsLeft => (freeHints - hintsUsed).clamp(0, freeHints);
+
   // --- free life tracking ---
   static bool get usedFreeLife => _p?.getBool('usedFreeLife') ?? false;
   static Future<void> setUsedFreeLife() async => _p?.setBool('usedFreeLife', true);
@@ -135,5 +142,6 @@ class Prefs {
     await _p?.remove('perfectLevel');
     await _p?.remove('perfectValid');
     await _p?.remove('perfectDates');
+    await _p?.remove('hintsUsed');
   }
 }
