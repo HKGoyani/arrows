@@ -72,6 +72,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   double _scale = 1;
   bool _winHandled = false;
 
+  // Pinch-to-zoom: board is scaled to fit viewport at 1x.
+  // User can zoom in up to _maxZoom. Intro animates from 1x to _defaultZoom.
+  final TransformationController _zoomCtrl = TransformationController();
+  late final AnimationController _zoomIntroCtrl;
+  bool _introPlayed = false;
+  static const double _maxZoom = 2.0;
+  static const double _defaultZoom = 1.2;
+
   // Tutorial (level 1): minimal UI + "Tap to move" prompt with a finger that
   // bounces over an arrow. Both disappear after the player's first move.
   late final AnimationController _fingerCtrl;
@@ -102,6 +110,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         vsync: this, duration: const Duration(milliseconds: 1100))
       ..addListener(_rebuild)
       ..repeat();
+    _zoomIntroCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1000))
+      ..addListener(_onZoomIntroTick);
     c.addListener(_rebuild);
     c.loadLevel(widget.level);
     if (widget.isDaily) {
@@ -157,6 +168,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _lurchCtrl.dispose();
     _hintPulseCtrl.dispose();
     _fingerCtrl.dispose();
+    _zoomIntroCtrl.dispose();
+    _zoomCtrl.dispose();
     for (final f in _flights) {
       _disposeFlight(f);
     }
@@ -165,6 +178,45 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   void _rebuild() {
     if (mounted) setState(() {});
+  }
+
+  Matrix4 _centeredMatrix(double scale) {
+    final bp = _lastBoardPx ?? const Size(400, 700);
+    final vp = _lastViewportSize ?? const Size(400, 700);
+    final dx = (vp.width - bp.width * scale) / 2;
+    final dy = (vp.height - bp.height * scale) / 2;
+    return Matrix4.identity()
+      ..setEntry(0, 0, scale)
+      ..setEntry(1, 1, scale)
+      ..setEntry(0, 3, dx)
+      ..setEntry(1, 3, dy);
+  }
+
+  void _onZoomIntroTick() {
+    final t = Curves.easeInOut.transform(_zoomIntroCtrl.value);
+    final scale = _introStartScale + (_introEndScale - _introStartScale) * t;
+    _zoomCtrl.value = _centeredMatrix(scale);
+  }
+
+  Size? _lastBoardPx;
+  Size? _lastViewportSize;
+  double _introStartScale = 1.0;
+  double _introEndScale = 1.2;
+
+  void _playIntroZoom() {
+    if (_introPlayed || _isTutorial) return;
+    _introPlayed = true;
+    if (c.arrows.length < 15) return;
+    final bp = _lastBoardPx!;
+    final vp = _lastViewportSize!;
+    _introStartScale = min(vp.width / bp.width, vp.height / bp.height)
+        .clamp(0.1, 1.0);
+    _introEndScale = (_introStartScale * _defaultZoom)
+        .clamp(_introStartScale, _maxZoom);
+    _zoomCtrl.value = _centeredMatrix(_introStartScale);
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _zoomIntroCtrl.forward(from: 0);
+    });
   }
 
   void _disposeFlight(_Flight f) {
@@ -320,6 +372,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _heartCtrl.reset();
     _showWinText = false;
     _showWinConfetti = false;
+    _zoomCtrl.value = Matrix4.identity();
+    _zoomIntroCtrl.reset();
+    _introPlayed = false;
     c.loadLevel(c.level);
     if (widget.isDaily) widget.onDidRestart?.call(); // wipe saved daily board
     _resetHintTimer();
@@ -495,6 +550,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _scale = [Cfg.targetCell / Cfg.cell, maxW / vbW, maxH / vbH]
           .reduce((a, b) => a < b ? a : b);
       final boardPx = Size(vbW * _scale, vbH * _scale);
+      _lastBoardPx = boardPx;
+      _lastViewportSize = Size(constraints.maxWidth, constraints.maxHeight);
+
+      final isDense = c.arrows.length >= 15;
+
+      if (!_introPlayed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _playIntroZoom();
+        });
+      }
 
       final flights = _flights.map((f) {
         final elapsed = f.ctrl.value * (Cfg.flyHoldMs + Cfg.flyDurMs);
@@ -502,44 +567,71 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         return (fly: f.fly, adv: flyEase(p) * f.fly.total);
       }).toList();
 
-      return Center(
-        child: SizedBox.fromSize(
-          size: boardPx,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(
-                child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapUp: _onTapUp,
-            child: CustomPaint(
-              painter: BoardPainter(
-                c: c,
-                flights: flights,
-                rippleCenter: _rippleCenter,
-                rippleT: _rippleCtrl.value,
-                flashBlocker: _flashBlocker,
-                lurchArrow: _lurchArrow,
-                lurchT: _lurchCtrl.value,
-                lurchDist: _lurchDist,
-                showGrid: _showGrid,
-                hintArrow: _hintArrow,
-                hintPulse: _hintPulseCtrl.value,
-                hintedIds: _hintedIds,
-                heartT: _heartCtrl.value,
-                clashTint: _clashFlashCtrl.isAnimating
-                    ? (_clashFlashCtrl.value < 0.15
-                        ? _clashFlashCtrl.value / 0.15
-                        : 1 - ((_clashFlashCtrl.value - 0.15) / 0.85))
-                    : 0,
+      final boardWidget = SizedBox.fromSize(
+        size: boardPx,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapUp: _onTapUp,
+                child: CustomPaint(
+                  painter: BoardPainter(
+                    c: c,
+                    flights: flights,
+                    rippleCenter: _rippleCenter,
+                    rippleT: _rippleCtrl.value,
+                    flashBlocker: _flashBlocker,
+                    lurchArrow: _lurchArrow,
+                    lurchT: _lurchCtrl.value,
+                    lurchDist: _lurchDist,
+                    showGrid: _showGrid,
+                    hintArrow: _hintArrow,
+                    hintPulse: _hintPulseCtrl.value,
+                    hintedIds: _hintedIds,
+                    heartT: _heartCtrl.value,
+                    clashTint: _clashFlashCtrl.isAnimating
+                        ? (_clashFlashCtrl.value < 0.15
+                            ? _clashFlashCtrl.value / 0.15
+                            : 1 - ((_clashFlashCtrl.value - 0.15) / 0.85))
+                        : 0,
+                  ),
+                ),
               ),
             ),
-              ),
-              ),
-              if (_isTutorial) _tutorialFinger(boardPx),
-            ],
-          ),
+            if (_isTutorial) _tutorialFinger(boardPx),
+          ],
         ),
+      );
+
+      // Small/tutorial boards: just center, no zoom.
+      if (!isDense) {
+        return Center(child: boardWidget);
+      }
+
+      // Dense boards: InteractiveViewer with constrained: false.
+      // Boundary margin allows centering at fitScale; when zoomed in
+      // the board covers the viewport with limited overflow at edges.
+      final fitScale = min(
+        constraints.maxWidth / boardPx.width,
+        constraints.maxHeight / boardPx.height,
+      ).clamp(0.1, 1.0);
+      final marginH = max(0.0, (constraints.maxWidth / fitScale - boardPx.width) / 2);
+      final marginV = max(0.0, (constraints.maxHeight / fitScale - boardPx.height) / 2);
+
+      return InteractiveViewer(
+        transformationController: _zoomCtrl,
+        constrained: false,
+        minScale: fitScale,
+        maxScale: _maxZoom,
+        panEnabled: true,
+        scaleEnabled: true,
+        boundaryMargin: EdgeInsets.symmetric(
+          horizontal: marginH,
+          vertical: marginV,
+        ),
+        child: boardWidget,
       );
     });
   }
