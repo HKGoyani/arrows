@@ -28,10 +28,11 @@ class LevelGenerator {
     return false;
   }
 
-  _Walk? _windPath(SeededRandom rng, Set<String> occ) {
+  _Walk? _windPath(SeededRandom rng, Set<String> occ, {int? maxLen}) {
     int cx = rng.nextInt(cols + 1), cy = rng.nextInt(rows + 1);
     if (occ.contains(cellKey(cx, cy))) return null;
-    final targetLen = 3 + rng.nextInt(maxSeg * 2 + 3);
+    final defaultLen = 3 + rng.nextInt(maxSeg * 2 + 3);
+    final targetLen = maxLen != null ? min(defaultLen, maxLen) : defaultLen;
     final pts = <Point<int>>[Point(cx, cy)];
     final body = <String>{cellKey(cx, cy)};
     var dir = Direction.values[rng.nextInt(4)];
@@ -70,9 +71,9 @@ class LevelGenerator {
   /// Targeted walk starting from a specific open cell (used by the dense
   /// packer to fill gaps instead of picking random starts).
   _Walk? _windPathFrom(SeededRandom rng, Set<String> occ, int sx, int sy,
-      {bool relaxAdj = false}) {
+      {bool relaxAdj = false, int? maxLen}) {
     if (occ.contains(cellKey(sx, sy))) return null;
-    final targetLen = 2 + rng.nextInt(maxSeg + 2);
+    final targetLen = maxLen ?? (2 + rng.nextInt(maxSeg + 2));
     final pts = <Point<int>>[Point(sx, sy)];
     final body = <String>{cellKey(sx, sy)};
     var cx = sx, cy = sy;
@@ -130,27 +131,29 @@ class LevelGenerator {
     final rng = SeededRandom(seed);
     final occ = <String>{};
     final arrows = <Arrow>[];
+    // Shorter arrows in Phase 1 pack tighter, leaving fewer internal gaps.
+    final phase1MaxLen = maxSeg <= 1 ? 3 : (maxSeg <= 2 ? 4 : null);
 
     // Phase 1: random starts (quick coverage)
     var tries = 0;
     final phase1Limit = count * 40;
     while (arrows.length < count && tries < phase1Limit) {
       tries++;
-      final w = _windPath(rng, occ);
+      final w = _windPath(rng, occ, maxLen: phase1MaxLen);
       if (w == null) continue;
       occ.addAll(w.body);
       arrows.add(Arrow(id: arrows.length, pts: w.pts, dir: w.headDir, cells: w.body));
     }
     if (arrows.length >= count) return arrows;
 
-    // Phase 2: scan for open cells and try to start arrows from them
-    for (var pass = 0; pass < 5 && arrows.length < count; pass++) {
+    // Phase 2: scan for open cells, progressively shorter arrows to fill gaps
+    for (var pass = 0; pass < 4 && arrows.length < count; pass++) {
       final relax = pass >= 2;
       for (var y = 0; y <= rows && arrows.length < count; y++) {
         for (var x = 0; x <= cols && arrows.length < count; x++) {
           if (occ.contains(cellKey(x, y))) continue;
-          for (var r = 0; r < 6; r++) {
-            final w = _windPathFrom(rng, occ, x, y, relaxAdj: relax);
+          for (var r = 0; r < 8; r++) {
+            final w = _windPathFrom(rng, occ, x, y, relaxAdj: relax, maxLen: 3);
             if (w == null) continue;
             occ.addAll(w.body);
             arrows.add(Arrow(id: arrows.length, pts: w.pts, dir: w.headDir, cells: w.body));
@@ -160,6 +163,39 @@ class LevelGenerator {
       }
     }
     return arrows;
+  }
+
+  /// Fills every gap with a 2-cell arrow, keeping only those that preserve
+  /// solvability. Each candidate is tested individually.
+  void _applyGapFill(List<Arrow> arrows) {
+    final occ = <String>{};
+    for (final a in arrows) {
+      occ.addAll(a.cells);
+    }
+    var placed = true;
+    while (placed) {
+      placed = false;
+      for (var y = 0; y <= rows; y++) {
+        for (var x = 0; x <= cols; x++) {
+          if (occ.contains(cellKey(x, y))) continue;
+          for (final d in Direction.values) {
+            final nx = x + d.dx, ny = y + d.dy;
+            if (!_inB(nx, ny)) continue;
+            if (occ.contains(cellKey(nx, ny))) continue;
+            final pts = [Point(x, y), Point(nx, ny)];
+            final cells = {cellKey(x, y), cellKey(nx, ny)};
+            final candidate = Arrow(id: arrows.length, pts: pts, dir: d, cells: cells);
+            arrows.add(candidate);
+            if (greedySolvable(arrows)) {
+              occ.addAll(cells);
+              placed = true;
+              break;
+            }
+            arrows.removeLast();
+          }
+        }
+      }
+    }
   }
 
   /// Reverse-construction: each arrow's exit corridor must be clear of placed
@@ -196,6 +232,7 @@ class LevelGenerator {
     final rng = SeededRandom(seed);
     final occ = <String>{};
     final arrows = <Arrow>[];
+    final phase1MaxLen = maxSeg <= 1 ? 3 : (maxSeg <= 2 ? 4 : null);
 
     bool exitClear(_Walk w) {
       var fx = w.hx, fy = w.hy;
@@ -212,7 +249,7 @@ class LevelGenerator {
     var tries = 0;
     while (arrows.length < count && tries < count * 40) {
       tries++;
-      final w = _windPath(rng, occ);
+      final w = _windPath(rng, occ, maxLen: phase1MaxLen);
       if (w == null) continue;
       if (!exitClear(w)) continue;
       occ.addAll(w.body);
@@ -221,13 +258,13 @@ class LevelGenerator {
     if (arrows.length >= count) return arrows;
 
     // Phase 2: gap-fill from open cells
-    for (var pass = 0; pass < 5 && arrows.length < count; pass++) {
+    for (var pass = 0; pass < 4 && arrows.length < count; pass++) {
       final relax = pass >= 2;
       for (var y = 0; y <= rows && arrows.length < count; y++) {
         for (var x = 0; x <= cols && arrows.length < count; x++) {
           if (occ.contains(cellKey(x, y))) continue;
-          for (var r = 0; r < 6; r++) {
-            final w = _windPathFrom(rng, occ, x, y, relaxAdj: relax);
+          for (var r = 0; r < 8; r++) {
+            final w = _windPathFrom(rng, occ, x, y, relaxAdj: relax, maxLen: 3);
             if (w == null) continue;
             if (!exitClear(w)) continue;
             occ.addAll(w.body);
@@ -237,6 +274,7 @@ class LevelGenerator {
         }
       }
     }
+
     return arrows;
   }
 
@@ -310,11 +348,11 @@ class LevelGenerator {
       case Tier.normal:
         count = 3 + level * 3;
       case Tier.hard:
-        count = min(15 + (level - 6).clamp(0, 50) * 3, gridArea ~/ 4);
+        count = min(15 + (level - 6).clamp(0, 50) * 3, gridArea ~/ 3);
       case Tier.superHard:
-        count = min(30 + (level - 15).clamp(0, 50) * 2, gridArea ~/ 3);
+        count = min(40 + (level - 15).clamp(0, 50) * 2, gridArea * 2 ~/ 5);
       case Tier.nightmare:
-        count = min(50 + (level - 35).clamp(0, 100), gridArea ~/ 3);
+        count = min(60 + (level - 35).clamp(0, 100), gridArea * 2 ~/ 5);
     }
 
     final seed = (0x9E37 + level * 2654435761) & 0xFFFFFFFF;
@@ -343,7 +381,10 @@ class LevelGenerator {
       }
       if (best != null && best.length >= count && att >= 12) break;
     }
-    if (best != null && best.length >= count) return GeneratedLevel(best, cols, rows);
+    if (best != null && best.length >= count) {
+      if (useDense) _applyGapFill(best);
+      return _trimToFit(best);
+    }
 
     // 2) guaranteed-solvable reverse-construction fallback
     List<Arrow>? rc;
@@ -360,7 +401,33 @@ class LevelGenerator {
       if (rc != null && rc.length >= count) break;
     }
     final chosen = (rc != null && rcScore > bestScore) ? rc : (best ?? rc ?? <Arrow>[]);
-    return GeneratedLevel(chosen, cols, rows);
+    if (useDense) _applyGapFill(chosen);
+    return _trimToFit(chosen);
+  }
+
+  /// Shrinks the grid to the bounding box of the placed arrows so there's no
+  /// dead space around the puzzle. Shifts all arrow coordinates to start at 0.
+  GeneratedLevel _trimToFit(List<Arrow> arrows) {
+    if (arrows.isEmpty) return GeneratedLevel(arrows, cols, rows);
+    var minX = cols, maxX = 0, minY = rows, maxY = 0;
+    for (final a in arrows) {
+      for (final p in a.pts) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      }
+    }
+    if (minX == 0 && minY == 0 && maxX == cols && maxY == rows) {
+      return GeneratedLevel(arrows, cols, rows);
+    }
+    final shifted = <Arrow>[];
+    for (final a in arrows) {
+      final pts = a.pts.map((p) => Point(p.x - minX, p.y - minY)).toList();
+      final cells = <String>{for (final p in pts) cellKey(p.x, p.y)};
+      shifted.add(Arrow(id: a.id, pts: pts, dir: a.dir, cells: cells));
+    }
+    return GeneratedLevel(shifted, maxX - minX, maxY - minY);
   }
 }
 
