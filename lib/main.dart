@@ -139,11 +139,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
           index: _tab,
           level: level,
           onTap: (i) {
-            if (i == 1) ChallengeService.markSeen(); // clear Challenge red dot
+            if (i == 1) ChallengeService.markSeen();
+            if (i == 2 && Prefs.collectionUnseen) Prefs.setCollectionUnseen(false);
             setState(() => _tab = i);
           },
           showChallengeBadge: ChallengeService.hasUnseen,
-          showCollectionBadge: LevelLegend.hasUnseen || PerfectPlay.hasUnseen || Unstoppable.hasUnseen,
+          showCollectionBadge: Prefs.collectionUnseen || LevelLegend.hasUnseen || PerfectPlay.hasUnseen || Unstoppable.hasUnseen,
         ),
       ),
     );
@@ -306,9 +307,16 @@ class _GameFlowState extends State<GameFlow> {
         } else {
           Prefs.setLevel(next);
           LevelLegend.onWin(next);
+          if (next == 10) Prefs.setCollectionUnseen(true);
           if (!mounted) return;
         }
-        if (streakExtended) {
+        // First install day (streak == 1): defer celebration until level 10.
+        // Subsequent days (streak 2+): celebrate on first win as usual.
+        final isFirstDay = StreakService.current == 1;
+        final showStreak = isFirstDay
+            ? (!_isDaily && next == 10)
+            : streakExtended;
+        if (showStreak) {
           Navigator.of(context).pushReplacement(PageRouteBuilder(
             pageBuilder: (ctx, __, ___) => StreakCelebration(
               streak: StreakService.current,

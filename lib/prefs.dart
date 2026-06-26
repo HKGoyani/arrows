@@ -98,6 +98,10 @@ class Prefs {
   static Future<void> setChallengeStates(String v) async =>
       _p?.setString('challengeStates', v);
 
+  // --- collection first-unlock badge ---
+  static bool get collectionUnseen => _p?.getBool('collectionUnseen') ?? false;
+  static Future<void> setCollectionUnseen(bool v) async => _p?.setBool('collectionUnseen', v);
+
   // --- perfect play unseen badge ---
   static bool get perfectUnseen => _p?.getBool('perfectUnseen') ?? false;
   static Future<void> setPerfectUnseen(bool v) async => _p?.setBool('perfectUnseen', v);
