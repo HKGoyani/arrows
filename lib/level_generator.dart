@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'difficulty.dart';
 import 'hand_levels.dart';
 import 'models.dart';
 import 'rng.dart';
@@ -12,9 +13,6 @@ class LevelGenerator {
 
   bool _inB(int x, int y) => x >= 0 && x <= cols && y >= 0 && y <= rows;
 
-  /// True if (nx,ny) is orthogonally adjacent to an own-body cell other than the
-  /// cell we stepped from — i.e. the path would fold back beside itself (a
-  /// U-turn / hairpin). Banned so an arrow never doubles back parallel to itself.
   bool _touchesSelf(int nx, int ny, int fromX, int fromY, Set<String> body) {
     const adj = [
       [1, 0],
@@ -30,8 +28,6 @@ class LevelGenerator {
     return false;
   }
 
-  /// A long winding arrow: self-avoiding walk, prefers straight, turns ~22% or
-  /// when blocked. Returns null if it couldn't grow to length >= 2.
   _Walk? _windPath(SeededRandom rng, Set<String> occ) {
     int cx = rng.nextInt(cols + 1), cy = rng.nextInt(rows + 1);
     if (occ.contains(cellKey(cx, cy))) return null;
@@ -71,6 +67,48 @@ class LevelGenerator {
     return _Walk(pts, body, headDir, cx, cy);
   }
 
+  /// Targeted walk starting from a specific open cell (used by the dense
+  /// packer to fill gaps instead of picking random starts).
+  _Walk? _windPathFrom(SeededRandom rng, Set<String> occ, int sx, int sy,
+      {bool relaxAdj = false}) {
+    if (occ.contains(cellKey(sx, sy))) return null;
+    final targetLen = 2 + rng.nextInt(maxSeg + 2);
+    final pts = <Point<int>>[Point(sx, sy)];
+    final body = <String>{cellKey(sx, sy)};
+    var cx = sx, cy = sy;
+    var dir = Direction.values[rng.nextInt(4)];
+    var headDir = dir;
+    for (var step = 0; step < targetLen; step++) {
+      final cur = dir;
+      final perp =
+          Direction.values.where((d) => d.horizontal != cur.horizontal).toList();
+      final List<Direction> order = rng.next() < 0.65
+          ? [cur, perp[rng.nextInt(2)], perp[0], perp[1]]
+          : [perp[rng.nextInt(2)], cur, perp[0], perp[1]];
+      var moved = false;
+      for (final d in order) {
+        final nx = cx + d.dx, ny = cy + d.dy;
+        final k = cellKey(nx, ny);
+        if (_inB(nx, ny) &&
+            !occ.contains(k) &&
+            !body.contains(k) &&
+            (relaxAdj || !_touchesSelf(nx, ny, cx, cy, body))) {
+          cx = nx;
+          cy = ny;
+          pts.add(Point(cx, cy));
+          body.add(k);
+          dir = d;
+          headDir = d;
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) break;
+    }
+    if (pts.length < 2) return null;
+    return _Walk(pts, body, headDir, cx, cy);
+  }
+
   List<Arrow> _packArrows(int seed, int count) {
     final rng = SeededRandom(seed);
     final occ = <String>{};
@@ -82,6 +120,44 @@ class LevelGenerator {
       if (w == null) continue;
       occ.addAll(w.body);
       arrows.add(Arrow(id: arrows.length, pts: w.pts, dir: w.headDir, cells: w.body));
+    }
+    return arrows;
+  }
+
+  /// Dense packer: random phase then gap-fill phase. Scans for open cells and
+  /// starts arrows from them so we don't waste tries on occupied spots.
+  List<Arrow> _packArrowsDense(int seed, int count) {
+    final rng = SeededRandom(seed);
+    final occ = <String>{};
+    final arrows = <Arrow>[];
+
+    // Phase 1: random starts (quick coverage)
+    var tries = 0;
+    final phase1Limit = count * 40;
+    while (arrows.length < count && tries < phase1Limit) {
+      tries++;
+      final w = _windPath(rng, occ);
+      if (w == null) continue;
+      occ.addAll(w.body);
+      arrows.add(Arrow(id: arrows.length, pts: w.pts, dir: w.headDir, cells: w.body));
+    }
+    if (arrows.length >= count) return arrows;
+
+    // Phase 2: scan for open cells and try to start arrows from them
+    for (var pass = 0; pass < 5 && arrows.length < count; pass++) {
+      final relax = pass >= 2;
+      for (var y = 0; y <= rows && arrows.length < count; y++) {
+        for (var x = 0; x <= cols && arrows.length < count; x++) {
+          if (occ.contains(cellKey(x, y))) continue;
+          for (var r = 0; r < 6; r++) {
+            final w = _windPathFrom(rng, occ, x, y, relaxAdj: relax);
+            if (w == null) continue;
+            occ.addAll(w.body);
+            arrows.add(Arrow(id: arrows.length, pts: w.pts, dir: w.headDir, cells: w.body));
+            break;
+          }
+        }
+      }
     }
     return arrows;
   }
@@ -115,8 +191,56 @@ class LevelGenerator {
     return arrows;
   }
 
-  /// Greedy solver — true iff every arrow can be cleared (removing only frees
-  /// cells ⇒ monotonic ⇒ greedy order is a valid solvability test).
+  /// Dense reverse-construction with gap-fill.
+  List<Arrow> _packArrowsRCDense(int seed, int count) {
+    final rng = SeededRandom(seed);
+    final occ = <String>{};
+    final arrows = <Arrow>[];
+
+    bool exitClear(_Walk w) {
+      var fx = w.hx, fy = w.hy;
+      while (true) {
+        fx += w.headDir.dx;
+        fy += w.headDir.dy;
+        if (!_inB(fx, fy)) return true;
+        final k = cellKey(fx, fy);
+        if (occ.contains(k) || w.body.contains(k)) return false;
+      }
+    }
+
+    // Phase 1: random starts
+    var tries = 0;
+    while (arrows.length < count && tries < count * 40) {
+      tries++;
+      final w = _windPath(rng, occ);
+      if (w == null) continue;
+      if (!exitClear(w)) continue;
+      occ.addAll(w.body);
+      arrows.add(Arrow(id: arrows.length, pts: w.pts, dir: w.headDir, cells: w.body));
+    }
+    if (arrows.length >= count) return arrows;
+
+    // Phase 2: gap-fill from open cells
+    for (var pass = 0; pass < 5 && arrows.length < count; pass++) {
+      final relax = pass >= 2;
+      for (var y = 0; y <= rows && arrows.length < count; y++) {
+        for (var x = 0; x <= cols && arrows.length < count; x++) {
+          if (occ.contains(cellKey(x, y))) continue;
+          for (var r = 0; r < 6; r++) {
+            final w = _windPathFrom(rng, occ, x, y, relaxAdj: relax);
+            if (w == null) continue;
+            if (!exitClear(w)) continue;
+            occ.addAll(w.body);
+            arrows.add(Arrow(id: arrows.length, pts: w.pts, dir: w.headDir, cells: w.body));
+            break;
+          }
+        }
+      }
+    }
+    return arrows;
+  }
+
+  /// Greedy solver — true iff every arrow can be cleared.
   bool greedySolvable(List<Arrow> arrows) {
     final occ = <String, int>{};
     for (final a in arrows) {
@@ -151,7 +275,6 @@ class LevelGenerator {
 
   GeneratedLevel genLevel(int level) {
     // Hand-authored onboarding levels (1–5), validated for solvability.
-    // Falls through to procedural generation if a board ever fails the solver.
     final hand = handLevel(level);
     if (hand != null && greedySolvable(hand.arrows)) {
       cols = hand.cols;
@@ -159,16 +282,43 @@ class LevelGenerator {
       return GeneratedLevel(hand.arrows, hand.cols, hand.rows);
     }
 
-    cols = min(2 + level, 13);
-    rows = min(3 + level, 16);
-    // Shorter arrows at higher tiers pack more pieces → denser, harder boards
-    // (matches the reference's many-short-arrows Nightmare layouts).
-    maxSeg = level < 6
-        ? max(2, min(4, min(cols, rows) ~/ 2))
-        : (level < 25 ? 3 : 2);
-    // Target scales with level; the packer fills the grid and early-exits.
-    final count = min(3 + level * 3, 60);
+    final tier = tierForLevel(level);
+
+    // Grid and arrow parameters driven by the tier assigned to this level.
+    switch (tier) {
+      case Tier.normal:
+        cols = min(2 + level, 9);
+        rows = min(3 + level, 11);
+        maxSeg = max(2, min(4, min(cols, rows) ~/ 2));
+      case Tier.hard:
+        cols = min(5 + level ~/ 2, 12);
+        rows = min(6 + level ~/ 2, 15);
+        maxSeg = 3;
+      case Tier.superHard:
+        cols = min(10 + (level - 15).clamp(0, 20) ~/ 3, 15);
+        rows = min(12 + (level - 15).clamp(0, 20) ~/ 3, 19);
+        maxSeg = 2;
+      case Tier.nightmare:
+        cols = min(14 + (level - 35).clamp(0, 50) ~/ 5, 16);
+        rows = min(17 + (level - 35).clamp(0, 50) ~/ 4, 20);
+        maxSeg = 1;
+    }
+
+    final gridArea = (cols + 1) * (rows + 1);
+    final int count;
+    switch (tier) {
+      case Tier.normal:
+        count = 3 + level * 3;
+      case Tier.hard:
+        count = min(15 + (level - 6).clamp(0, 50) * 3, gridArea ~/ 4);
+      case Tier.superHard:
+        count = min(30 + (level - 15).clamp(0, 50) * 2, gridArea ~/ 3);
+      case Tier.nightmare:
+        count = min(50 + (level - 35).clamp(0, 100), gridArea ~/ 3);
+    }
+
     final seed = (0x9E37 + level * 2654435761) & 0xFFFFFFFF;
+    final useDense = tier != Tier.normal;
 
     int score(List<Arrow> arr) {
       var s = 0;
@@ -178,26 +328,30 @@ class LevelGenerator {
       return (arr.length >= count ? 1000000 : 0) + s;
     }
 
-    // 1) densest fully-solvable winding packing (early-exit once a good one is found)
+    // 1) densest fully-solvable packing
     List<Arrow>? best;
     var bestScore = -1;
-    for (var att = 0; att < 60; att++) {
-      final arr = _packArrows((seed + att * 7919) & 0xFFFFFFFF, count);
+    final attempts1 = useDense ? 40 : 60;
+    for (var att = 0; att < attempts1; att++) {
+      final s = (seed + att * 7919) & 0xFFFFFFFF;
+      final arr = useDense ? _packArrowsDense(s, count) : _packArrows(s, count);
       if (!greedySolvable(arr)) continue;
       final sc = score(arr);
       if (sc > bestScore) {
         bestScore = sc;
         best = arr;
       }
-      if (best != null && best.length >= count && att >= 18) break;
+      if (best != null && best.length >= count && att >= 12) break;
     }
     if (best != null && best.length >= count) return GeneratedLevel(best, cols, rows);
 
     // 2) guaranteed-solvable reverse-construction fallback
     List<Arrow>? rc;
     var rcScore = -1;
-    for (var att = 0; att < 40; att++) {
-      final arr = _packArrowsRC((seed + 101 + att * 7919) & 0xFFFFFFFF, count);
+    final attempts2 = useDense ? 30 : 40;
+    for (var att = 0; att < attempts2; att++) {
+      final s = (seed + 101 + att * 7919) & 0xFFFFFFFF;
+      final arr = useDense ? _packArrowsRCDense(s, count) : _packArrowsRC(s, count);
       final sc = score(arr);
       if (sc > rcScore) {
         rcScore = sc;

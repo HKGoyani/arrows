@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'config.dart';
+import 'difficulty.dart';
 import 'game_controller.dart';
 import 'ui_kit.dart';
 
@@ -177,12 +178,8 @@ class GameTopBar extends StatelessWidget {
   const GameTopBar({super.key, required this.c, required this.onBack, required this.onRestart});
 
   (String, Color) get _difficultyInfo {
-    final lvl = c.level;
-    // 4 tiers (Normal → Hard → Super Hard → Nightmare), escalating heat-map.
-    if (lvl < 6) return ('Normal', const Color(0xFF27C281));
-    if (lvl < 15) return ('Hard', const Color(0xFF38ADF2));
-    if (lvl < 35) return ('Super Hard', const Color(0xFFDE63FB));
-    return ('Nightmare', const Color(0xFFE53935));
+    final tier = tierForLevel(c.level);
+    return (tier.label, tier.color);
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:arrows_game/difficulty.dart';
 import 'package:arrows_game/hand_levels.dart';
 import 'package:arrows_game/level_generator.dart';
 
@@ -21,10 +22,23 @@ void main() {
   });
 
   test('procedural levels stay solvable across the ramp', () {
-    for (final lvl in [6, 8, 10, 15, 20, 35, 50]) {
+    for (final lvl in [6, 8, 10, 15, 20, 35, 50, 70]) {
       final g = gen.genLevel(lvl);
       expect(g.arrows, isNotEmpty, reason: 'L$lvl empty');
       expect(gen.greedySolvable(g.arrows), isTrue, reason: 'L$lvl unsolvable');
     }
+  });
+
+  test('mixed tiers produce varied difficulty across range', () {
+    var tiers = <Tier>{};
+    for (var lvl = 35; lvl <= 60; lvl++) {
+      tiers.add(tierForLevel(lvl));
+      final g = gen.genLevel(lvl);
+      expect(g.arrows.length, greaterThanOrEqualTo(10),
+          reason: 'L$lvl only ${g.arrows.length} arrows');
+      expect(gen.greedySolvable(g.arrows), isTrue, reason: 'L$lvl unsolvable');
+    }
+    expect(tiers.length, greaterThanOrEqualTo(2),
+        reason: 'Expected mixed tiers in 35-60 range');
   });
 }
