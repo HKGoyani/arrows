@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'config.dart';
+import 'l10n.dart';
 import 'prefs.dart';
 import 'streak.dart';
 import 'streak_screen.dart';
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 8),
                 FadeTransition(
                   opacity: appearAnim,
-                  child: Text('Clear every arrow on the board',
+                  child: Text(Tr.get('clearEveryArrow'),
                       style: poppins(13.5, FontWeight.w800, AppColors.muted)),
                 ),
                 const SizedBox(height: 14),
@@ -147,10 +148,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             )..layout();
                             return tp.height;
                           }
-                          final labelW = measure('Level ');
+                          final labelW = measure('${Tr.get('level')} ');
                           final numW =
                               max(measure('$_prevLevel'), measure('$_currLevel'));
-                          final lineH = measureH('Level $_currLevel');
+                          final lineH = measureH('${Tr.get('level')} $_currLevel');
                           // "Level " and the number both start at top:0 in the
                           // same Stack, so they share the exact baseline. Only
                           // the number is clipped + slides. Width is measured,
@@ -170,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       Positioned(
                                         left: 0,
                                         top: 0,
-                                        child: Text('Level ', style: style),
+                                        child: Text('${Tr.get('level')} ', style: style),
                                       ),
                                       // old number slides down, fades out
                                       Positioned(
@@ -216,9 +217,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             )..layout();
                             return tp.height;
                           }
-                          final labelW = measure('Level ');
+                          final labelW = measure('${Tr.get('level')} ');
                           final numW = measure('$_currLevel');
-                          final lineH = measureH('Level $_currLevel');
+                          final lineH = measureH('${Tr.get('level')} $_currLevel');
                           return Center(
                             child: FadeTransition(
                               opacity: appearAnim,
@@ -230,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     Positioned(
                                       left: 0,
                                       top: 0,
-                                      child: Text('Level ', style: style),
+                                      child: Text('${Tr.get('level')} ', style: style),
                                     ),
                                     Positioned(
                                       left: labelW,
@@ -252,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     child: FadeTransition(
                       opacity: playAnim,
                       child: PrimaryButton(
-                          label: 'Play',
+                          label: Tr.get('play'),
                           onTap: widget.onPlay,
                           width: 280),
                     ),
@@ -261,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 12),
                 FadeTransition(
                   opacity: playAnim,
-                  child: Text(_currLevel > 1 ? 'Continue your run' : 'Tap to begin',
+                  child: Text(_currLevel > 1 ? Tr.get('continueYourRun') : Tr.get('tapToBegin'),
                       style: poppins(13, FontWeight.w800, AppColors.muted)),
                 ),
                 const SizedBox(height: 20),

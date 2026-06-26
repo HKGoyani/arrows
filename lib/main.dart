@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'audio.dart';
+import 'l10n.dart';
 import 'challenge.dart';
 import 'collection_icons.dart';
 import 'collection_screen.dart';
@@ -376,12 +377,12 @@ class _LevelLegendCelebration extends StatelessWidget {
                   color: const Color(0xFFF1F2F8),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text('New Unlock!',
+                child: Text(Tr.get('newUnlock'),
                     style: poppins(13.5, FontWeight.w700, AppColors.muted)),
               ),
               const SizedBox(height: 18),
               Text(
-                'You earned Level Legend by\nreaching level $milestone!',
+                Tr.param('levelLegendEarned', {'milestone': '$milestone'}),
                 textAlign: TextAlign.center,
                 style: poppins(20, FontWeight.w800, AppColors.ink),
               ),
@@ -397,7 +398,7 @@ class _LevelLegendCelebration extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   alignment: Alignment.center,
-                  child: Text('Continue',
+                  child: Text(Tr.get('continueButton'),
                       style: poppins(18, FontWeight.w800, Colors.white)),
                 ),
               ),
@@ -448,12 +449,12 @@ class _PerfectPlayCelebration extends StatelessWidget {
                   color: const Color(0xFFF1F2F8),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text('New Unlock!',
+                child: Text(Tr.get('newUnlock'),
                     style: poppins(13.5, FontWeight.w700, AppColors.muted)),
               ),
               const SizedBox(height: 18),
               Text(
-                'You earned Perfect Play by\nwinning $milestone levels on your\nfirst attempt!',
+                Tr.param('perfectPlayEarned', {'milestone': '$milestone'}),
                 textAlign: TextAlign.center,
                 style: poppins(20, FontWeight.w800, AppColors.ink),
               ),
@@ -469,7 +470,7 @@ class _PerfectPlayCelebration extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   alignment: Alignment.center,
-                  child: Text('Continue',
+                  child: Text(Tr.get('continueButton'),
                       style: poppins(18, FontWeight.w800, Colors.white)),
                 ),
               ),

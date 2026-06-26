@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'audio.dart';
+import 'l10n.dart';
 import 'board_painter.dart';
 import 'config.dart';
 import 'confetti.dart';
@@ -448,7 +449,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                               const Icon(Icons.lightbulb_rounded,
                                   color: AppColors.btnInk, size: 20),
                               const SizedBox(width: 5),
-                              Text('Hint',
+                              Text(Tr.get('hint'),
                                   style: poppins(
                                       16, FontWeight.w900, AppColors.btnInk)),
                               const SizedBox(width: 4),
@@ -482,7 +483,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                               const Icon(Icons.videocam_rounded,
                                   color: Colors.white, size: 20),
                               const SizedBox(width: 6),
-                              Text('Hint',
+                              Text(Tr.get('hint'),
                                   style: poppins(
                                       16, FontWeight.w900, Colors.white)),
                             ],
@@ -693,7 +694,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           color: const Color(0xFFEDEFF7),
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Text('Tap to move',
+        child: Text(Tr.get('tapToMove'),
             style: poppins(20, FontWeight.w900, AppColors.blue)),
       ),
     );
@@ -711,14 +712,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  static const _winWords = [
-    'Awesome!', 'Fabulous!', 'Fantastic!', 'Terrific!', 'Excellent!',
-    'Great!', 'Wonderful!', 'Superb!', 'Magnificent!', 'Phenomenal!',
-    'Stunning!', 'Stellar!', 'Mind-blowing!', 'Marvelous!',
-    'Brilliant!', 'Well done!', 'Outstanding!',
-  ];
-
-  String _winMessage() => _winWords[c.level % _winWords.length];
+  String _winMessage() => Tr.winWord(c.level);
 
   Widget _winOverlay() {
     return Positioned.fill(
@@ -784,7 +778,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Out of lives',
+                Text(Tr.get('outOfLives'),
                     style: poppins(24, FontWeight.w800, AppColors.ink)),
                 const SizedBox(height: 24),
                 Stack(
@@ -843,7 +837,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                                   : AppColors.blue),
                           const SizedBox(width: 8),
                         ],
-                        Text('Add More Lives',
+                        Text(Tr.get('addMoreLives'),
                             style: poppins(17, FontWeight.w800,
                                 canAddFree ? Colors.white : AppColors.blue)),
                       ],
@@ -861,7 +855,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       border: Border.all(color: AppColors.cardBorder, width: 1.5),
                     ),
                     child: Center(
-                      child: Text('Restart',
+                      child: Text(Tr.get('restart'),
                           style: poppins(16, FontWeight.w800, AppColors.muted)),
                     ),
                   ),

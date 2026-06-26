@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'audio.dart';
 import 'config.dart';
+import 'l10n.dart';
 import 'prefs.dart';
 import 'ui_kit.dart';
 
@@ -29,7 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.language_rounded,
                     tint: AppColors.navInk,
-                    title: 'Language',
+                    title: Tr.get('language'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -42,18 +43,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const _Divider(),
                   _toggle(AudioService.vibrationOn, Icons.waves_rounded, AppColors.navInk,
-                      'Vibrations', null, AudioService.setVibration),
+                      Tr.get('vibrations'), null, AudioService.setVibration),
                   const _Divider(),
                   _toggle(AudioService.soundOn, Icons.volume_up_rounded, AppColors.navInk,
-                      'Sounds', null, AudioService.setSound),
+                      Tr.get('sounds'), null, AudioService.setSound),
                   const _Divider(),
                   _toggle(AudioService.musicOn, Icons.music_note_rounded, AppColors.navInk,
-                      'Music', null, AudioService.setMusic),
+                      Tr.get('music'), null, AudioService.setMusic),
                   const _Divider(),
                   SettingsTile(
                     icon: Icons.dark_mode_rounded,
                     tint: AppColors.navInk,
-                    title: 'Dark mode',
+                    title: Tr.get('darkMode'),
                     trailing: _comingSoon(),
                   ),
                 ],
@@ -65,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: SettingsTile(
                 icon: Icons.person_rounded,
                 tint: AppColors.navInk,
-                title: 'Account Connection',
+                title: Tr.get('accountConnection'),
                 trailing: _comingSoon(),
               ),
             ),
@@ -77,7 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.block_rounded,
                     tint: AppColors.navInk,
-                    title: 'Remove Ads',
+                    title: Tr.get('removeAds'),
                     trailing: ThemeSwitch(
                       value: Prefs.removeAds,
                       onChanged: (v) { Prefs.setRemoveAds(v); setState(() {}); },
@@ -88,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.refresh_rounded,
                     tint: AppColors.navInk,
-                    title: 'Restore purchases',
+                    title: Tr.get('restorePurchases'),
                   ),
                 ],
               ),
@@ -101,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.menu_book_rounded,
                     tint: AppColors.navInk,
-                    title: 'How to play',
+                    title: Tr.get('howToPlay'),
                     trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
                     onTap: () => _howToPlay(context),
                   ),
@@ -109,14 +110,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.cloud_download_rounded,
                     tint: AppColors.navInk,
-                    title: 'Restore Progress',
+                    title: Tr.get('restoreProgress'),
                     trailing: _comingSoon(),
                   ),
                   const _Divider(),
                   SettingsTile(
                     icon: Icons.restart_alt_rounded,
                     tint: AppColors.navInk,
-                    title: 'Reset progress',
+                    title: Tr.get('resetProgress'),
                     trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
                     onTap: () => _confirmReset(context),
                   ),
@@ -131,14 +132,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.star_rounded,
                     tint: AppColors.navInk,
-                    title: 'Rate us',
+                    title: Tr.get('rateUs'),
                     onTap: () => _rateUs(context),
                   ),
                   const _Divider(),
                   SettingsTile(
                     icon: Icons.edit_rounded,
                     tint: AppColors.navInk,
-                    title: 'Write us',
+                    title: Tr.get('writeUs'),
                     trailing: _comingSoon(),
                   ),
                 ],
@@ -152,13 +153,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.description_rounded,
                     tint: AppColors.navInk,
-                    title: 'Privacy',
+                    title: Tr.get('privacy'),
                   ),
                   const _Divider(),
                   SettingsTile(
                     icon: Icons.info_outline_rounded,
                     tint: AppColors.navInk,
-                    title: 'Terms of Service',
+                    title: Tr.get('termsOfService'),
                   ),
                 ],
               ),
@@ -178,7 +179,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: const Color(0xFFE0E3F0),
       borderRadius: BorderRadius.circular(10),
     ),
-    child: Text('Coming Soon',
+    child: Text(Tr.get('comingSoon'),
         style: poppins(11, FontWeight.w800, const Color(0xFF8B90AE))),
   );
 
@@ -225,13 +226,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+              padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Language',
-                      style: poppins(22, FontWeight.w800, AppColors.ink)),
-                  const SizedBox(height: 16),
+                  Text(Tr.get('language'),
+                      style: poppins(22, FontWeight.w900, const Color(0xFF5A5F7E))),
+                  const SizedBox(height: 14),
                   ...List.generate(_languages.length, (i) {
                     final lang = _languages[i];
                     final isSelected = lang == selected;
@@ -245,13 +246,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             setState(() {});
                           },
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             child: Row(
                               children: [
                                 Expanded(
                                   child: Text(lang,
                                       style: poppins(16, FontWeight.w800,
-                                          isSelected ? AppColors.blue : AppColors.ink)),
+                                          isSelected ? AppColors.blue : const Color(0xFF3A3F5E))),
                                 ),
                                 if (isSelected)
                                   Icon(Icons.check_circle,
@@ -273,11 +274,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
+                        border: Border.all(color: const Color(0xFFD0D4EE), width: 1.5),
                       ),
                       child: Center(
-                        child: Text('Close',
-                            style: poppins(16, FontWeight.w800, AppColors.muted)),
+                        child: Text(Tr.get('close'),
+                            style: poppins(17, FontWeight.w800, AppColors.muted)),
                       ),
                     ),
                   ),
@@ -302,7 +303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('How can we improve?',
+              Text(Tr.get('howCanWeImprove'),
                   style: poppins(22, FontWeight.w800, AppColors.ink)),
               const SizedBox(height: 20),
               Container(
@@ -315,7 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   controller: controller,
                   maxLines: 5,
                   decoration: InputDecoration(
-                    hintText: 'Enter your feedback...',
+                    hintText: Tr.get('enterYourFeedback'),
                     hintStyle: poppins(14, FontWeight.w800, AppColors.muted),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.all(16),
@@ -347,7 +348,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(28),
                   ),
                   child: Center(
-                    child: Text('Submit',
+                    child: Text(Tr.get('submit'),
                         style: poppins(17, FontWeight.w800, Colors.white)),
                   ),
                 ),
@@ -363,7 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
                   ),
                   child: Center(
-                    child: Text('Cancel',
+                    child: Text(Tr.get('cancel'),
                         style: poppins(16, FontWeight.w800, AppColors.muted)),
                   ),
                 ),
@@ -386,7 +387,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Enjoying Arrows?',
+              Text(Tr.get('enjoyingArrows'),
                   style: poppins(22, FontWeight.w800, AppColors.ink)),
               const SizedBox(height: 20),
               Row(
@@ -397,7 +398,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 )),
               ),
               const SizedBox(height: 18),
-              Text('Take a moment to rate the game!\nThank you for your support',
+              Text(Tr.get('rateMessage'),
                   textAlign: TextAlign.center,
                   style: poppins(14, FontWeight.w800, AppColors.muted, height: 1.4)),
               const SizedBox(height: 24),
@@ -414,7 +415,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
                   ),
                   child: Center(
-                    child: Text('1-4 Stars',
+                    child: Text(Tr.get('oneToFourStars'),
                         style: poppins(16, FontWeight.w800, AppColors.muted)),
                   ),
                 ),
@@ -433,7 +434,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(28),
                   ),
                   child: Center(
-                    child: Text('5 Stars',
+                    child: Text(Tr.get('fiveStars'),
                         style: poppins(17, FontWeight.w800, Colors.white)),
                   ),
                 ),
@@ -449,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
                   ),
                   child: Center(
-                    child: Text('Close',
+                    child: Text(Tr.get('close'),
                         style: poppins(16, FontWeight.w800, AppColors.muted)),
                   ),
                 ),
@@ -467,19 +468,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (_) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('How to play', style: poppins(20, FontWeight.w800, AppColors.ink)),
+        title: Text(Tr.get('howToPlay'), style: poppins(20, FontWeight.w800, AppColors.ink)),
         content: Text(
-          'Tap an arrow to fire it off the board.\n\n'
-          '• If its path to the edge is clear, it flies off.\n'
-          '• If it is blocked, it turns red and you lose a life.\n'
-          '• You have 3 lives. Clear the whole board to win.\n\n'
-          'Boards get bigger and busier as you level up.',
+          Tr.get('howToPlayText'),
           style: poppins(14, FontWeight.w800, AppColors.muted, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Got it', style: poppins(15, FontWeight.w800, AppColors.blue)),
+            child: Text(Tr.get('gotIt'), style: poppins(15, FontWeight.w800, AppColors.blue)),
           ),
         ],
       ),
@@ -492,22 +489,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (_) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Reset progress?', style: poppins(19, FontWeight.w800, AppColors.ink)),
+        title: Text(Tr.get('resetProgressQuestion'), style: poppins(19, FontWeight.w800, AppColors.ink)),
         content: Text(
-          'This clears your level and streak. This cannot be undone.',
+          Tr.get('resetWarning'),
           style: poppins(14, FontWeight.w800, AppColors.muted, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: poppins(15, FontWeight.w800, AppColors.muted)),
+            child: Text(Tr.get('cancel'), style: poppins(15, FontWeight.w800, AppColors.muted)),
           ),
           TextButton(
             onPressed: () async {
               await Prefs.resetProgress();
               if (context.mounted) Navigator.pop(context);
             },
-            child: Text('Reset', style: poppins(15, FontWeight.w800, AppColors.red)),
+            child: Text(Tr.get('reset'), style: poppins(15, FontWeight.w800, AppColors.red)),
           ),
         ],
       ),

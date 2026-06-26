@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'l10n.dart';
 
 enum Tier {
-  normal('Normal', Color(0xFF27C281)),
-  hard('Hard', Color(0xFF38ADF2)),
-  superHard('Super Hard', Color(0xFFDE63FB)),
-  nightmare('Nightmare', Color(0xFFE53935));
+  normal('normal', Color(0xFF27C281)),
+  hard('hard', Color(0xFF38ADF2)),
+  superHard('superHard', Color(0xFFDE63FB)),
+  nightmare('nightmare', Color(0xFFE53935));
 
-  final String label;
+  final String _key;
   final Color color;
-  const Tier(this.label, this.color);
+  const Tier(this._key, this.color);
+
+  String get label => Tr.get(_key);
 }
 
 /// Deterministic tier for a given level. The distribution varies by range but

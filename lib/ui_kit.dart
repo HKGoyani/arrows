@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'config.dart';
+import 'l10n.dart';
 
 TextStyle poppins(double size, FontWeight w, Color c, {double? ls, double? height}) =>
     TextStyle(
@@ -283,12 +284,12 @@ class AppBottomNav extends StatelessWidget {
     final collectionUnlocked = level >= 10;
     final level20Unlocked = level >= 20;
     final items = [
-      (Icons.home_rounded, 'Home', true),
+      (Icons.home_rounded, Tr.get('home'), true),
       (level20Unlocked ? Icons.calendar_month_rounded : Icons.lock_rounded,
-          level20Unlocked ? 'Challenge' : 'Level 20', level20Unlocked),
+          level20Unlocked ? Tr.get('challenge') : 'Level 20', level20Unlocked),
       (collectionUnlocked ? Icons.hotel_class : Icons.lock_rounded,
-          collectionUnlocked ? 'Collection' : 'Level 10', collectionUnlocked),
-      (Icons.settings_rounded, 'Settings', true),
+          collectionUnlocked ? Tr.get('collection') : 'Level 10', collectionUnlocked),
+      (Icons.settings_rounded, Tr.get('settings'), true),
     ];
     return Container(
       decoration: const BoxDecoration(

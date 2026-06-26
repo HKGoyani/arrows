@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'challenge.dart';
+import 'l10n.dart';
 import 'collection_icons.dart';
 import 'config.dart';
 import 'level_legend.dart';
@@ -38,7 +39,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SectionHeader(title: 'Records'),
+            _SectionHeader(title: Tr.get('records')),
             const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +47,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                 Expanded(child: _RecordCard(
                   iconWidget: const FlameOnPedestal(),
                   value: '$bestStreak',
-                  label: 'Longest Streak',
+                  label: Tr.get('longestStreak'),
                   date: dateOr(_recordDate(Prefs.bestStreakDate), bestStreak),
                   onTap: bestStreak > 0
                       ? () => showRecordDetail(context,
@@ -54,8 +55,8 @@ class _CollectionScreenState extends State<CollectionScreen> {
                           value: '$bestStreak',
                           date: dateOr(
                               _recordDate(Prefs.bestStreakDate), bestStreak),
-                          text: 'You reached a $bestStreak day streak!',
-                          primaryLabel: 'Current Streak',
+                          text: Tr.param('streakDayText', {'count': '$bestStreak'}),
+                          primaryLabel: Tr.get('currentStreak'),
                           onPrimary: () =>
                               showStreakDetail(context, StreakService.current))
                       : null,
@@ -64,7 +65,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                 Expanded(child: _RecordCard(
                   painter: CrownPainter(),
                   value: '$winStreak',
-                  label: 'Highest Win\nStreak',
+                  label: Tr.get('highestWinStreak'),
                   date: dateOr(RecordsService.highestWinStreakDate, winStreak),
                   onTap: winStreak > 0
                       ? () => showRecordDetail(context,
@@ -72,39 +73,38 @@ class _CollectionScreenState extends State<CollectionScreen> {
                           value: '$winStreak',
                           date: dateOr(
                               RecordsService.highestWinStreakDate, winStreak),
-                          text: 'You won $winStreak levels in a row!',
+                          text: Tr.param('winStreakText', {'count': '$winStreak'}),
                           currentText:
-                              "You're on ${RecordsService.currentWinStreak} "
-                              'wins in a row.')
+                              Tr.param('winStreakCurrent', {'count': '${RecordsService.currentWinStreak}'}))
                       : null,
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _RecordCard(
                   painter: WingArrowPainter(),
                   value: '$mostWins',
-                  label: 'Most Wins',
+                  label: Tr.get('mostWins'),
                   date: dateOr(RecordsService.mostWinsDate, mostWins),
                   onTap: mostWins > 0
                       ? () => showRecordDetail(context,
                           painter: WingArrowPainter(),
                           value: '$mostWins',
                           date: dateOr(RecordsService.mostWinsDate, mostWins),
-                          text: 'You won $mostWins levels in a day!',
+                          text: Tr.param('mostWinsText', {'count': '$mostWins'}),
                           currentText:
-                              'You won ${RecordsService.winsToday} levels today.')
+                              Tr.param('mostWinsToday', {'count': '${RecordsService.winsToday}'}))
                       : null,
                 )),
               ],
             ),
             const SizedBox(height: 28),
-            _SectionHeader(title: 'Awards'),
+            _SectionHeader(title: Tr.get('awards')),
             const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: _AwardCard(
                   icon: Icons.star_rounded,
-                  label: 'Level Legend',
+                  label: Tr.get('levelLegend'),
                   unlocked: LevelLegend.unlocked,
                   painter: StarMedalPainter(unlocked: LevelLegend.unlocked),
                   value: LevelLegend.unlocked ? '${LevelLegend.reached}' : null,
@@ -123,7 +123,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                 const SizedBox(width: 12),
                 Expanded(child: _AwardCard(
                   icon: Icons.hexagon_rounded,
-                  label: 'Perfect Play',
+                  label: Tr.get('perfectPlay'),
                   unlocked: PerfectPlay.unlocked,
                   painter: TargetMedalPainter(unlocked: PerfectPlay.unlocked),
                   value: PerfectPlay.unlocked ? '${PerfectPlay.reached}' : null,
@@ -142,7 +142,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                 const SizedBox(width: 12),
                 Expanded(child: _AwardCard(
                   icon: Icons.shield_rounded,
-                  label: 'Unstoppable',
+                  label: Tr.get('unstoppable'),
                   unlocked: Unstoppable.unlocked,
                   painter: SkullShieldPainter(unlocked: Unstoppable.unlocked),
                   value: Unstoppable.unlocked ? '${Unstoppable.reached}' : null,
@@ -161,7 +161,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
               ],
             ),
             const SizedBox(height: 28),
-            _SectionHeader(title: 'Challenge Trophies'),
+            _SectionHeader(title: Tr.get('challengeTrophies')),
             ..._buildTrophyYears(),
           ],
         ),
@@ -195,8 +195,8 @@ class _CollectionScreenState extends State<CollectionScreen> {
 
   /// Formats an ISO date ("2026-04-12") as "Apr 12 2026", or '' if unset.
   static String _recordDate(String iso) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [Tr.get('janShort'), Tr.get('febShort'), Tr.get('marShort'), Tr.get('aprShort'), Tr.get('mayShort'), Tr.get('junShort'),
+        Tr.get('julShort'), Tr.get('augShort'), Tr.get('sepShort'), Tr.get('octShort'), Tr.get('novShort'), Tr.get('decShort')];
     final p = iso.split('-');
     if (p.length != 3) return '';
     final m = int.tryParse(p[1]) ?? 1;
@@ -275,7 +275,7 @@ class _RecordDetailScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if (currentText != null) ...[
-            const _DatePill('Current'),
+            _DatePill(Tr.get('current')),
             const SizedBox(height: 10),
             Text(currentText!,
                 textAlign: TextAlign.center,
@@ -346,7 +346,7 @@ class _RecordDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(25),
                     border: Border.all(color: const Color(0xFFE4E6F1), width: 1.5),
                   ),
-                  child: Text('Close',
+                  child: Text(Tr.get('close'),
                       style: poppins(17, FontWeight.w900, const Color(0xFF8C90A6))),
                 ),
               ),
@@ -571,9 +571,9 @@ class _TrophyGrid extends StatelessWidget {
   final Set<String> playedDays;
   const _TrophyGrid({required this.year, required this.playedDays});
 
-  static const _monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+  static List<String> get _monthNames => [
+    Tr.get('january'), Tr.get('february'), Tr.get('march'), Tr.get('april'), Tr.get('may'), Tr.get('june'),
+    Tr.get('july'), Tr.get('august'), Tr.get('september'), Tr.get('october'), Tr.get('november'), Tr.get('december'),
   ];
   static const _daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
@@ -622,7 +622,7 @@ class _TrophyGrid extends StatelessWidget {
               const SizedBox(height: 8),
               Text(_monthNames[i],
                   style: poppins(12, FontWeight.w800, AppColors.ink)),
-              Text('$played of $days',
+              Text(Tr.param('xOfY', {'x': '$played', 'y': '$days'}),
                   style: poppins(10.5, FontWeight.w700, AppColors.muted)),
             ],
           ),
@@ -685,8 +685,8 @@ class _AwardDetailScreen extends StatelessWidget {
               const SizedBox(height: 36),
               Text(
                 unlocked
-                    ? 'Award earned!'
-                    : 'Reach Level $target to earn this award.',
+                    ? Tr.get('awardEarned')
+                    : Tr.param('reachLevelToEarn', {'target': '$target'}),
                 textAlign: TextAlign.center,
                 style: poppins(20, FontWeight.w800, AppColors.ink),
               ),
@@ -707,7 +707,7 @@ class _AwardDetailScreen extends StatelessWidget {
                       border: Border.all(
                           color: const Color(0xFFE4E6F1), width: 1.5),
                     ),
-                    child: Text('Close',
+                    child: Text(Tr.get('close'),
                         style: poppins(17, FontWeight.w800,
                             const Color(0xFF8C90A6))),
                   ),
@@ -856,14 +856,13 @@ class _LevelLegendDetailScreen extends StatelessWidget {
                 _DatePill(LevelLegend.earnedDateFor(reached) ?? _formatToday()),
                 const SizedBox(height: 18),
                 Text(
-                  'You earned Level Legend by\nreaching level $reached!',
+                  Tr.param('levelLegendEarned', {'milestone': '$reached'}),
                   textAlign: TextAlign.center,
                   style: poppins(20, FontWeight.w800, AppColors.ink),
                 ),
               ] else
                 Text(
-                  'Reach Level ${LevelLegend.milestones.first} to earn '
-                  'this award.',
+                  Tr.param('reachLevelToEarn', {'target': '${LevelLegend.milestones.first}'}),
                   textAlign: TextAlign.center,
                   style: poppins(20, FontWeight.w800, AppColors.ink),
                 ),
@@ -878,7 +877,7 @@ class _LevelLegendDetailScreen extends StatelessWidget {
               ],
               const Spacer(flex: 5),
               if (unlocked && next != null) ...[
-                Text('Next award at level $next',
+                Text(Tr.param('nextAwardAtLevel', {'next': '$next'}),
                     style: poppins(
                         15, FontWeight.w700, const Color(0xFF7A7F9E))),
                 const SizedBox(height: 14),
@@ -900,9 +899,9 @@ class _LevelLegendDetailScreen extends StatelessWidget {
   }
 
   static String _formatToday() {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    final months = [
+      Tr.get('janShort'), Tr.get('febShort'), Tr.get('marShort'), Tr.get('aprShort'), Tr.get('mayShort'), Tr.get('junShort'),
+      Tr.get('julShort'), Tr.get('augShort'), Tr.get('sepShort'), Tr.get('octShort'), Tr.get('novShort'), Tr.get('decShort'),
     ];
     final d = DateTime.now();
     return '${months[d.month - 1]} ${d.day} ${d.year}';
@@ -969,22 +968,20 @@ class _PerfectPlayDetailScreen extends StatelessWidget {
                 _DatePill(PerfectPlay.earnedDateFor(reached) ?? _formatToday()),
                 const SizedBox(height: 18),
                 Text(
-                  'You earned Perfect Play by winning $reached '
-                  'levels on your first attempt!',
+                  Tr.param('earnedPerfectPlay', {'count': '$reached'}),
                   textAlign: TextAlign.center,
                   style: poppins(20, FontWeight.w800, AppColors.ink),
                 ),
               ] else
                 Text(
-                  'Win ${PerfectPlay.milestones.first} levels on your first '
-                  'attempt to earn this award.',
+                  Tr.param('winFirstAttempt', {'count': '${PerfectPlay.milestones.first}'}),
                   textAlign: TextAlign.center,
                   style: poppins(20, FontWeight.w800, AppColors.ink),
                 ),
               const Spacer(flex: 5),
               if (next != null) ...[
                 if (unlocked) ...[
-                  Text('Next award at $next levels',
+                  Text(Tr.param('nextAwardAtLevels', {'next': '$next'}),
                       style: poppins(15, FontWeight.w700, const Color(0xFF7A7F9E))),
                   const SizedBox(height: 14),
                 ],
@@ -1006,8 +1003,8 @@ class _PerfectPlayDetailScreen extends StatelessWidget {
   }
 
   static String _formatToday() {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [Tr.get('janShort'), Tr.get('febShort'), Tr.get('marShort'), Tr.get('aprShort'), Tr.get('mayShort'), Tr.get('junShort'),
+        Tr.get('julShort'), Tr.get('augShort'), Tr.get('sepShort'), Tr.get('octShort'), Tr.get('novShort'), Tr.get('decShort')];
     final d = DateTime.now();
     return '${months[d.month - 1]} ${d.day} ${d.year}';
   }
@@ -1087,14 +1084,13 @@ class _UnstoppableDetailScreen extends StatelessWidget {
                 _DatePill(Unstoppable.earnedDateFor(reached) ?? _formatToday()),
                 const SizedBox(height: 18),
                 Text(
-                  'You earned Unstoppable by\nwinning $reached Nightmare levels!',
+                  Tr.param('earnedUnstoppable', {'count': '$reached'}),
                   textAlign: TextAlign.center,
                   style: poppins(20, FontWeight.w800, AppColors.ink),
                 ),
               ] else
                 Text(
-                  'Win ${Unstoppable.milestones.first} Nightmare levels to earn '
-                  'this award.',
+                  Tr.param('winNightmareLevels', {'count': '${Unstoppable.milestones.first}'}),
                   textAlign: TextAlign.center,
                   style: poppins(20, FontWeight.w800, AppColors.ink),
                 ),
@@ -1109,7 +1105,7 @@ class _UnstoppableDetailScreen extends StatelessWidget {
               ],
               const Spacer(flex: 5),
               if (unlocked && next != null) ...[
-                Text('Next award at $next levels',
+                Text(Tr.param('nextAwardAtLevels', {'next': '$next'}),
                     style: poppins(
                         15, FontWeight.w700, const Color(0xFF7A7F9E))),
                 const SizedBox(height: 14),
@@ -1131,9 +1127,9 @@ class _UnstoppableDetailScreen extends StatelessWidget {
   }
 
   static String _formatToday() {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    final months = [
+      Tr.get('janShort'), Tr.get('febShort'), Tr.get('marShort'), Tr.get('aprShort'), Tr.get('mayShort'), Tr.get('junShort'),
+      Tr.get('julShort'), Tr.get('augShort'), Tr.get('sepShort'), Tr.get('octShort'), Tr.get('novShort'), Tr.get('decShort'),
     ];
     final d = DateTime.now();
     return '${months[d.month - 1]} ${d.day} ${d.year}';
@@ -1158,7 +1154,7 @@ class _CloseButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(30),
           border: Border.all(color: const Color(0xFFE4E6F1), width: 1.5),
         ),
-        child: Text('Close',
+        child: Text(Tr.get('close'),
             style: poppins(17, FontWeight.w800, const Color(0xFF8C90A6))),
       ),
     );
@@ -1175,8 +1171,8 @@ void showTrophyDetail(BuildContext context, {
   required bool completed,
 }) {
   final monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    Tr.get('january'), Tr.get('february'), Tr.get('march'), Tr.get('april'), Tr.get('may'), Tr.get('june'),
+    Tr.get('july'), Tr.get('august'), Tr.get('september'), Tr.get('october'), Tr.get('november'), Tr.get('december'),
   ];
   showGeneralDialog(
     context: context,
@@ -1253,7 +1249,7 @@ class _TrophyDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(28),
                   ),
                   alignment: Alignment.center,
-                  child: Text('Go to month',
+                  child: Text(Tr.get('goToMonth'),
                       style: poppins(18, FontWeight.w900, Colors.white)),
                 ),
               ),
@@ -1271,7 +1267,7 @@ class _TrophyDetailScreen extends StatelessWidget {
                     border: Border.all(
                         color: const Color(0xFFE4E6F1), width: 1.5),
                   ),
-                  child: Text('Close',
+                  child: Text(Tr.get('close'),
                       style: poppins(18, FontWeight.w900, const Color(0xFF8C90A6))),
                 ),
               ),
@@ -1436,9 +1432,9 @@ class _MonthDetailScreenState extends State<MonthDetailScreen>
     });
   }
 
-  static const _monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+  static List<String> get _monthNames => [
+    Tr.get('january'), Tr.get('february'), Tr.get('march'), Tr.get('april'), Tr.get('may'), Tr.get('june'),
+    Tr.get('july'), Tr.get('august'), Tr.get('september'), Tr.get('october'), Tr.get('november'), Tr.get('december'),
   ];
   static const _daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
@@ -1511,8 +1507,8 @@ class _MonthDetailScreenState extends State<MonthDetailScreen>
     // completed day → Replay (or Continue if a replay is mid-way);
     // un-played day → Play (or Continue if mid-way)
     final btnLabel = inProgress
-        ? 'Continue'
-        : (selectedPlayed ? 'Replay' : 'Play');
+        ? Tr.get('continueButton')
+        : (selectedPlayed ? Tr.get('replay') : Tr.get('play'));
 
     // ── animation phases ──
     // 0.0-0.20: day shows as blue selected, overlay transitions blue→green
@@ -1603,7 +1599,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Row(
-                  children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+                  children: [Tr.get('mo'), Tr.get('tu'), Tr.get('we'), Tr.get('th'), Tr.get('fr'), Tr.get('sa'), Tr.get('su')]
                       .map((d) => Expanded(
                             child: Center(
                               child: Text(d,
@@ -1647,7 +1643,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen>
                                 color: const Color(0xFFF1F2F8),
                                 borderRadius: BorderRadius.circular(31),
                               ),
-                              child: Text('New level in ${_untilMidnight()}',
+                              child: Text(Tr.param('newLevelIn', {'time': _untilMidnight()}),
                                   style: poppins(
                                       18, FontWeight.w900, AppColors.blue)),
                             )

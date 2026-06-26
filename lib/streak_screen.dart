@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'l10n.dart';
 import 'prefs.dart';
 import 'streak.dart';
 import 'ui_kit.dart';
@@ -36,7 +37,7 @@ class _WeekDay {
 }
 
 List<_WeekDay> _currentWeek() {
-  const labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  final labels = [Tr.get('mo'), Tr.get('tu'), Tr.get('we'), Tr.get('th'), Tr.get('fr'), Tr.get('sa'), Tr.get('su')];
   String fmt(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   final now = DateTime.now();
@@ -257,7 +258,7 @@ class _StreakCelebrationState extends State<StreakCelebration>
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
                       child: PrimaryButton(
-                          label: 'Continue',
+                          label: Tr.get('continueButton'),
                           onTap: widget.onContinue,
                           width: double.infinity),
                     ),
@@ -350,7 +351,7 @@ class _RollingStreakText extends StatelessWidget {
             ),
           ),
         ),
-        Text(' day streak', style: style),
+        Text(' ${Tr.get('dayStreakSuffix')}', style: style),
       ],
     );
   }
@@ -515,13 +516,13 @@ class StreakDetailSheet extends StatelessWidget {
             const Spacer(flex: 3),
             streakFlame(size: 180),
             const SizedBox(height: 18),
-            Text('$streak day streak',
+            Text(Tr.param('dayStreak', {'count': '$streak'}),
                 style: poppins(25, FontWeight.w900, const Color(0xFF535B83))),
             const SizedBox(height: 24),
             const StreakWeekRow(),
             if (!StreakService.playedToday) ...[
               const SizedBox(height: 18),
-              Text('Win a level today to extend your streak!',
+              Text(Tr.get('extendStreakText'),
                   style: poppins(14, FontWeight.w800, const Color(0xFF5E658B))),
             ],
             const Spacer(flex: 2),
@@ -541,7 +542,7 @@ class StreakDetailSheet extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
                       child: Column(
                         children: [
-                          Text('Streak Freezers',
+                          Text(Tr.get('streakFreezers'),
                               style: poppins(17, FontWeight.w900,
                                   const Color(0xFF535B83))),
                           const SizedBox(height: 16),
@@ -561,7 +562,7 @@ class StreakDetailSheet extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Text('0/3 Equipped',
+                          Text(Tr.get('freezerStatus'),
                               style: poppins(13.5, FontWeight.w800,
                                   const Color(0xFF535B83))),
                         ],
@@ -592,7 +593,7 @@ class StreakDetailSheet extends StatelessWidget {
                     border:
                         Border.all(color: const Color(0xFFE4E6F1), width: 1.5),
                   ),
-                  child: Text('Close',
+                  child: Text(Tr.get('close'),
                       style:
                           poppins(17, FontWeight.w900, const Color(0xFF8C90A6))),
                 ),
