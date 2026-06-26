@@ -165,33 +165,85 @@ class LevelGenerator {
     return arrows;
   }
 
-  /// Fills every gap with a 2-cell arrow, keeping only those that preserve
-  /// solvability. Each candidate is tested individually.
+  /// Fills gaps with 3+ cell arrows (L-shapes and straights), then 2-cell as
+  /// last resort. Each candidate is tested for solvability individually.
   void _applyGapFill(List<Arrow> arrows) {
     final occ = <String>{};
     for (final a in arrows) {
       occ.addAll(a.cells);
     }
+
+    bool tryPlace(List<Point<int>> pts, Direction dir) {
+      final cells = {for (final p in pts) cellKey(p.x, p.y)};
+      final candidate = Arrow(id: arrows.length, pts: pts, dir: dir, cells: cells);
+      arrows.add(candidate);
+      if (greedySolvable(arrows)) {
+        occ.addAll(cells);
+        return true;
+      }
+      arrows.removeLast();
+      return false;
+    }
+
+    /// Generate candidate arrows starting from (x,y): 3-4 cell L-shapes
+    /// and straights in all orientations, then 2-cell as fallback.
+    List<(List<Point<int>>, Direction)> candidates(int x, int y) {
+      final out = <(List<Point<int>>, Direction)>[];
+      // 3-cell straights
+      for (final d in Direction.values) {
+        final p1 = Point(x + d.dx, y + d.dy);
+        final p2 = Point(x + d.dx * 2, y + d.dy * 2);
+        if (_inB(p1.x, p1.y) && _inB(p2.x, p2.y) &&
+            !occ.contains(cellKey(p1.x, p1.y)) &&
+            !occ.contains(cellKey(p2.x, p2.y))) {
+          out.add(([Point(x, y), p1, p2], d));
+        }
+      }
+      // 3-cell L-shapes: go one direction then turn
+      for (final d1 in Direction.values) {
+        final p1 = Point(x + d1.dx, y + d1.dy);
+        if (!_inB(p1.x, p1.y) || occ.contains(cellKey(p1.x, p1.y))) continue;
+        for (final d2 in Direction.values) {
+          if (d2 == d1 || d2.dx == -d1.dx && d2.dy == -d1.dy) continue;
+          final p2 = Point(p1.x + d2.dx, p1.y + d2.dy);
+          if (!_inB(p2.x, p2.y) || occ.contains(cellKey(p2.x, p2.y))) continue;
+          if (p2.x == x && p2.y == y) continue;
+          out.add(([Point(x, y), p1, p2], d2));
+        }
+      }
+      // 4-cell straights
+      for (final d in Direction.values) {
+        final p1 = Point(x + d.dx, y + d.dy);
+        final p2 = Point(x + d.dx * 2, y + d.dy * 2);
+        final p3 = Point(x + d.dx * 3, y + d.dy * 3);
+        if (_inB(p1.x, p1.y) && _inB(p2.x, p2.y) && _inB(p3.x, p3.y) &&
+            !occ.contains(cellKey(p1.x, p1.y)) &&
+            !occ.contains(cellKey(p2.x, p2.y)) &&
+            !occ.contains(cellKey(p3.x, p3.y))) {
+          out.add(([Point(x, y), p1, p2, p3], d));
+        }
+      }
+      // 2-cell fallback (last resort)
+      for (final d in Direction.values) {
+        final nx = x + d.dx, ny = y + d.dy;
+        if (_inB(nx, ny) && !occ.contains(cellKey(nx, ny))) {
+          out.add(([Point(x, y), Point(nx, ny)], d));
+        }
+      }
+      return out;
+    }
+
     var placed = true;
     while (placed) {
       placed = false;
       for (var y = 0; y <= rows; y++) {
         for (var x = 0; x <= cols; x++) {
           if (occ.contains(cellKey(x, y))) continue;
-          for (final d in Direction.values) {
-            final nx = x + d.dx, ny = y + d.dy;
-            if (!_inB(nx, ny)) continue;
-            if (occ.contains(cellKey(nx, ny))) continue;
-            final pts = [Point(x, y), Point(nx, ny)];
-            final cells = {cellKey(x, y), cellKey(nx, ny)};
-            final candidate = Arrow(id: arrows.length, pts: pts, dir: d, cells: cells);
-            arrows.add(candidate);
-            if (greedySolvable(arrows)) {
-              occ.addAll(cells);
+          for (final (pts, dir) in candidates(x, y)) {
+            if (tryPlace(pts, dir)) {
               placed = true;
               break;
             }
-            arrows.removeLast();
           }
         }
       }

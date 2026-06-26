@@ -207,7 +207,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _playIntroZoom() {
     if (_introPlayed || _isTutorial) return;
     _introPlayed = true;
-    if (c.arrows.length < 15) return;
+    if (c.total < 15) return;
     final bp = _lastBoardPx!;
     final vp = _lastViewportSize!;
     _introStartScale = min(vp.width / bp.width, vp.height / bp.height)
@@ -554,7 +554,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _lastBoardPx = boardPx;
       _lastViewportSize = Size(constraints.maxWidth, constraints.maxHeight);
 
-      final isDense = c.arrows.length >= 15;
+      final isDense = c.total >= 15;
 
       if (!_introPlayed) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
