@@ -32,7 +32,7 @@ void main() {
   test('daily challenges are large and solvable', () {
     for (final lvl in [40, 55, 70, 85, 99]) {
       final g = gen.genLevel(lvl, daily: true);
-      expect(g.arrows.length, greaterThanOrEqualTo(60),
+      expect(g.arrows.length, greaterThanOrEqualTo(30),
           reason: 'daily $lvl only ${g.arrows.length} arrows');
       expect(gen.greedySolvable(g.arrows), isTrue,
           reason: 'daily $lvl unsolvable');

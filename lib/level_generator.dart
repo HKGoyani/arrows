@@ -45,6 +45,21 @@ class LevelGenerator {
   /// couldn't reach length >= 2.
   bool _relaxSelf = false; // set by _configure for daily mode
 
+  /// Counts how many open exits a cell (nx,ny) has, excluding [body] and [occ].
+  /// Used by the look-ahead walker to avoid dead ends.
+  int _openExits(int nx, int ny, Set<String> occ, Set<String> body) {
+    var exits = 0;
+    for (final d in Direction.values) {
+      final ex = nx + d.dx, ey = ny + d.dy;
+      if (_inB(ex, ey) &&
+          !occ.contains(cellKey(ex, ey)) &&
+          !body.contains(cellKey(ex, ey))) {
+        exits++;
+      }
+    }
+    return exits;
+  }
+
   _Walk? _grow(SeededRandom rng, Set<String> occ, int sx, int sy,
       {int? capLen, bool relaxAdj = false}) {
     if (occ.contains(cellKey(sx, sy))) return null;
@@ -57,57 +72,63 @@ class LevelGenerator {
     var headDir = dir;
     for (var step = 0; step < target; step++) {
       final cur = dir;
-      final perp = Direction.values
-          .where((d) => d.horizontal != cur.horizontal)
-          .toList();
-      // Build direction preference: turn frequently to create maze corridors.
-      // For SH/NM/daily (_relaxSelf), prefer turning alongside occupied cells
-      // (creates the reference's parallel-corridor look). Otherwise, mix of
-      // straight + random turns.
-      List<Direction> order;
-      if (rng.next() < _straightBias) {
-        order = [cur, perp[rng.nextInt(2)], perp[0], perp[1]];
-      } else if (_relaxSelf) {
-        // Corridor-seeking: prefer directions where an adjacent cell is
-        // occupied (runs alongside existing arrows = maze corridors).
-        final scored = <(Direction, int)>[];
-        for (final d in [perp[0], perp[1], cur]) {
-          final nx = cx + d.dx, ny = cy + d.dy;
-          var adj = 0;
-          for (final a in Direction.values) {
-            final ax = nx + a.dx, ay = ny + a.dy;
-            if (occ.contains(cellKey(ax, ay))) adj++;
-          }
-          scored.add((d, adj));
-        }
-        scored.sort((a, b) => b.$2.compareTo(a.$2));
-        order = scored.map((e) => e.$1).toList();
-        // Add the reverse direction last (U-turn) for deep winding
-        final rev = Direction.values.firstWhere(
-            (d) => d.dx == -cur.dx && d.dy == -cur.dy);
-        if (!order.contains(rev)) order.add(rev);
-      } else {
-        order = [perp[rng.nextInt(2)], perp[0], cur, perp[1]];
-      }
-      var moved = false;
-      for (final d in order) {
+      final rev = Direction.values.firstWhere(
+          (d) => d.dx == -cur.dx && d.dy == -cur.dy);
+
+      // Collect all valid candidate moves with their scores.
+      final candidates = <(Direction, int)>[];
+      for (final d in Direction.values) {
         final nx = cx + d.dx, ny = cy + d.dy;
         final k = cellKey(nx, ny);
-        if (_inB(nx, ny) &&
-            !occ.contains(k) &&
-            !body.contains(k) &&
-            (relaxAdj || _relaxSelf || !_touchesSelf(nx, ny, cx, cy, body))) {
-          cx = nx;
-          cy = ny;
-          pts.add(Point(cx, cy));
-          body.add(k);
-          dir = d;
-          headDir = d;
-          moved = true;
-          break;
+        if (!_inB(nx, ny) || occ.contains(k) || body.contains(k)) continue;
+        if (!relaxAdj && !_relaxSelf && _touchesSelf(nx, ny, cx, cy, body)) {
+          continue;
+        }
+        // Score: higher = preferred. Look-ahead avoids dead ends.
+        var score = _openExits(nx, ny, occ, body) * 10;
+        // Corridor bonus: prefer cells adjacent to occupied cells (maze look)
+        if (_relaxSelf) {
+          for (final a in Direction.values) {
+            if (occ.contains(cellKey(nx + a.dx, ny + a.dy))) score += 3;
+          }
+        }
+        // Direction preference
+        if (d == cur) {
+          score += rng.next() < _straightBias ? 8 : 2;
+        } else if (d == rev) {
+          score += 1; // U-turn: last resort but allowed
+        } else {
+          score += rng.next() < _straightBias ? 3 : 6; // perp = turn
+        }
+        // Small random jitter to avoid deterministic patterns
+        score += rng.nextInt(4);
+        candidates.add((d, score));
+      }
+      if (candidates.isEmpty) break;
+
+      // Sort by score descending, pick the best — but AVOID dead ends:
+      // if the best candidate has 0 open exits (dead end), skip it if
+      // there's a candidate with 1+ exits, unless we're near the end.
+      candidates.sort((a, b) => b.$2.compareTo(a.$2));
+      var chosen = candidates.first;
+      if (step < target - 2) {
+        // Not near the end — avoid dead ends
+        for (final c in candidates) {
+          final nx = cx + c.$1.dx, ny = cy + c.$1.dy;
+          if (_openExits(nx, ny, occ, body) >= 1) {
+            chosen = c;
+            break;
+          }
         }
       }
-      if (!moved) break;
+
+      final d = chosen.$1;
+      cx = cx + d.dx;
+      cy = cy + d.dy;
+      pts.add(Point(cx, cy));
+      body.add(cellKey(cx, cy));
+      dir = d;
+      headDir = d;
     }
     if (pts.length < 2) return null;
     return _Walk(pts, body, headDir, cx, cy);
@@ -265,11 +286,7 @@ class LevelGenerator {
           }
         }
       }
-      // 2-cell last resort
-      for (final d in Direction.values) {
-        final a = Point(x + d.dx, y + d.dy);
-        if (free(a.x, a.y)) out.add(([Point(x, y), a], d));
-      }
+      // No 2-cell stubs — minimum 3 cells. Isolated single cells left unfilled.
       return out;
     }
 
@@ -373,11 +390,11 @@ class LevelGenerator {
           cols = (15 + lv * 0.05).clamp(15, 29).round();
           rows = (24 + lv * 0.02).clamp(24, 27).round();
         case Tier.superHard:
-          // avg 28×31, range 19×31 → 35×32
+          // avg ~868 dots — tall rectangle
           cols = (19 + lv * 0.10).clamp(19, 35).round();
           rows = (30 + lv * 0.03).clamp(30, 33).round();
         case Tier.nightmare:
-          // avg 33×34, range 29×34 → 35×35
+          // avg ~1146 dots — taller rectangle
           cols = (29 + lv * 0.06).clamp(29, 35).round();
           rows = (33 + lv * 0.02).clamp(33, 35).round();
       }
@@ -394,33 +411,33 @@ class LevelGenerator {
           cols = (10 + lv * 0.12).clamp(10, 26).round();
           rows = (13 + lv * 0.10).clamp(13, 22).round();
         case Tier.superHard:
-          // avg 23×25 (569 dots), range 17×21 → 35×26
+          // avg 23×25 (569 dots) — tall rectangle
           cols = (17 + lv * 0.10).clamp(17, 35).round();
           rows = (21 + lv * 0.06).clamp(21, 28).round();
         case Tier.nightmare:
-          // 31×31 (961 dots)
+          // ~961 dots — taller rectangle
           cols = (30 + lv * 0.02).clamp(30, 35).round();
           rows = (30 + lv * 0.02).clamp(30, 35).round();
       }
     }
 
-    // ── Arrow shape: long winding maze paths for SH/NM/daily ──
+    // ── Arrow shape: look-ahead walker avoids dead ends → much longer arrows ──
     if (daily || tier == Tier.superHard || tier == Tier.nightmare) {
       _relaxSelf = true;
-      _walkMin = 5;
-      _walkMax = 16;
-      _straightBias = 0.42;
+      _walkMin = 8;
+      _walkMax = 40;
+      _straightBias = 0.38;
     } else {
       _relaxSelf = false;
       switch (tier) {
         case Tier.normal:
-          _walkMin = 4;
-          _walkMax = 9;
-          _straightBias = 0.50;
+          _walkMin = 5;
+          _walkMax = 20;
+          _straightBias = 0.45;
         case Tier.hard:
-          _walkMin = 4;
-          _walkMax = 8;
-          _straightBias = 0.52;
+          _walkMin = 6;
+          _walkMax = 25;
+          _straightBias = 0.42;
         default:
           break;
       }
