@@ -391,12 +391,11 @@ class LevelGenerator {
           rows = (24 + lv * 0.02).clamp(24, 27).round();
         case Tier.superHard:
           // avg ~868 dots — tall rectangle
-          cols = (19 + lv * 0.10).clamp(19, 35).round();
-          rows = (30 + lv * 0.03).clamp(30, 33).round();
+          cols = (20 + lv * 0.08).clamp(20, 30).round();
+          rows = (25 + lv * 0.10).clamp(25, 37).round();
         case Tier.nightmare:
-          // avg ~1146 dots — taller rectangle
-          cols = (29 + lv * 0.06).clamp(29, 35).round();
-          rows = (33 + lv * 0.02).clamp(33, 35).round();
+          cols = (28 + lv * 0.08).clamp(28, 40).round();
+          rows = (35 + lv * 0.08).clamp(35, 45).round();
       }
     } else {
       switch (tier) {
@@ -404,20 +403,17 @@ class LevelGenerator {
           // Range 4×6 (L4) → 14×19 (L9) → 22×29 (L47) → 14×20 (L98)
           // Fast growth early, slower later. Reference Normal varies a lot
           // but trends upward. Cap at 26×20 (max seen in reference).
-          cols = (5 + lv * 0.22).clamp(5, 26).round();
-          rows = (6 + lv * 0.26).clamp(6, 20).round();
+          cols = (7 + lv * 0.20).clamp(7, 26).round();
+          rows = (10 + lv * 0.18).clamp(10, 26).round();
         case Tier.hard:
-          // avg 15×17 (264 dots), range 10×14 → 26×20
           cols = (10 + lv * 0.12).clamp(10, 26).round();
-          rows = (13 + lv * 0.10).clamp(13, 22).round();
+          rows = (20 + lv * 0.08).clamp(20, 26).round();
         case Tier.superHard:
-          // avg 23×25 (569 dots) — tall rectangle
-          cols = (17 + lv * 0.10).clamp(17, 35).round();
-          rows = (21 + lv * 0.06).clamp(21, 28).round();
+          cols = (15 + lv * 0.08).clamp(15, 28).round();
+          rows = (25 + lv * 0.08).clamp(25, 35).round();
         case Tier.nightmare:
-          // ~961 dots — taller rectangle
-          cols = (30 + lv * 0.02).clamp(30, 35).round();
-          rows = (30 + lv * 0.02).clamp(30, 35).round();
+          cols = (25 + lv * 0.05).clamp(25, 35).round();
+          rows = (30 + lv * 0.06).clamp(30, 40).round();
       }
     }
 
