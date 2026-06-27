@@ -115,7 +115,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         vsync: this, duration: const Duration(milliseconds: 1000))
       ..addListener(_onZoomIntroTick);
     c.addListener(_rebuild);
-    c.loadLevel(widget.level);
+    c.loadLevel(widget.level, daily: widget.isDaily);
     if (widget.isDaily) {
       widget.onLoaded?.call(c); // restore saved board if any
     } else {
@@ -376,7 +376,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _zoomCtrl.value = Matrix4.identity();
     _zoomIntroCtrl.reset();
     _introPlayed = false;
-    c.loadLevel(c.level);
+    c.loadLevel(c.level, daily: widget.isDaily);
     if (widget.isDaily) widget.onDidRestart?.call(); // wipe saved daily board
     _resetHintTimer();
   }

@@ -32,9 +32,9 @@ class GameController extends ChangeNotifier {
   List<Arrow> get liveArrows =>
       arrows.where((a) => a.state != ArrowState.leaving).toList();
 
-  void loadLevel(int lvl) {
+  void loadLevel(int lvl, {bool daily = false}) {
     level = lvl;
-    final g = _gen.genLevel(lvl);
+    final g = _gen.genLevel(lvl, daily: daily);
     arrows = g.arrows;
     cols = g.cols;
     rows = g.rows;

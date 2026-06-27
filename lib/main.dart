@@ -165,12 +165,14 @@ Future<void> startDailyChallenge(BuildContext context, DateTime date) {
   );
 }
 
-/// A deterministic, moderate-difficulty puzzle for a given calendar day.
+/// A deterministic difficulty seed for a given calendar day. Daily challenges
+/// run in [daily] mode (large boards, Hard+ tiers) so this maps to the harder
+/// end of the curve; the value also drives the daily tier cycle (H/SH/NM).
 int dailyLevelFor(DateTime date) {
   final ord = DateTime(date.year, date.month, date.day)
       .difference(DateTime(2026, 1, 1))
       .inDays;
-  return 10 + (ord % 9); // 10..18 — varied but consistent per day
+  return 40 + (ord % 60); // 40..99 — big, varied, consistent per day
 }
 
 /// Immersive game flow (full-screen, no nav): intro card → gameplay, advancing

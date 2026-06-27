@@ -22,23 +22,41 @@ void main() {
   });
 
   test('procedural levels stay solvable across the ramp', () {
-    for (final lvl in [6, 8, 10, 15, 20, 35, 50, 70]) {
+    for (final lvl in [6, 8, 10, 15, 20, 35, 50, 70, 100, 120]) {
       final g = gen.genLevel(lvl);
       expect(g.arrows, isNotEmpty, reason: 'L$lvl empty');
       expect(gen.greedySolvable(g.arrows), isTrue, reason: 'L$lvl unsolvable');
     }
   });
 
-  test('mixed tiers produce varied difficulty across range', () {
-    var tiers = <Tier>{};
-    for (var lvl = 35; lvl <= 60; lvl++) {
-      tiers.add(tierForLevel(lvl));
-      final g = gen.genLevel(lvl);
-      expect(g.arrows.length, greaterThanOrEqualTo(10),
-          reason: 'L$lvl only ${g.arrows.length} arrows');
-      expect(gen.greedySolvable(g.arrows), isTrue, reason: 'L$lvl unsolvable');
+  test('daily challenges are large and solvable', () {
+    for (final lvl in [40, 55, 70, 85, 99]) {
+      final g = gen.genLevel(lvl, daily: true);
+      expect(g.arrows.length, greaterThanOrEqualTo(60),
+          reason: 'daily $lvl only ${g.arrows.length} arrows');
+      expect(gen.greedySolvable(g.arrows), isTrue,
+          reason: 'daily $lvl unsolvable');
     }
-    expect(tiers.length, greaterThanOrEqualTo(2),
-        reason: 'Expected mixed tiers in 35-60 range');
+  });
+
+  test('difficulty scales with level (more arrows at higher levels)', () {
+    final low = gen.genLevel(20).arrows.length;
+    final mid = gen.genLevel(50).arrows.length;
+    final high = gen.genLevel(100).arrows.length;
+    expect(mid, greaterThan(low), reason: 'L50 ($mid) should exceed L20 ($low)');
+    expect(high, greaterThan(mid), reason: 'L100 ($high) should exceed L50 ($mid)');
+  });
+
+  test('tier progression: Nightmare only at L100+, Super Hard at L26+', () {
+    // No Nightmare below 100
+    for (var lvl = 6; lvl < 100; lvl++) {
+      expect(tierForLevel(lvl), isNot(Tier.nightmare),
+          reason: 'L$lvl should not be Nightmare');
+    }
+    // No Super Hard below 26
+    for (var lvl = 6; lvl < 26; lvl++) {
+      expect(tierForLevel(lvl) == Tier.superHard, isFalse,
+          reason: 'L$lvl should not be Super Hard');
+    }
   });
 }
