@@ -14,32 +14,60 @@ enum Tier {
   String get label => Tr.get(_key);
 }
 
-/// Deterministic tier LABEL for a level. Matches the reference game where the
-/// label is mostly cosmetic — Normal dominates at every level, and the harder
-/// tiers are sprinkled in with a ceiling that rises by level. Real difficulty
-/// is driven by board size + arrow density (see LevelGenerator), not the label.
+/// Deterministic tier for a level. Calibrated from 99 reference levels (L4-102):
+///   L4-102: 70% Normal, 20% Hard, 9% SH, 1% NM (L100 hardcoded)
+///   L103+:  Normal gradually gives way; Nightmare grows to 40% by L1000+
 ///
-/// Reference observations: Hard first appears ~L6, Super Hard ~L26,
-/// Nightmare ~L100. Normal stays the dominant label throughout.
+/// Hard first at L6, Super Hard at L26, Nightmare at L100.
 Tier tierForLevel(int level) {
   if (level < 6) return Tier.normal;
+  if (level == 100) return Tier.nightmare;
 
-  final hash = ((level * 2654435761) & 0xFFFFFFFF) / 4294967296.0;
+  final hash = ((level * 2654435761 + level * 7919 + 0x1337) & 0xFFFFFFFF) /
+      4294967296.0;
 
   if (level < 26) {
-    // L6-25: ~70% Normal, ~30% Hard
+    // ~70% Normal, ~30% Hard
     return hash < 0.70 ? Tier.normal : Tier.hard;
   }
   if (level < 100) {
-    // L26-99: ~65% Normal, ~22% Hard, ~13% Super Hard
-    if (hash < 0.65) return Tier.normal;
-    if (hash < 0.87) return Tier.hard;
+    // ~70% Normal, ~20% Hard, ~10% Super Hard
+    if (hash < 0.70) return Tier.normal;
+    if (hash < 0.90) return Tier.hard;
     return Tier.superHard;
   }
-  // L100+: ~55% Normal, ~22% Hard, ~13% Super Hard, ~10% Nightmare
-  if (hash < 0.55) return Tier.normal;
-  if (hash < 0.77) return Tier.hard;
-  if (hash < 0.90) return Tier.superHard;
+  if (level < 151) {
+    // ~55% Normal, ~18% Hard, ~18% SH, ~8% NM
+    if (hash < 0.55) return Tier.normal;
+    if (hash < 0.73) return Tier.hard;
+    if (hash < 0.92) return Tier.superHard;
+    return Tier.nightmare;
+  }
+  if (level < 251) {
+    // ~40% Normal, ~22% Hard, ~22% SH, ~16% NM
+    if (hash < 0.40) return Tier.normal;
+    if (hash < 0.62) return Tier.hard;
+    if (hash < 0.84) return Tier.superHard;
+    return Tier.nightmare;
+  }
+  if (level < 501) {
+    // ~25% Normal, ~20% Hard, ~27% SH, ~28% NM
+    if (hash < 0.25) return Tier.normal;
+    if (hash < 0.45) return Tier.hard;
+    if (hash < 0.72) return Tier.superHard;
+    return Tier.nightmare;
+  }
+  if (level < 1001) {
+    // ~15% Normal, ~20% Hard, ~30% SH, ~35% NM
+    if (hash < 0.15) return Tier.normal;
+    if (hash < 0.35) return Tier.hard;
+    if (hash < 0.65) return Tier.superHard;
+    return Tier.nightmare;
+  }
+  // L1000+: plateau — ~10% Normal, ~18% Hard, ~32% SH, ~40% NM
+  if (hash < 0.10) return Tier.normal;
+  if (hash < 0.28) return Tier.hard;
+  if (hash < 0.60) return Tier.superHard;
   return Tier.nightmare;
 }
 
