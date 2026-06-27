@@ -349,34 +349,58 @@ class LevelGenerator {
 
   /// Sets grid size and arrow-shape params for a level (and daily mode).
   ///
-  /// Reference grid sizes (counted from dot grids in reference screenshots):
-  ///   Normal:     5×6  → ~10×13  (small, grows with level)
-  ///   Hard:       10×14 → ~16×22  (medium, ~2× Normal at same level)
-  ///   Super Hard: ~28×43          (large, ~1276 grid points)
-  ///   Nightmare:  ~32×51          (huge, ~1716 grid points)
-  ///   Daily:      28×43 → 32×51  (same as SH/NM, always large)
+  /// Reference grid sizes (measured from all 155 reference screenshots):
+  ///   Normal:     avg 11×13 (151 dots), range 4×6 → 14×20
+  ///   Hard:       avg 15×17 (264 dots), range 10×14 → 26×20
+  ///   Super Hard: avg 23×25 (569 dots), range 17×21 → 35×26
+  ///   Nightmare:  31×31 (961 dots)
+  ///   Daily Hard:       avg 18×25 (444 dots)
+  ///   Daily Super Hard: avg 28×31 (868 dots)
+  ///   Daily Nightmare:  avg 33×34 (1146 dots), up to 35×35
   void _configure(int level, Tier tier, bool daily) {
     final lv = level.toDouble();
 
     // ── Grid size ──
     if (daily) {
-      // Daily challenges: large boards matching SH/NM reference sizes.
-      cols = (24 + lv * 0.08).clamp(24, 32).round();
-      rows = (38 + lv * 0.13).clamp(38, 51).round();
+      // Daily challenges are bigger than main levels at the same tier.
+      switch (tier) {
+        case Tier.normal:
+          // Shouldn't happen for daily, but fallback
+          cols = 15;
+          rows = 20;
+        case Tier.hard:
+          // avg 18×25, range 15×24 → 29×25
+          cols = (15 + lv * 0.05).clamp(15, 29).round();
+          rows = (24 + lv * 0.02).clamp(24, 27).round();
+        case Tier.superHard:
+          // avg 28×31, range 19×31 → 35×32
+          cols = (19 + lv * 0.10).clamp(19, 35).round();
+          rows = (30 + lv * 0.03).clamp(30, 33).round();
+        case Tier.nightmare:
+          // avg 33×34, range 29×34 → 35×35
+          cols = (29 + lv * 0.06).clamp(29, 35).round();
+          rows = (33 + lv * 0.02).clamp(33, 35).round();
+      }
     } else {
       switch (tier) {
         case Tier.normal:
-          cols = (5 + lv * 0.08).clamp(5, 13).round();
-          rows = (6 + lv * 0.10).clamp(6, 16).round();
+          // Range 4×6 (L4) → 14×19 (L9) → 22×29 (L47) → 14×20 (L98)
+          // Fast growth early, slower later. Reference Normal varies a lot
+          // but trends upward. Cap at 26×20 (max seen in reference).
+          cols = (5 + lv * 0.22).clamp(5, 26).round();
+          rows = (6 + lv * 0.26).clamp(6, 20).round();
         case Tier.hard:
-          cols = (8 + lv * 0.10).clamp(8, 18).round();
-          rows = (12 + lv * 0.14).clamp(12, 24).round();
+          // avg 15×17 (264 dots), range 10×14 → 26×20
+          cols = (10 + lv * 0.12).clamp(10, 26).round();
+          rows = (13 + lv * 0.10).clamp(13, 22).round();
         case Tier.superHard:
-          cols = (18 + lv * 0.10).clamp(18, 28).round();
-          rows = (28 + lv * 0.15).clamp(28, 43).round();
+          // avg 23×25 (569 dots), range 17×21 → 35×26
+          cols = (17 + lv * 0.10).clamp(17, 35).round();
+          rows = (21 + lv * 0.06).clamp(21, 28).round();
         case Tier.nightmare:
-          cols = (24 + lv * 0.08).clamp(24, 32).round();
-          rows = (38 + lv * 0.13).clamp(38, 51).round();
+          // 31×31 (961 dots)
+          cols = (30 + lv * 0.02).clamp(30, 35).round();
+          rows = (30 + lv * 0.02).clamp(30, 35).round();
       }
     }
 
