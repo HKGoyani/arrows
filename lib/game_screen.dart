@@ -78,8 +78,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   final TransformationController _zoomCtrl = TransformationController();
   late final AnimationController _zoomIntroCtrl;
   bool _introPlayed = false;
-  static const double _maxZoom = 2.0;
-  static const double _defaultZoom = 1.2;
+  // Dynamic zoom based on grid size — computed in _boardArea.
+  double _maxZoom = 2.0;
+  double _defaultZoom = 1.2;
 
   // Tutorial (level 1): minimal UI + "Tap to move" prompt with a finger that
   // bounces over an arrow. Both disappear after the player's first move.
@@ -204,6 +205,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   double _introStartScale = 1.0;
   double _introEndScale = 1.2;
 
+  bool _introAnimating = false;
+
   void _playIntroZoom() {
     if (_introPlayed || _isTutorial) return;
     _introPlayed = true;
@@ -215,8 +218,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _introEndScale = (_introStartScale * _defaultZoom)
         .clamp(_introStartScale, _maxZoom);
     _zoomCtrl.value = _centeredMatrix(_introStartScale);
+    _introAnimating = true;
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) _zoomIntroCtrl.forward(from: 0);
+      if (mounted) {
+        _zoomIntroCtrl.forward(from: 0).then((_) {
+          if (mounted) setState(() => _introAnimating = false);
+        });
+      }
     });
   }
 
@@ -376,6 +384,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _zoomCtrl.value = Matrix4.identity();
     _zoomIntroCtrl.reset();
     _introPlayed = false;
+    _introAnimating = false;
     c.loadLevel(c.level, daily: widget.isDaily);
     if (widget.isDaily) widget.onDidRestart?.call(); // wipe saved daily board
     _resetHintTimer();
@@ -556,6 +565,22 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
       final isDense = c.total >= 15;
 
+      // Dynamic zoom based on grid density: bigger boards need more zoom range.
+      final gridPoints = (c.cols + 1) * (c.rows + 1);
+      if (gridPoints > 1200) {
+        _maxZoom = 3.0;
+        _defaultZoom = 2.0;
+      } else if (gridPoints > 800) {
+        _maxZoom = 3.0;
+        _defaultZoom = 1.75;
+      } else if (gridPoints > 300) {
+        _maxZoom = 2.5;
+        _defaultZoom = 1.5;
+      } else {
+        _maxZoom = 2.0;
+        _defaultZoom = 1.2;
+      }
+
       if (!_introPlayed) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _playIntroZoom();
@@ -626,8 +651,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         constrained: false,
         minScale: fitScale,
         maxScale: _maxZoom,
-        panEnabled: true,
-        scaleEnabled: true,
+        panEnabled: !_introAnimating,
+        scaleEnabled: !_introAnimating,
         boundaryMargin: EdgeInsets.symmetric(
           horizontal: marginH,
           vertical: marginV,

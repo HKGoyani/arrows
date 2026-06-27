@@ -60,9 +60,35 @@ class LevelGenerator {
       final perp = Direction.values
           .where((d) => d.horizontal != cur.horizontal)
           .toList();
-      final List<Direction> order = rng.next() < _straightBias
-          ? [cur, perp[rng.nextInt(2)], perp[0], perp[1]]
-          : [perp[rng.nextInt(2)], perp[0], cur, perp[1]];
+      // Build direction preference: turn frequently to create maze corridors.
+      // For SH/NM/daily (_relaxSelf), prefer turning alongside occupied cells
+      // (creates the reference's parallel-corridor look). Otherwise, mix of
+      // straight + random turns.
+      List<Direction> order;
+      if (rng.next() < _straightBias) {
+        order = [cur, perp[rng.nextInt(2)], perp[0], perp[1]];
+      } else if (_relaxSelf) {
+        // Corridor-seeking: prefer directions where an adjacent cell is
+        // occupied (runs alongside existing arrows = maze corridors).
+        final scored = <(Direction, int)>[];
+        for (final d in [perp[0], perp[1], cur]) {
+          final nx = cx + d.dx, ny = cy + d.dy;
+          var adj = 0;
+          for (final a in Direction.values) {
+            final ax = nx + a.dx, ay = ny + a.dy;
+            if (occ.contains(cellKey(ax, ay))) adj++;
+          }
+          scored.add((d, adj));
+        }
+        scored.sort((a, b) => b.$2.compareTo(a.$2));
+        order = scored.map((e) => e.$1).toList();
+        // Add the reverse direction last (U-turn) for deep winding
+        final rev = Direction.values.firstWhere(
+            (d) => d.dx == -cur.dx && d.dy == -cur.dy);
+        if (!order.contains(rev)) order.add(rev);
+      } else {
+        order = [perp[rng.nextInt(2)], perp[0], cur, perp[1]];
+      }
       var moved = false;
       for (final d in order) {
         final nx = cx + d.dx, ny = cy + d.dy;
@@ -322,68 +348,58 @@ class LevelGenerator {
   }
 
   /// Sets grid size and arrow-shape params for a level (and daily mode).
+  ///
+  /// Reference grid sizes (counted from dot grids in reference screenshots):
+  ///   Normal:     5×6  → ~10×13  (small, grows with level)
+  ///   Hard:       10×14 → ~16×22  (medium, ~2× Normal at same level)
+  ///   Super Hard: ~28×43          (large, ~1276 grid points)
+  ///   Nightmare:  ~32×51          (huge, ~1716 grid points)
+  ///   Daily:      28×43 → 32×51  (same as SH/NM, always large)
   void _configure(int level, Tier tier, bool daily) {
     final lv = level.toDouble();
+
+    // ── Grid size ──
     if (daily) {
-      // Daily challenges: large boards (zoom handles the overflow).
-      cols = (12 + lv * 0.10).clamp(12, 18).round();
-      rows = (18 + lv * 0.18).clamp(18, 28).round();
+      // Daily challenges: large boards matching SH/NM reference sizes.
+      cols = (24 + lv * 0.08).clamp(24, 32).round();
+      rows = (38 + lv * 0.13).clamp(38, 51).round();
     } else {
-      // Main progression: smooth growth matching the reference curve, with a
-      // size bump for harder tiers (the reference's Hard+ boards are bigger).
-      var c = (5 + lv * 0.16).clamp(5, 16).round();
-      var r = (6 + lv * 0.22).clamp(6, 24).round();
       switch (tier) {
         case Tier.normal:
-          break;
+          cols = (5 + lv * 0.08).clamp(5, 13).round();
+          rows = (6 + lv * 0.10).clamp(6, 16).round();
         case Tier.hard:
-          c += 1;
-          r += 2;
+          cols = (8 + lv * 0.10).clamp(8, 18).round();
+          rows = (12 + lv * 0.14).clamp(12, 24).round();
         case Tier.superHard:
-          c += 2;
-          r += 3;
+          cols = (18 + lv * 0.10).clamp(18, 28).round();
+          rows = (28 + lv * 0.15).clamp(28, 43).round();
         case Tier.nightmare:
-          c += 3;
-          r += 4;
+          cols = (24 + lv * 0.08).clamp(24, 32).round();
+          rows = (38 + lv * 0.13).clamp(38, 51).round();
       }
-      cols = c.clamp(5, 18);
-      rows = r.clamp(6, 26);
     }
-    if (daily) {
-      // Daily challenges are ALWAYS long winding maze paths (5-10+ cell
-      // U-turns/S-curves/spirals) regardless of tier — the reference's
-      // signature daily look. Lower straight-bias = windier. Self-adjacency
-      // relaxed so arrows can run parallel (like the reference), packing
-      // the grid tighter with longer arrows instead of short gap-fill stubs.
-      _walkMin = 5;
-      _walkMax = 14;
-      _straightBias = 0.45;
+
+    // ── Arrow shape: long winding maze paths for SH/NM/daily ──
+    if (daily || tier == Tier.superHard || tier == Tier.nightmare) {
       _relaxSelf = true;
-      return;
-    }
-    // Main progression: Super Hard and Nightmare also get relaxed self-adjacency
-    // and long winding arrows (matching the reference's maze look at those tiers).
-    switch (tier) {
-      case Tier.normal:
-        _relaxSelf = false;
-        _walkMin = 4;
-        _walkMax = 9;
-        _straightBias = 0.52;
-      case Tier.hard:
-        _relaxSelf = false;
-        _walkMin = 4;
-        _walkMax = 7;
-        _straightBias = 0.56;
-      case Tier.superHard:
-        _relaxSelf = true;
-        _walkMin = 5;
-        _walkMax = 12;
-        _straightBias = 0.48;
-      case Tier.nightmare:
-        _relaxSelf = true;
-        _walkMin = 5;
-        _walkMax = 14;
-        _straightBias = 0.45;
+      _walkMin = 5;
+      _walkMax = 16;
+      _straightBias = 0.42;
+    } else {
+      _relaxSelf = false;
+      switch (tier) {
+        case Tier.normal:
+          _walkMin = 4;
+          _walkMax = 9;
+          _straightBias = 0.50;
+        case Tier.hard:
+          _walkMin = 4;
+          _walkMax = 8;
+          _straightBias = 0.52;
+        default:
+          break;
+      }
     }
   }
 
