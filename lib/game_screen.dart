@@ -867,14 +867,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   Widget _loseOverlay() {
-    final canAddFree = !Prefs.usedFreeLife;
     return Positioned.fill(
       child: Container(
         color: Colors.black.withValues(alpha: 0.5),
         child: Center(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 32),
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.fromLTRB(28, 32, 28, 24),
             decoration: BoxDecoration(
               color: AppColors.bg,
               borderRadius: BorderRadius.circular(24),
@@ -882,78 +881,46 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(Tr.get('outOfLives'),
-                    style: poppins(24, FontWeight.w800, AppColors.ink)),
-                const SizedBox(height: 24),
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: AppColors.heartEmpty.withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.favorite,
-                          size: 52, color: AppColors.red),
-                    ),
-                    Positioned(
-                      right: -8,
-                      top: -4,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: canAddFree
-                              ? const Color(0xFF4CAF50)
-                              : AppColors.blue,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text('+1',
-                              style: poppins(16, FontWeight.w800, Colors.white)),
-                        ),
-                      ),
-                    ),
-                  ],
+                Text('Continue?',
+                    style: poppins(26, FontWeight.w900, AppColors.ink)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (_) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(Icons.favorite, size: 36, color: AppColors.heart),
+                  )),
                 ),
-                const SizedBox(height: 28),
-                GestureDetector(
-                  onTap: canAddFree
-                      ? _addLife
-                      : () => AdService.showRewarded(onRewarded: () {
-                            if (mounted) _addLife();
-                          }),
+                const SizedBox(height: 16),
+                Text('Watch an ad to refill your lives\nand keep playing!',
+                    textAlign: TextAlign.center,
+                    style: poppins(15.5, FontWeight.w700, AppColors.ink)),
+                const SizedBox(height: 24),
+                Pressable(
+                  onTap: () => AdService.showRewarded(onRewarded: () {
+                    if (mounted) _addLife();
+                  }),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      color: canAddFree
-                          ? const Color(0xFF4CAF50)
-                          : AppColors.navPill,
+                      color: AppColors.blue,
                       borderRadius: BorderRadius.circular(28),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (!canAddFree) ...[
-                          Icon(Icons.videocam_rounded,
-                              size: 20,
-                              color: canAddFree
-                                  ? Colors.white
-                                  : AppColors.blue),
-                          const SizedBox(width: 8),
-                        ],
+                        const Icon(Icons.videocam_rounded,
+                            size: 24, color: Colors.white),
+                        const SizedBox(width: 8),
                         Text(Tr.get('addMoreLives'),
-                            style: poppins(17, FontWeight.w800,
-                                canAddFree ? Colors.white : AppColors.blue)),
+                            style: poppins(19, FontWeight.w900, Colors.white)),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                GestureDetector(
+                const SizedBox(height: 10),
+                Pressable(
                   onTap: _restart,
                   child: Container(
                     width: double.infinity,
@@ -964,7 +931,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     ),
                     child: Center(
                       child: Text(Tr.get('restart'),
-                          style: poppins(16, FontWeight.w800, AppColors.muted)),
+                          style: poppins(18, FontWeight.w900, AppColors.muted)),
                     ),
                   ),
                 ),
