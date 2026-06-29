@@ -99,9 +99,13 @@ class LevelGenerator {
             final dx = x - cx, dy = y - cy;
             final angle = atan2(dy, dx);
             final dist = sqrt(dx * dx / (rx * rx) + dy * dy / (ry * ry));
-            // 5-pointed star: inner radius modulated by angle
-            final r = 0.5 + 0.5 * cos(5 * angle).abs();
-            if (dist <= r * 1.1 + 0.15) mask.add(cellKey(x, y));
+            // 5-pointed star: sharp points with deep inner valleys
+            // Alternates between outer radius (1.0) and inner (0.38)
+            final a = (angle + pi / 2) % (2 * pi); // rotate so point faces up
+            final sector = (a * 5 / (2 * pi)) % 1.0; // 0-1 within each sector
+            final t = (sector - 0.5).abs() * 2; // 0 at valley, 1 at point
+            final r = 0.52 + 0.48 * t; // inner=0.52, outer=1.0 (fatter star)
+            if (dist <= r + 0.08) mask.add(cellKey(x, y));
           }
         }
       case 'cross':
@@ -566,6 +570,9 @@ class LevelGenerator {
       } else if (shapeName == 'triangle') {
         cols = max(cols, 26);
         rows = max(rows, 30);
+      } else if (shapeName == 'star') {
+        cols = max(cols, 32);
+        rows = max(rows, 36);
       } else {
         cols = (cols * 1.4).round();
         rows = (rows * 1.4).round();
