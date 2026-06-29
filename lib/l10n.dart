@@ -40,6 +40,7 @@ class Tr {
       'outOfLives': 'Out of lives',
       'addMoreLives': 'Add More Lives',
       'restart': 'Restart',
+      'restartMessage': 'Move all arrows back to the beginning and start again with full lives',
 
       // Settings
       'language': 'Language',
@@ -197,6 +198,7 @@ class Tr {
       'outOfLives': 'Keine Leben mehr',
       'addMoreLives': 'Mehr Leben',
       'restart': 'Neustart',
+      'restartMessage': 'Alle Pfeile zurücksetzen und mit vollen Leben neu starten',
 
       // Settings
       'language': 'Sprache',

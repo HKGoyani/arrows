@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'ad_service.dart';
 import 'audio.dart';
 import 'l10n.dart';
 import 'board_painter.dart';
@@ -116,6 +117,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         vsync: this, duration: const Duration(milliseconds: 1000))
       ..addListener(_onZoomIntroTick);
     c.addListener(_rebuild);
+    AdService.setPlaying(true);
     c.loadLevel(widget.level, daily: widget.isDaily);
     if (widget.isDaily) {
       widget.onLoaded?.call(c); // restore saved board if any
@@ -150,10 +152,21 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _startHintTimer();
       return;
     }
+    if (Prefs.hasFreeHint) {
+      _applyHint(safe.first);
+    } else {
+      // Show rewarded ad for paid hint
+      AdService.showRewarded(onRewarded: () {
+        if (mounted && safe.isNotEmpty) _applyHint(safe.first);
+      });
+    }
+  }
+
+  void _applyHint(Arrow arrow) {
     Prefs.setHintsUsed(Prefs.hintsUsed + 1);
     setState(() {
-      _hintArrow = safe.first;
-      _hintedIds.add(safe.first.id);
+      _hintArrow = arrow;
+      _hintedIds.add(arrow.id);
       _showHint = false;
     });
     _hintPulseCtrl.forward(from: 0);
@@ -175,6 +188,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     for (final f in _flights) {
       _disposeFlight(f);
     }
+    AdService.setPlaying(false);
     super.dispose();
   }
 
@@ -361,8 +375,73 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _restart() {
+    // From lose screen — no confirmation needed, restart directly with ad
+    AdService.onRestart(onDone: () {
+      if (!mounted) return;
+      _doRestart();
+    });
+  }
+
+  void _confirmRestart() {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: AppColors.bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${Tr.get('restart')}?',
+                  style: poppins(22, FontWeight.w900, AppColors.ink)),
+              const SizedBox(height: 12),
+              Text(Tr.get('restartMessage'),
+                  textAlign: TextAlign.center,
+                  style: poppins(14, FontWeight.w600, AppColors.ink)),
+              const SizedBox(height: 24),
+              Pressable(
+                onTap: () {
+                  Navigator.pop(context);
+                  _restart();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.blue,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(Tr.get('restart'),
+                      style: poppins(17, FontWeight.w900, Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Pressable(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: AppColors.cardBorder, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(Tr.get('cancel'),
+                      style: poppins(16, FontWeight.w900, AppColors.muted)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _doRestart() {
     if (!widget.isDaily) {
-      PerfectPlay.onRestart(); // manual restart → attempt no longer perfect
+      PerfectPlay.onRestart();
     }
     _clashFlashCtrl.reset();
     _lurchCtrl.reset();
@@ -417,7 +496,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       : Column(
                           children: [
                             GameTopBar(
-                                c: c, onBack: widget.onBack, onRestart: _restart),
+                                c: c, onBack: widget.onBack, onRestart: _confirmRestart),
                             ProgressBar(progress: c.progress),
                           ],
                         ),
@@ -841,7 +920,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 28),
                 GestureDetector(
-                  onTap: canAddFree ? _addLife : null,
+                  onTap: canAddFree
+                      ? _addLife
+                      : () => AdService.showRewarded(onRewarded: () {
+                            if (mounted) _addLife();
+                          }),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),

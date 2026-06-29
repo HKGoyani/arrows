@@ -127,7 +127,7 @@ class GameController extends ChangeNotifier {
   }
 
   void addLife() {
-    hearts = 1;
+    hearts = 3;
     status = GameStatus.playing;
     notifyListeners();
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'ad_service.dart';
 import 'audio.dart';
 import 'l10n.dart';
 import 'challenge.dart';
@@ -23,6 +25,7 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Prefs.init();
   await AudioService.init();
+  await AdService.init();
   runApp(ArrowsApp());
 }
 
@@ -74,11 +77,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
     });
   }
   late final AnimationController _navSlideCtrl;
+  BannerAd? _bannerAd;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _bannerAd = AdService.createBanner();
     _navSlideCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -88,6 +93,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
 
   @override
   void dispose() {
+    _bannerAd?.dispose();
     _navSlideCtrl.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -97,6 +103,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AudioService.onAppResume();
+      AdService.showAppOpenIfReady();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
@@ -137,7 +144,16 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
           const SettingsScreen(),
         ],
       ),
-      bottomNavigationBar: SlideTransition(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_bannerAd != null)
+            SizedBox(
+              height: _bannerAd!.size.height.toDouble(),
+              width: _bannerAd!.size.width.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
+            ),
+          SlideTransition(
         position: Tween<Offset>(
           begin: const Offset(0, 1),
           end: Offset.zero,
@@ -156,6 +172,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
           showChallengeBadge: ChallengeService.hasUnseen,
           showCollectionBadge: Prefs.collectionUnseen || LevelLegend.hasUnseen || PerfectPlay.hasUnseen || Unstoppable.hasUnseen,
         ),
+      ),
+        ],
       ),
     );
   }
@@ -315,10 +333,12 @@ class _GameFlowState extends State<GameFlow> {
         StreakService.registerPlayToday();
         if (_isDaily) {
           await _completeDaily();
+          AdService.onDailyComplete();
           if (!mounted) return;
         } else {
           Prefs.setLevel(next);
           LevelLegend.onWin(next);
+          AdService.onLevelWin();
           if (next == 10) Prefs.setCollectionUnseen(true);
           if (!mounted) return;
         }
