@@ -36,9 +36,7 @@ class LevelGenerator {
   /// Shaped levels cycle every 5-6-7 levels from L16 to L99.
   static const _shapeLevels = <int, String>{
     16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
-    39: 'star', 45: 'cross', 52: 'circle', 57: 'heart',
-    63: 'diamond', 70: 'triangle', 75: 'star', 81: 'cross',
-    88: 'circle', 93: 'heart', 99: 'diamond',
+    39: 'star', 45: 'cross', 88: 'circle', 99: 'diamond',
   };
 
   /// Builds a shape mask for the current grid, or null for rectangular.
