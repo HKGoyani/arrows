@@ -73,6 +73,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _showWinConfetti = false;
   double _scale = 1;
   bool _winHandled = false;
+  bool _restartHidden = false;
 
   // Pinch-to-zoom: board is scaled to fit viewport at 1x.
   // User can zoom in up to _maxZoom. Intro animates from 1x to _defaultZoom.
@@ -375,7 +376,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _restart() {
-    // From lose screen — no confirmation needed, restart directly with ad
+    // Hide board BEFORE ad plays — prevents any visible jump
+    setState(() => _restartHidden = true);
     AdService.onRestart(onDone: () {
       if (!mounted) return;
       _doRestart();
@@ -383,6 +385,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _confirmRestart() {
+    // Only show confirmation if player has made progress (3+ arrows fired)
+    final arrowsFired = c.total - c.arrows.where((a) => a.state != ArrowState.leaving).length;
+    if (arrowsFired < 3) {
+      _restart();
+      return;
+    }
     showDialog(
       context: context,
       builder: (_) => Dialog(
@@ -460,13 +468,24 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _heartCtrl.reset();
     _showWinText = false;
     _showWinConfetti = false;
-    _zoomCtrl.value = Matrix4.identity();
     _zoomIntroCtrl.reset();
     _introPlayed = false;
     _introAnimating = false;
     c.loadLevel(c.level, daily: widget.isDaily);
-    if (widget.isDaily) widget.onDidRestart?.call(); // wipe saved daily board
+    if (widget.isDaily) widget.onDidRestart?.call();
     _resetHintTimer();
+    // Set zoom to fitScale and reveal immediately — no delay after ad
+    final bp = _lastBoardPx;
+    final vp = _lastViewportSize;
+    if (bp != null && vp != null && c.total >= 15) {
+      final fitScale = min(vp.width / bp.width, vp.height / bp.height)
+          .clamp(0.1, 1.0);
+      _zoomCtrl.value = _centeredMatrix(fitScale);
+    } else {
+      _zoomCtrl.value = Matrix4.identity();
+    }
+    _restartHidden = false;
+    setState(() {});
   }
 
   @override
@@ -505,7 +524,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   child: ClipRect(
                     child: Stack(
                       children: [
-                        _boardArea(),
+                        Opacity(
+                          opacity: _restartHidden ? 0.0 : 1.0,
+                          child: _boardArea(),
+                        ),
                         if (_clashFlashCtrl.isAnimating) _clashFlashOverlay(),
                       ],
                     ),
