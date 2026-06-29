@@ -21,7 +21,104 @@ class LevelGenerator {
   int _walkMin = 4, _walkMax = 8;
   double _straightBias = 0.6; // higher = straighter; lower = windier
 
-  bool _inB(int x, int y) => x >= 0 && x <= cols && y >= 0 && y <= rows;
+  // Shape mask: if non-null, only cells in this set are valid. Affects all
+  // packing, gap-fill, and solvability checks via _inB.
+  Set<String>? _shapeMask;
+
+  bool _inB(int x, int y) {
+    if (x < 0 || x > cols || y < 0 || y > rows) return false;
+    if (_shapeMask != null) return _shapeMask!.contains(cellKey(x, y));
+    return true;
+  }
+
+  // ── Shape masks ──
+
+  /// Shaped levels cycle every 5-6-7 levels from L16 to L99.
+  static const _shapeLevels = <int, String>{
+    16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
+    39: 'star', 45: 'cross', 52: 'circle', 57: 'heart',
+    63: 'diamond', 70: 'triangle', 75: 'star', 81: 'cross',
+    88: 'circle', 93: 'heart', 99: 'diamond',
+  };
+
+  /// Builds a shape mask for the current grid, or null for rectangular.
+  Set<String>? _buildShapeMask(String shape) {
+    final cx = cols / 2.0, cy = rows / 2.0;
+    final rx = cols / 2.0, ry = rows / 2.0;
+    final mask = <String>{};
+
+    switch (shape) {
+      case 'circle':
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final dx = (x - cx) / rx, dy = (y - cy) / ry;
+            if (dx * dx + dy * dy <= 1.05) mask.add(cellKey(x, y));
+          }
+        }
+      case 'heart':
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            // Top: two large bumps with gentle notch (the version that worked)
+            if (ny < -0.1) {
+              final t = (ny + 0.1) / 0.9;
+              final lx = nx + 0.50;
+              final rx2 = nx - 0.50;
+              final r = 0.55;
+              final inLeft = lx * lx + t * t * 0.8 <= r * r;
+              final inRight = rx2 * rx2 + t * t * 0.8 <= r * r;
+              if (inLeft || inRight) mask.add(cellKey(x, y));
+            } else {
+              // Bottom: sharper point (quadratic narrowing)
+              final t = (ny + 0.1) / 1.1;
+              final halfW = 1.05 * (1.0 - t * t * 0.4 - t * 0.6);
+              if (nx.abs() <= halfW.clamp(0, 1)) mask.add(cellKey(x, y));
+            }
+          }
+        }
+      case 'diamond':
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final dx = (x - cx).abs() / rx, dy = (y - cy).abs() / ry;
+            if (dx + dy <= 1.05) mask.add(cellKey(x, y));
+          }
+        }
+      case 'triangle':
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            // Inverted triangle (point at bottom)
+            final ny = y / rows; // 0=top, 1=bottom
+            final halfW = (1 - ny) * rx;
+            if ((x - cx).abs() <= halfW + 0.5) mask.add(cellKey(x, y));
+          }
+        }
+      case 'star':
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final dx = x - cx, dy = y - cy;
+            final angle = atan2(dy, dx);
+            final dist = sqrt(dx * dx / (rx * rx) + dy * dy / (ry * ry));
+            // 5-pointed star: inner radius modulated by angle
+            final r = 0.5 + 0.5 * cos(5 * angle).abs();
+            if (dist <= r * 1.1 + 0.15) mask.add(cellKey(x, y));
+          }
+        }
+      case 'cross':
+        final armW = max(2, (cols * 0.3).round());
+        final armH = max(2, (rows * 0.3).round());
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final inHBar = (y - cy).abs() <= armH;
+            final inVBar = (x - cx).abs() <= armW;
+            if (inHBar || inVBar) mask.add(cellKey(x, y));
+          }
+        }
+      default:
+        return null;
+    }
+    return mask.length >= 20 ? mask : null;
+  }
 
   /// True if (nx,ny) is orthogonally adjacent to an own-body cell other than
   /// the cell we stepped from — banned so a path never folds beside itself.
@@ -454,6 +551,22 @@ class LevelGenerator {
     final tier = daily ? dailyTier(level) : tierForLevel(level);
     _configure(level, tier, daily);
 
+    // Shape mask: shaped levels only in main progression, not daily.
+    // Shaped boards lose ~30% of cells to the mask, so bump the grid
+    // larger to compensate — keeps arrow count visually dense.
+    final shapeName = daily ? null : _shapeLevels[level];
+    if (shapeName != null) {
+      // Shape-specific grid sizing. Heart needs to be wide (34×25 ref).
+      if (shapeName == 'heart') {
+        cols = max(cols, 29);
+        rows = max(rows, 25);
+      } else {
+        cols = (cols * 1.3).round();
+        rows = (rows * 1.3).round();
+      }
+    }
+    _shapeMask = shapeName != null ? _buildShapeMask(shapeName) : null;
+
     final seed = (0x9E37 + level * 2654435761 + (daily ? 0x5151 : 0)) & 0xFFFFFFFF;
 
     int score(List<Arrow> arr) {
@@ -464,11 +577,23 @@ class LevelGenerator {
       return cells; // total coverage — favours fuller boards
     }
 
-    final area = (cols + 1) * (rows + 1);
+    final area = _shapeMask?.length ?? (cols + 1) * (rows + 1);
     List<Arrow>? best;
     var bestScore = -1;
 
-    if (daily) {
+    if (_shapeMask != null) {
+      // Shaped levels: RC-only (guaranteed solvable by construction).
+      for (var att = 0; att < 10; att++) {
+        final arr = _packRC((seed + att * 7919) & 0xFFFFFFFF);
+        if (arr.isEmpty) continue;
+        final sc = score(arr);
+        if (sc > bestScore) {
+          bestScore = sc;
+          best = arr;
+        }
+        if (bestScore > area * 0.55) break;
+      }
+    } else if (daily) {
       // Daily: _packFill FIRST — produces the signature long winding maze
       // arrows. RC's exit-corridor constraint forces short arrows, so we only
       // use it as a fallback if _packFill fails solvability.
@@ -547,7 +672,9 @@ class LevelGenerator {
 
     best ??= <Arrow>[];
     _applyGapFill(best);
-    return _trimToFit(best);
+    final result = _trimToFit(best);
+    _shapeMask = null;
+    return result;
   }
 
   /// Shrinks the grid to the bounding box of the placed arrows so there's no
