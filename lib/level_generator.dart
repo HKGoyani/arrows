@@ -109,8 +109,8 @@ class LevelGenerator {
           }
         }
       case 'cross':
-        final armW = max(2, (cols * 0.3).round());
-        final armH = max(2, (rows * 0.3).round());
+        final armW = max(2, (cols * 0.22).round());
+        final armH = max(2, (rows * 0.22).round());
         for (var y = 0; y <= rows; y++) {
           for (var x = 0; x <= cols; x++) {
             final inHBar = (y - cy).abs() <= armH;
@@ -573,6 +573,9 @@ class LevelGenerator {
       } else if (shapeName == 'star') {
         cols = max(cols, 32);
         rows = max(rows, 36);
+      } else if (shapeName == 'cross') {
+        cols = max(cols, 29);
+        rows = max(rows, 34);
       } else {
         cols = (cols * 1.4).round();
         rows = (rows * 1.4).round();
