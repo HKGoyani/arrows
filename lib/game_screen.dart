@@ -771,7 +771,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     }
                     return Opacity(
                       opacity: opacity.clamp(0.0, 1.0),
-                      child: Text(_winMessage(), style: poppins(22, FontWeight.w900, const Color(0xFF535B83))),
+                      child: Text(_winMessage(), style: poppins(22, FontWeight.w900, AppColors.ink)),
                     );
                   },
                 ),
