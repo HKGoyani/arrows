@@ -109,6 +109,19 @@ class FlameOnPedestal extends StatelessWidget {
               height: s * 0.62,
               child: CustomPaint(painter: PedestalPainter()),
             ),
+            // tiny fill behind flame gap using pedestal color
+            Positioned(
+              top: s * 0.34,
+              left: s * 0.38,
+              child: Container(
+                width: s * 0.24,
+                height: s * 0.14,
+                decoration: const BoxDecoration(
+                  color: _pedLight,
+                  borderRadius: BorderRadius.all(Radius.circular(4)),
+                ),
+              ),
+            ),
             // flame: base dips well into the cup
             Positioned(
               top: s * 0.10,
