@@ -560,6 +560,9 @@ class LevelGenerator {
       if (shapeName == 'heart') {
         cols = max(cols, 29);
         rows = max(rows, 25);
+      } else if (shapeName == 'diamond') {
+        cols = max(cols, 26);
+        rows = max(cols, 30);
       } else {
         cols = (cols * 1.3).round();
         rows = (rows * 1.3).round();
