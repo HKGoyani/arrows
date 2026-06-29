@@ -563,9 +563,12 @@ class LevelGenerator {
       } else if (shapeName == 'diamond') {
         cols = max(cols, 26);
         rows = max(cols, 30);
+      } else if (shapeName == 'triangle') {
+        cols = max(cols, 26);
+        rows = max(rows, 30);
       } else {
-        cols = (cols * 1.3).round();
-        rows = (rows * 1.3).round();
+        cols = (cols * 1.4).round();
+        rows = (rows * 1.4).round();
       }
     }
     _shapeMask = shapeName != null ? _buildShapeMask(shapeName) : null;
