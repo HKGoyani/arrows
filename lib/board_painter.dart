@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'config.dart';
+import 'prefs.dart';
 import 'fly_off.dart';
 import 'game_controller.dart';
 import 'models.dart';
@@ -72,7 +73,7 @@ class BoardPainter extends CustomPainter {
     if (showGrid) {
       final far = vbW * 4;
       final normalPaint = Paint()
-        ..color = const Color(0xFFD0D3E8)
+        ..color = Prefs.darkMode ? const Color(0xFF3A4060) : const Color(0xFFD0D3E8)
         ..strokeWidth = Cfg.stroke
         ..strokeCap = StrokeCap.round;
       final redPaint = Paint()

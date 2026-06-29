@@ -224,7 +224,7 @@ void showRecordDetail(
   String? primaryLabel,
   VoidCallback? onPrimary,
   double badgeAlign = 0.80,
-  Color textColor = const Color(0xFF5E658B),
+  Color? textColor,
 }) {
   showGeneralDialog(
     context: context,
@@ -250,7 +250,7 @@ class _RecordDetailScreen extends StatelessWidget {
   final String? primaryLabel;
   final VoidCallback? onPrimary;
   final double badgeAlign;
-  final Color textColor;
+  final Color? textColor;
   const _RecordDetailScreen({
     this.painter,
     this.iconWidget,
@@ -261,7 +261,7 @@ class _RecordDetailScreen extends StatelessWidget {
     this.primaryLabel,
     this.onPrimary,
     this.badgeAlign = 0.80,
-    this.textColor = const Color(0xFF5E658B),
+    this.textColor,
   });
 
   @override
@@ -279,7 +279,7 @@ class _RecordDetailScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Text(currentText!,
                 textAlign: TextAlign.center,
-                style: poppins(16, FontWeight.w800, const Color(0xFF7A809C))),
+                style: poppins(16, FontWeight.w800, AppColors.muted)),
           ],
           if (primaryLabel != null)
             Pressable(
@@ -301,7 +301,7 @@ class _RecordDetailScreen extends StatelessWidget {
     );
 
     return Material(
-      color: Colors.white,
+      color: AppColors.bg,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -331,7 +331,7 @@ class _RecordDetailScreen extends StatelessWidget {
               const SizedBox(height: 18),
               Text(text,
                   textAlign: TextAlign.center,
-                  style: poppins(18, FontWeight.w900, textColor)),
+                  style: poppins(18, FontWeight.w900, textColor ?? AppColors.muted)),
               const Spacer(flex: 4),
               bottomSlot,
               const SizedBox(height: 14),
@@ -342,12 +342,12 @@ class _RecordDetailScreen extends StatelessWidget {
                   height: 50,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.bg,
                     borderRadius: BorderRadius.circular(25),
-                    border: Border.all(color: const Color(0xFFE4E6F1), width: 1.5),
+                    border: Border.all(color: AppColors.cardBorder, width: 1.5),
                   ),
                   child: Text(Tr.get('close'),
-                      style: poppins(17, FontWeight.w900, const Color(0xFF8C90A6))),
+                      style: poppins(17, FontWeight.w900, AppColors.muted)),
                 ),
               ),
               const SizedBox(height: 28),
@@ -412,7 +412,7 @@ class _NumberBadge extends StatelessWidget {
             ..style = PaintingStyle.stroke
             ..strokeWidth = fontSize * 0.3
             ..strokeJoin = StrokeJoin.round
-            ..color = const Color(0xFF6F7596),
+            ..color = Prefs.darkMode ? const Color(0xFF3A4060) : AppColors.muted,
         )),
         // white fill
         Text(value, style: base),
@@ -670,7 +670,7 @@ class _AwardDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final unlocked = current >= target;
     return Material(
-      color: Colors.white,
+      color: AppColors.bg,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -702,14 +702,14 @@ class _AwardDetailScreen extends StatelessWidget {
                     height: 60,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.bg,
                       borderRadius: BorderRadius.circular(30),
                       border: Border.all(
-                          color: const Color(0xFFE4E6F1), width: 1.5),
+                          color: AppColors.cardBorder, width: 1.5),
                     ),
                     child: Text(Tr.get('close'),
                         style: poppins(17, FontWeight.w800,
-                            const Color(0xFF8C90A6))),
+                            AppColors.muted)),
                   ),
                 ),
               ),
@@ -756,7 +756,7 @@ class _AwardProgress extends StatelessWidget {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEDEFF7),
+                      color: AppColors.cardBorder,
                       borderRadius: BorderRadius.circular(h / 2),
                     ),
                   ),
@@ -783,7 +783,7 @@ class _AwardProgress extends StatelessWidget {
         if (showTarget) ...[
           const SizedBox(width: 10),
           Text('$target',
-              style: poppins(16, FontWeight.w900, const Color(0xFFAFB4CC))),
+              style: poppins(16, FontWeight.w900, AppColors.muted)),
         ],
       ],
     );
@@ -827,7 +827,7 @@ class _LevelLegendDetailScreen extends StatelessWidget {
     final next = LevelLegend.next;
 
     return Material(
-      color: Colors.white,
+      color: AppColors.bg,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -879,7 +879,7 @@ class _LevelLegendDetailScreen extends StatelessWidget {
               if (unlocked && next != null) ...[
                 Text(Tr.param('nextAwardAtLevel', {'next': '$next'}),
                     style: poppins(
-                        15, FontWeight.w700, const Color(0xFF7A7F9E))),
+                        15, FontWeight.w700, AppColors.muted)),
                 const SizedBox(height: 14),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
@@ -938,7 +938,7 @@ class _PerfectPlayDetailScreen extends StatelessWidget {
     final next = PerfectPlay.next;
 
     return Material(
-      color: Colors.white,
+      color: AppColors.bg,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -982,7 +982,7 @@ class _PerfectPlayDetailScreen extends StatelessWidget {
               if (next != null) ...[
                 if (unlocked) ...[
                   Text(Tr.param('nextAwardAtLevels', {'next': '$next'}),
-                      style: poppins(15, FontWeight.w700, const Color(0xFF7A7F9E))),
+                      style: poppins(15, FontWeight.w700, AppColors.muted)),
                   const SizedBox(height: 14),
                 ],
                 Padding(
@@ -1019,10 +1019,10 @@ class _DatePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F2F8),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Text(text, style: poppins(13, FontWeight.w800, const Color(0xFF535B83))),
+      child: Text(text, style: poppins(13, FontWeight.w800, AppColors.ink)),
     );
   }
 }
@@ -1055,7 +1055,7 @@ class _UnstoppableDetailScreen extends StatelessWidget {
     final next = Unstoppable.next;
 
     return Material(
-      color: Colors.white,
+      color: AppColors.bg,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -1107,7 +1107,7 @@ class _UnstoppableDetailScreen extends StatelessWidget {
               if (unlocked && next != null) ...[
                 Text(Tr.param('nextAwardAtLevels', {'next': '$next'}),
                     style: poppins(
-                        15, FontWeight.w700, const Color(0xFF7A7F9E))),
+                        15, FontWeight.w700, AppColors.muted)),
                 const SizedBox(height: 14),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
@@ -1150,12 +1150,12 @@ class _CloseButton extends StatelessWidget {
         height: 60,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.bg,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: const Color(0xFFE4E6F1), width: 1.5),
+          border: Border.all(color: AppColors.cardBorder, width: 1.5),
         ),
         child: Text(Tr.get('close'),
-            style: poppins(17, FontWeight.w800, const Color(0xFF8C90A6))),
+            style: poppins(17, FontWeight.w800, AppColors.muted)),
       ),
     );
   }
@@ -1211,7 +1211,7 @@ class _TrophyDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.bg,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -1262,13 +1262,13 @@ class _TrophyDetailScreen extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.bg,
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
-                        color: const Color(0xFFE4E6F1), width: 1.5),
+                        color: AppColors.cardBorder, width: 1.5),
                   ),
                   child: Text(Tr.get('close'),
-                      style: poppins(18, FontWeight.w900, const Color(0xFF8C90A6))),
+                      style: poppins(18, FontWeight.w900, AppColors.muted)),
                 ),
               ),
               const SizedBox(height: 28),
@@ -1640,7 +1640,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen>
                               height: 62,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF1F2F8),
+                                color: AppColors.surface,
                                 borderRadius: BorderRadius.circular(31),
                               ),
                               child: Text(Tr.param('newLevelIn', {'time': _untilMidnight()}),
@@ -1888,7 +1888,7 @@ class _DayCell extends StatelessWidget {
     final hasRing = progress > 0 && progress < 1;
     // base circle colour
     final Color bg;
-    final Color textColor;
+    final Color? textColor;
     if (played) {
       bg = const Color(0xFF28E588); // green = completed
       textColor = Colors.white;
@@ -1899,8 +1899,8 @@ class _DayCell extends StatelessWidget {
       bg = Colors.transparent;
       textColor = const Color(0xFFCDD2E4);
     } else {
-      bg = const Color(0xFFEDEFF7);
-      textColor = const Color(0xFF5E658B);
+      bg = AppColors.cardBorder;
+      textColor = AppColors.muted;
     }
 
     // show the number only when selected, or for an un-played non-future day.

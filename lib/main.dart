@@ -23,11 +23,20 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Prefs.init();
   await AudioService.init();
-  runApp(const ArrowsApp());
+  runApp(ArrowsApp());
 }
 
-class ArrowsApp extends StatelessWidget {
-  const ArrowsApp({super.key});
+final appKey = GlobalKey<_ArrowsAppState>();
+
+class ArrowsApp extends StatefulWidget {
+  ArrowsApp() : super(key: appKey);
+  @override
+  State<ArrowsApp> createState() => _ArrowsAppState();
+}
+
+class _ArrowsAppState extends State<ArrowsApp> {
+  void rebuildTheme() => setState(() {});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -348,7 +357,7 @@ class _LevelLegendCelebration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -376,7 +385,7 @@ class _LevelLegendCelebration extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F2F8),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(Tr.get('newUnlock'),
@@ -420,7 +429,7 @@ class _PerfectPlayCelebration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -448,7 +457,7 @@ class _PerfectPlayCelebration extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F2F8),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(Tr.get('newUnlock'),
@@ -501,7 +510,7 @@ class _CelebBadge extends StatelessWidget {
                 ..style = PaintingStyle.stroke
                 ..strokeWidth = fs * 0.3
                 ..strokeJoin = StrokeJoin.round
-                ..color = const Color(0xFF6F7596),
+                ..color = Prefs.darkMode ? const Color(0xFF3A4060) : const Color(0xFF6F7596),
             )),
         Text(value, style: base),
       ],

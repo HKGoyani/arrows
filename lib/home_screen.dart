@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Stack(
       children: [
-        const Positioned.fill(child: CustomPaint(painter: DotGridPainter())),
+        Positioned.fill(child: CustomPaint(painter: DotGridPainter(isDark: Prefs.darkMode))),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     padding: const EdgeInsets.only(top: 1),
                                     child: Text('$streak',
                                         style: poppins(20, FontWeight.w900,
-                                            const Color(0xFF535B83))),
+                                            AppColors.ink)),
                                   ),
                                 ],
                               ),
@@ -115,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const Spacer(flex: 4),
                 FadeTransition(
                   opacity: appearAnim,
-                  child: const ArrowsWordmark(),
+                  child: ArrowsWordmark(),
                 ),
                 const SizedBox(height: 8),
                 FadeTransition(

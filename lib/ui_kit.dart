@@ -10,7 +10,8 @@ TextStyle poppins(double size, FontWeight w, Color c, {double? ls, double? heigh
 
 /// Faint dot-grid backdrop (echoes the game board) for menu screens.
 class DotGridPainter extends CustomPainter {
-  const DotGridPainter();
+  final bool isDark;
+  const DotGridPainter({this.isDark = false});
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint()..color = AppColors.dot.withValues(alpha: 0.55);
@@ -23,7 +24,7 @@ class DotGridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant DotGridPainter old) => old.isDark != isDark;
 }
 
 /// Scales down briefly while pressed.
@@ -113,7 +114,7 @@ class AppCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.bg,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.cardBorder),
         boxShadow: const [
@@ -250,8 +251,8 @@ class ThemeSwitch extends StatelessWidget {
           child: Container(
             width: 24,
             height: 24,
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: AppColors.bg,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(color: Color(0x22000000), blurRadius: 4, offset: Offset(0, 1)),
@@ -292,7 +293,7 @@ class AppBottomNav extends StatelessWidget {
       (Icons.settings_rounded, Tr.get('settings'), true),
     ];
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.navBg,
         boxShadow: [BoxShadow(color: Color(0x0A111430), blurRadius: 14, offset: Offset(0, -4))],
       ),
@@ -334,7 +335,7 @@ class AppBottomNav extends StatelessWidget {
                           child: Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: AppColors.red,
                               shape: BoxShape.circle,
                             ),

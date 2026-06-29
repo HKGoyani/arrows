@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'audio.dart';
 import 'config.dart';
+import 'main.dart' show appKey;
 import 'l10n.dart';
 import 'prefs.dart';
 import 'ui_kit.dart';
@@ -36,26 +37,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         Text(Prefs.language, style: poppins(14, FontWeight.w800, AppColors.muted)),
                         const SizedBox(width: 4),
-                        const Icon(Icons.chevron_right_rounded, color: AppColors.muted, size: 20),
+                        Icon(Icons.chevron_right_rounded, color: AppColors.muted, size: 20),
                       ],
                     ),
                     onTap: () => _showLanguage(context),
                   ),
-                  const _Divider(),
                   _toggle(AudioService.vibrationOn, Icons.waves_rounded, AppColors.navInk,
                       Tr.get('vibrations'), null, AudioService.setVibration),
-                  const _Divider(),
                   _toggle(AudioService.soundOn, Icons.volume_up_rounded, AppColors.navInk,
                       Tr.get('sounds'), null, AudioService.setSound),
-                  const _Divider(),
                   _toggle(AudioService.musicOn, Icons.music_note_rounded, AppColors.navInk,
                       Tr.get('music'), null, AudioService.setMusic),
-                  const _Divider(),
                   SettingsTile(
                     icon: Icons.dark_mode_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('darkMode'),
-                    trailing: _comingSoon(),
+                    trailing: ThemeSwitch(
+                      value: Prefs.darkMode,
+                      onChanged: (v) {
+                        Prefs.setDarkMode(v);
+                        setState(() {});
+                        appKey.currentState?.rebuildTheme();
+                      },
+                    ),
+                    onTap: () {
+                      Prefs.setDarkMode(!Prefs.darkMode);
+                      setState(() {});
+                      appKey.currentState?.rebuildTheme();
+                    },
                   ),
                 ],
               ),
@@ -85,7 +94,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     onTap: () { Prefs.setRemoveAds(!Prefs.removeAds); setState(() {}); },
                   ),
-                  const _Divider(),
                   SettingsTile(
                     icon: Icons.refresh_rounded,
                     tint: AppColors.navInk,
@@ -103,22 +111,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.menu_book_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('howToPlay'),
-                    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+                    trailing: Icon(Icons.chevron_right_rounded, color: AppColors.muted),
                     onTap: () => _howToPlay(context),
                   ),
-                  const _Divider(),
                   SettingsTile(
                     icon: Icons.cloud_download_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('restoreProgress'),
                     trailing: _comingSoon(),
                   ),
-                  const _Divider(),
                   SettingsTile(
                     icon: Icons.restart_alt_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('resetProgress'),
-                    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+                    trailing: Icon(Icons.chevron_right_rounded, color: AppColors.muted),
                     onTap: () => _confirmReset(context),
                   ),
                 ],
@@ -135,7 +141,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Tr.get('rateUs'),
                     onTap: () => _rateUs(context),
                   ),
-                  const _Divider(),
                   SettingsTile(
                     icon: Icons.edit_rounded,
                     tint: AppColors.navInk,
@@ -155,7 +160,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     tint: AppColors.navInk,
                     title: Tr.get('privacy'),
                   ),
-                  const _Divider(),
                   SettingsTile(
                     icon: Icons.info_outline_rounded,
                     tint: AppColors.navInk,
@@ -176,11 +180,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static Widget _comingSoon() => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(
-      color: const Color(0xFFE0E3F0),
+      color: AppColors.btnBg,
       borderRadius: BorderRadius.circular(10),
     ),
     child: Text(Tr.get('comingSoon'),
-        style: poppins(11, FontWeight.w800, const Color(0xFF8B90AE))),
+        style: poppins(11, FontWeight.w800, AppColors.muted)),
   );
 
   Widget _toggle(ValueNotifier<bool> n, IconData icon, Color tint, String title,
@@ -223,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (ctx, setDialogState) {
           final selected = Prefs.language;
           return Dialog(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.bg,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
@@ -231,7 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(Tr.get('language'),
-                      style: poppins(22, FontWeight.w900, const Color(0xFF5A5F7E))),
+                      style: poppins(22, FontWeight.w900, AppColors.muted)),
                   const SizedBox(height: 14),
                   ...List.generate(_languages.length, (i) {
                     final lang = _languages[i];
@@ -252,7 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Expanded(
                                   child: Text(lang,
                                       style: poppins(16, FontWeight.w800,
-                                          isSelected ? AppColors.blue : const Color(0xFF3A3F5E))),
+                                          isSelected ? AppColors.blue : AppColors.ink)),
                                 ),
                                 if (isSelected)
                                   Icon(Icons.check_circle,
@@ -274,7 +278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: const Color(0xFFD0D4EE), width: 1.5),
+                        border: Border.all(color: AppColors.cardBorder, width: 1.5),
                       ),
                       child: Center(
                         child: Text(Tr.get('close'),
@@ -296,7 +300,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (_) => Dialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
@@ -308,9 +312,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEEFF8),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFD0D4EE)),
+                  border: Border.all(color: AppColors.cardBorder),
                 ),
                 child: TextField(
                   controller: controller,
@@ -361,7 +365,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
+                    border: Border.all(color: AppColors.cardBorder, width: 1),
                   ),
                   child: Center(
                     child: Text(Tr.get('cancel'),
@@ -380,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (_) => Dialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
@@ -412,7 +416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
+                    border: Border.all(color: AppColors.cardBorder, width: 1),
                   ),
                   child: Center(
                     child: Text(Tr.get('oneToFourStars'),
@@ -447,7 +451,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: const Color(0xFFD0D4EE), width: 1),
+                    border: Border.all(color: AppColors.cardBorder, width: 1),
                   ),
                   child: Center(
                     child: Text(Tr.get('close'),
@@ -466,7 +470,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(Tr.get('howToPlay'), style: poppins(20, FontWeight.w800, AppColors.ink)),
         content: Text(
@@ -487,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(Tr.get('resetProgressQuestion'), style: poppins(19, FontWeight.w800, AppColors.ink)),
         content: Text(
@@ -520,7 +524,7 @@ class _SettingsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEF0F8),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
       ),
       child: child,
@@ -532,5 +536,5 @@ class _Divider extends StatelessWidget {
   const _Divider();
   @override
   Widget build(BuildContext context) =>
-      const Divider(height: 1, thickness: 1, color: AppColors.cardBorder, indent: 12, endIndent: 12);
+      Divider(height: 1, thickness: 1, color: AppColors.cardBorder, indent: 12, endIndent: 12);
 }

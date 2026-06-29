@@ -21,13 +21,13 @@ class ArrowsWordmark extends StatelessWidget {
         ),
         Text(
           'rrows',
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Area',
             fontFamilyFallback: ['Poppins'],
             fontSize: 36,
             fontWeight: FontWeight.w900,
-            shadows: [Shadow(color: Color(0xFF38427E), blurRadius: 1)],
-            color: const Color(0xFF38427E),
+            shadows: [Shadow(color: AppColors.ink, blurRadius: 1)],
+            color: AppColors.ink,
             letterSpacing: 0.5,
             height: 1,
           ),
@@ -45,7 +45,7 @@ class _TrianglePainter extends CustomPainter {
       ..lineTo(s.width, s.height)
       ..lineTo(0, s.height)
       ..close();
-    canvas.drawPath(p, Paint()..color = const Color(0xFF38427E));
+    canvas.drawPath(p, Paint()..color = AppColors.ink);
   }
 
   @override
@@ -63,7 +63,7 @@ class CircleButton extends StatelessWidget {
       child: Container(
         width: 46,
         height: 46,
-        decoration: const BoxDecoration(color: AppColors.btnBg, shape: BoxShape.circle),
+        decoration: BoxDecoration(color: AppColors.btnBg, shape: BoxShape.circle),
         child: Center(child: child),
       ),
     );
@@ -153,7 +153,7 @@ class ProgressBar extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              const ColoredBox(color: AppColors.progressTrack),
+              ColoredBox(color: AppColors.progressTrack),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
                 duration: const Duration(milliseconds: 350),
@@ -191,7 +191,7 @@ class GameTopBar extends StatelessWidget {
         children: [
           CircleButton(
             onTap: onBack,
-            child: const Icon(Icons.play_arrow, color: AppColors.btnInk, size: 40)
+            child: Icon(Icons.play_arrow, color: AppColors.btnInk, size: 40)
                 .rotated(),
           ),
           const SizedBox(width: 14),
@@ -199,7 +199,7 @@ class GameTopBar extends StatelessWidget {
             onTap: onRestart,
             child: Transform.rotate(
               angle: -30 * pi / 180,
-              child: const Icon(Icons.replay_rounded, color: AppColors.btnInk, size: 28,
+              child: Icon(Icons.replay_rounded, color: AppColors.btnInk, size: 28,
                 shadows: [Shadow(color: AppColors.btnInk, blurRadius: 1)],
               ),
             ),

@@ -445,7 +445,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       ? Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 9),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.btnBg,
                             borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(22),
@@ -455,7 +455,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.lightbulb_rounded,
+                              Icon(Icons.lightbulb_rounded,
                                   color: AppColors.btnInk, size: 20),
                               const SizedBox(width: 5),
                               Text(Tr.get('hint'),
@@ -699,7 +699,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             angle: -pi / 4,
             child: Transform.scale(
               scale: scale,
-              child: const Icon(Icons.touch_app,
+              child: Icon(Icons.touch_app,
                   size: iconSize, color: AppColors.arrow),
             ),
           ),
@@ -797,7 +797,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             margin: const EdgeInsets.symmetric(horizontal: 32),
             padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.bg,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(

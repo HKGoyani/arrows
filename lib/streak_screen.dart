@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'config.dart';
 import 'l10n.dart';
 import 'prefs.dart';
 import 'streak.dart';
@@ -94,7 +95,7 @@ class StreakWeekRow extends StatelessWidget {
                                 ? _flameOrange
                                 : d.isToday
                                     ? const Color(0xFF7A89FB)
-                                    : const Color(0xFFC2C7DE))),
+                                    : AppColors.lock)),
                   ),
                 ),
             ],
@@ -141,7 +142,7 @@ class StreakWeekRow extends StatelessWidget {
         ? _flameOrange
         : d.isToday
             ? const Color(0xFFB8BFE0)
-            : const Color(0xFFEDEFF7);
+            : AppColors.cardBorder;
     final circle = Container(
       width: _circle,
       height: _circle,
@@ -221,7 +222,7 @@ class _StreakCelebrationState extends State<StreakCelebration>
   Widget build(BuildContext context) {
     final oldStreak = widget.streak - 1;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _c,
@@ -324,7 +325,7 @@ class _RollingStreakText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = poppins(25, FontWeight.w900, const Color(0xFF535B83));
+    final style = poppins(25, FontWeight.w900, AppColors.ink);
     const h = 34.0;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -440,7 +441,7 @@ class _CelebrationWeekRow extends StatelessWidget {
     } else if (d.done) {
       color = _flameOrange;
     } else {
-      color = const Color(0xFFC2C7DE);
+      color = AppColors.lock;
     }
     return Text(d.label, style: poppins(13, FontWeight.w900, color));
   }
@@ -459,7 +460,7 @@ class _CelebrationWeekRow extends StatelessWidget {
               Container(
                 width: _circle,
                 height: _circle,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                     color: _pendingBlue, shape: BoxShape.circle),
               ),
             Transform(
@@ -485,8 +486,8 @@ class _CelebrationWeekRow extends StatelessWidget {
     return Container(
       width: _circle,
       height: _circle,
-      decoration: const BoxDecoration(
-          color: Color(0xFFEDEFF7), shape: BoxShape.circle),
+      decoration: BoxDecoration(
+          color: AppColors.cardBorder, shape: BoxShape.circle),
     );
   }
 
@@ -509,7 +510,7 @@ class StreakDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.bg,
       child: SafeArea(
         child: Column(
           children: [
@@ -517,7 +518,7 @@ class StreakDetailSheet extends StatelessWidget {
             streakFlame(size: 180),
             const SizedBox(height: 18),
             Text(Tr.param('dayStreak', {'count': '$streak'}),
-                style: poppins(25, FontWeight.w900, const Color(0xFF535B83))),
+                style: poppins(25, FontWeight.w900, AppColors.ink)),
             const SizedBox(height: 24),
             const StreakWeekRow(),
             if (!StreakService.playedToday) ...[
@@ -532,9 +533,9 @@ class StreakDetailSheet extends StatelessWidget {
                 // match the week row width (StreakWeekRow: 42 × 7 = 294)
                 width: 294,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE9EBF4)),
+                  border: Border.all(color: AppColors.cardBorder),
                 ),
                 child: Stack(
                   children: [
@@ -544,7 +545,7 @@ class StreakDetailSheet extends StatelessWidget {
                         children: [
                           Text(Tr.get('streakFreezers'),
                               style: poppins(17, FontWeight.w900,
-                                  const Color(0xFF535B83))),
+                                  AppColors.ink)),
                           const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -564,7 +565,7 @@ class StreakDetailSheet extends StatelessWidget {
                           const SizedBox(height: 12),
                           Text(Tr.get('freezerStatus'),
                               style: poppins(13.5, FontWeight.w800,
-                                  const Color(0xFF535B83))),
+                                  AppColors.ink)),
                         ],
                       ),
                     ),
@@ -588,14 +589,14 @@ class StreakDetailSheet extends StatelessWidget {
                   height: 50,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.bg,
                     borderRadius: BorderRadius.circular(25),
                     border:
-                        Border.all(color: const Color(0xFFE4E6F1), width: 1.5),
+                        Border.all(color: AppColors.cardBorder, width: 1.5),
                   ),
                   child: Text(Tr.get('close'),
                       style:
-                          poppins(17, FontWeight.w900, const Color(0xFF8C90A6))),
+                          poppins(17, FontWeight.w900, AppColors.muted)),
                 ),
               ),
             ),
