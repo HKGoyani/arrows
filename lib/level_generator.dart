@@ -36,7 +36,7 @@ class LevelGenerator {
   /// Shaped levels cycle every 5-6-7 levels from L16 to L99.
   static const _shapeLevels = <int, String>{
     16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
-    39: 'star', 45: 'cross', 88: 'circle', 99: 'diamond',
+    39: 'star', 45: 'cross', 88: 'circle', 99: 'peach',
   };
 
   /// Builds a shape mask for the current grid, or null for rectangular.
@@ -104,6 +104,29 @@ class LevelGenerator {
             final t = (sector - 0.5).abs() * 2; // 0 at valley, 1 at point
             final r = 0.52 + 0.48 * t; // inner=0.52, outer=1.0 (fatter star)
             if (dist <= r + 0.08) mask.add(cellKey(x, y));
+          }
+        }
+      case 'peach':
+        // Rounded heart/peach: very round body, tiny top dip, gentle bottom
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            if (ny < -0.1) {
+              final t = (ny + 0.1) / 0.9;
+              final lx = nx + 0.38;
+              final rx2 = nx - 0.38;
+              final r = 0.65;
+              final inLeft = lx * lx + t * t * 0.6 <= r * r;
+              final inRight = rx2 * rx2 + t * t * 0.6 <= r * r;
+              if (inLeft || inRight) mask.add(cellKey(x, y));
+            } else if (ny < 0.3) {
+              if (nx.abs() <= 1.02) mask.add(cellKey(x, y));
+            } else {
+              final t = (ny - 0.3) / 0.7;
+              final halfW = 1.02 * (1.0 - t * t * 0.55 - t * 0.45);
+              if (nx.abs() <= halfW.clamp(0, 1)) mask.add(cellKey(x, y));
+            }
           }
         }
       case 'cross':
@@ -562,6 +585,9 @@ class LevelGenerator {
       if (shapeName == 'heart') {
         cols = max(cols, 29);
         rows = max(rows, 25);
+      } else if (shapeName == 'peach') {
+        cols = max(cols, 33);
+        rows = max(rows, 37);
       } else if (shapeName == 'diamond') {
         cols = max(cols, 26);
         rows = max(cols, 30);
