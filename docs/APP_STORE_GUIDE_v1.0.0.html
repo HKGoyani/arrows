@@ -159,33 +159,38 @@
 
     <div class="alert" id="critical">
       <h2>Critical — must fix before submission</h2>
-      <p>These are <strong>blocking</strong> issues. The app as built today will not function correctly for real users if shipped as-is.</p>
+      <p>Updated 2026-06-30 — 3 of the original 5 blocking items are resolved. Two remain.</p>
       <table>
-        <tr><th>Item</th><th>Current state</th><th>Required action</th></tr>
+        <tr><th>Item</th><th>Status</th><th>Detail</th></tr>
         <tr>
           <td><strong>AdMob App ID</strong></td>
-          <td>Test ID <code>ca-app-pub-3940256099942544~1458002511</code> in <code>ios/Runner/Info.plist</code></td>
-          <td>Replace with your real AdMob App ID from the AdMob console</td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Production App ID <code>ca-app-pub-4818503743858431~5166233161</code> set in <code>Info.plist</code></td>
         </tr>
         <tr>
           <td><strong>Ad Unit IDs</strong></td>
-          <td>All 4 ad formats use Google's shared test IDs in <code>lib/ad_service.dart</code></td>
-          <td>Create real ad units in AdMob console for <code>com.shayona.arrows</code> and swap in production IDs</td>
+          <td><span class="tag tag-ok">RESOLVED (iOS)</span></td>
+          <td>All 4 formats (rewarded, interstitial, banner, app open) use production IDs in <code>lib/ad_service.dart</code>. Android still on test IDs — no Android AdMob app/units created yet</td>
         </tr>
         <tr>
           <td><strong>App Tracking Transparency</strong></td>
-          <td><code>NSUserTrackingUsageDescription</code> is <strong>missing</strong> from <code>Info.plist</code></td>
-          <td>Add this key with a user-facing string. Without it, the ATT prompt won't show and Apple may reject the build for undisclosed IDFA use</td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td><code>NSUserTrackingUsageDescription</code> added to <code>Info.plist</code>, and the actual native ATT request is wired via <code>app_tracking_transparency</code> in <code>AdService.init()</code> — fires after the GDPR/UMP consent flow resolves</td>
+        </tr>
+        <tr>
+          <td><strong>GDPR / US States consent (UMP)</strong></td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Not in the original list, found during a follow-up compliance audit. Google UMP SDK consent flow implemented in <code>AdService._requestConsent()</code>, runs before any ad loads. GDPR (EEA/UK) and US States messages created and published in AdMob console → Privacy &amp; Messaging</td>
         </tr>
         <tr>
           <td><strong>In-App Purchase product</strong></td>
-          <td>Only exists in the local <code>Configuration.storekit</code> test file</td>
-          <td>Create the real <code>remove_ads</code> non-consumable product in App Store Connect and submit for review</td>
+          <td><span class="tag tag-block">STILL BLOCKING</span></td>
+          <td>Only exists in the local <code>Configuration.storekit</code> test file. Create the real <code>remove_ads</code> non-consumable product in App Store Connect and submit for review</td>
         </tr>
         <tr>
           <td><strong>App screenshots</strong></td>
-          <td>None created yet</td>
-          <td>Required for all supported device sizes (see Section 4)</td>
+          <td><span class="tag tag-block">STILL BLOCKING</span></td>
+          <td>None created yet. Required for all supported device sizes (see Section 4)</td>
         </tr>
       </table>
     </div>
@@ -331,7 +336,8 @@ one-time Remove Ads purchase for an uninterrupted experience.</pre>
         <tr><td>Diagnostics</td><td>No</td><td>—</td><td>—</td><td>No Crashlytics integrated</td></tr>
         <tr><td>Contact, Health, Financial, Location, Browsing, Photos, Contacts</td><td>No</td><td>—</td><td>—</td><td>App collects none of these</td></tr>
       </table>
-      <p><strong>Tracking:</strong> answer <strong>Yes</strong> to "Does this app track users?" — AdMob may use IDFA for personalization if ATT consent is granted. The ATT prompt must be implemented first (see Critical section).</p>
+      <p><strong>Tracking:</strong> answer <strong>Yes</strong> to "Does this app track users?" — AdMob may use IDFA for personalization if ATT consent is granted. <span class="tag tag-ok">ATT prompt is now implemented</span> via <code>app_tracking_transparency</code>, fired in <code>AdService.init()</code>.</p>
+      <p><strong>Consent (GDPR/US States):</strong> <span class="tag tag-ok">RESOLVED</span> — Google UMP SDK consent flow runs before any ad request, with published GDPR and US States messages in AdMob console. Required by AdMob's EU User Consent Policy.</p>
       <p>Full policy text: <a href="https://hkgoyani.github.io/arrows-legal/privacy-policy.html" target="_blank">hkgoyani.github.io/arrows-legal/privacy-policy.html</a></p>
     </section>
 
@@ -438,15 +444,16 @@ or tap an in-progress level number to continue.</pre>
       <h2>13. Build &amp; Archive Checklist</h2>
       <p>Run through this immediately before archiving in Xcode:</p>
       <ul>
-        <li>Swap test AdMob App ID → production App ID in <code>Info.plist</code></li>
-        <li>Swap all 4 test ad unit IDs → production IDs in <code>lib/ad_service.dart</code></li>
-        <li>Add <code>NSUserTrackingUsageDescription</code> to <code>Info.plist</code></li>
-        <li>Add <code>ITSAppUsesNonExemptEncryption = false</code> to <code>Info.plist</code></li>
-        <li>Create real <code>remove_ads</code> IAP product in App Store Connect</li>
-        <li>Capture and upload App Store screenshots (6.9" minimum)</li>
-        <li>Confirm <code>pubspec.yaml</code> version is <code>1.0.0+1</code> (already set)</li>
+        <li><span class="tag tag-ok">DONE</span> Swap test AdMob App ID → production App ID in <code>Info.plist</code></li>
+        <li><span class="tag tag-ok">DONE</span> Swap iOS ad unit IDs → production IDs in <code>lib/ad_service.dart</code> (Android still on test IDs)</li>
+        <li><span class="tag tag-ok">DONE</span> Add <code>NSUserTrackingUsageDescription</code> to <code>Info.plist</code></li>
+        <li><span class="tag tag-ok">DONE</span> Implement the native ATT request (<code>app_tracking_transparency</code>) and GDPR/UMP consent flow</li>
+        <li><span class="tag tag-block">PENDING</span> Add <code>ITSAppUsesNonExemptEncryption = false</code> to <code>Info.plist</code></li>
+        <li><span class="tag tag-block">PENDING</span> Create real <code>remove_ads</code> IAP product in App Store Connect</li>
+        <li><span class="tag tag-block">PENDING</span> Capture and upload App Store screenshots (6.9" minimum)</li>
+        <li><span class="tag tag-ok">DONE</span> Confirm <code>pubspec.yaml</code> version is <code>1.0.0+1</code></li>
         <li>Run <code>flutter build ipa</code> (or archive via Xcode with <code>ios/Runner.xcworkspace</code>)</li>
-        <li>Test the production build on a real device — confirm ATT prompt appears, ads load, IAP purchase flow works end-to-end with a Sandbox tester account</li>
+        <li>Test the production build on a <strong>real device</strong> — the ATT system prompt and GDPR consent form do not reliably render on the iOS Simulator (confirmed via system logs that the request fires and auto-resolves, but no visible dialog). Confirm both prompts appear, ads load, and the IAP purchase flow works end-to-end with a Sandbox tester account</li>
         <li>Upload via Xcode Organizer or Transporter</li>
         <li>Submit for review with the notes from Section 12</li>
       </ul>
