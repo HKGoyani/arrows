@@ -213,21 +213,36 @@ class AdService {
   // APP OPEN AD — on resume / cold start (not during gameplay)
   // ═══════════════════════════════════════════════════════════════════
 
+  static bool _coldStartShown = false;
+
   static void _loadAppOpen() {
     if (_adsRemoved) return;
     AppOpenAd.load(
       adUnitId: _appOpenId,
       request: const AdRequest(),
       adLoadCallback: AppOpenAdLoadCallback(
-        onAdLoaded: (ad) => _appOpenAd = ad,
+        onAdLoaded: (ad) {
+          _appOpenAd = ad;
+          // Show immediately on cold start once the first load completes —
+          // init() fires this load but nothing else triggers a show at
+          // launch, only app-resume does.
+          if (!_coldStartShown) {
+            _coldStartShown = true;
+            showAppOpenIfReady();
+          }
+        },
         onAdFailedToLoad: (error) => _appOpenAd = null,
       ),
     );
   }
 
-  /// Call on app resume. Skipped if user is actively playing.
+  /// Call on app resume / cold start. Skipped if user is actively playing.
   static void showAppOpenIfReady() {
-    if (_adsRemoved || _isPlaying || _appOpenAd == null) return;
+    if (_adsRemoved || _isPlaying) return;
+    if (_appOpenAd == null) {
+      _loadAppOpen(); // not ready — reload for next opportunity
+      return;
+    }
     _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
