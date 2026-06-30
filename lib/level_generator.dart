@@ -36,8 +36,8 @@ class LevelGenerator {
   /// Shaped levels cycle every 5-6-7 levels from L16 to L99.
   static const _shapeLevels = <int, String>{
     16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
-    39: 'star', 45: 'cross', 52: 'hexagon', 81: 'octagon',
-    88: 'circle', 99: 'peach',
+    39: 'star', 45: 'cross', 52: 'hexagon', 57: 'pentagon',
+    81: 'octagon', 88: 'circle', 99: 'peach',
   };
 
   /// Builds a shape mask for the current grid, or null for rectangular.
@@ -170,6 +170,26 @@ class LevelGenerator {
               halfW = 1.0 - t * 0.5;
             }
             if (nx.abs() <= halfW + 0.05) mask.add(cellKey(x, y));
+          }
+        }
+      case 'pentagon':
+        // Regular 5-sided polygon, point facing down (rotated 180° from
+        // the initial point-up attempt). Uses the standard "distance to
+        // regular polygon edge by angle" formula: radius is the apothem
+        // at each edge midpoint, widening to the full circumradius at
+        // each vertex.
+        const pentN = 5;
+        const pentSector = 2 * pi / pentN;
+        final pentApothem = cos(pi / pentN);
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final dx = x - cx, dy = y - cy;
+            final dist = sqrt(dx * dx / (rx * rx) + dy * dy / (ry * ry));
+            var angle = (atan2(dy, dx) - pi / 2) % (2 * pi);
+            if (angle < 0) angle += 2 * pi;
+            final a = (angle + pentSector / 2) % pentSector - pentSector / 2;
+            final r = pentApothem / cos(a);
+            if (dist <= r + 0.08) mask.add(cellKey(x, y));
           }
         }
       default:
@@ -639,6 +659,9 @@ class LevelGenerator {
       } else if (shapeName == 'octagon') {
         cols = max(cols, 33);
         rows = max(rows, 33);
+      } else if (shapeName == 'pentagon') {
+        cols = max(cols, 32);
+        rows = max(rows, 34);
       } else {
         cols = (cols * 1.4).round();
         rows = (rows * 1.4).round();
@@ -662,7 +685,12 @@ class LevelGenerator {
 
     if (_shapeMask != null) {
       // Shaped levels: RC-only (guaranteed solvable by construction).
-      for (var att = 0; att < 10; att++) {
+      // Pentagon (L57) gets extra attempts + a higher fill target — it
+      // was visibly sparser than the other shapes at the default count.
+      final isPentagon = shapeName == 'pentagon';
+      final shapeAttempts = isPentagon ? 28 : 10;
+      final shapeFillTarget = isPentagon ? 0.66 : 0.55;
+      for (var att = 0; att < shapeAttempts; att++) {
         final arr = _packRC((seed + att * 7919) & 0xFFFFFFFF);
         if (arr.isEmpty) continue;
         final sc = score(arr);
@@ -670,7 +698,7 @@ class LevelGenerator {
           bestScore = sc;
           best = arr;
         }
-        if (bestScore > area * 0.55) break;
+        if (bestScore > area * shapeFillTarget) break;
       }
     } else if (daily) {
       // Daily: _packFill FIRST — produces the signature long winding maze
