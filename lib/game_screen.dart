@@ -322,7 +322,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _fire(Arrow a) {
-    AudioService.tap();
+    AudioService.swipe();
     AudioService.vibrate(Haptic.light);
     final ctrl = AnimationController(
         vsync: this,
