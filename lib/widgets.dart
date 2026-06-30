@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'audio.dart';
 import 'config.dart';
 import 'difficulty.dart';
 import 'game_controller.dart';
@@ -59,7 +60,10 @@ class CircleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        AudioService.uiTap();
+        onTap();
+      },
       child: Container(
         width: 46,
         height: 46,

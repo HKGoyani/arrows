@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'audio.dart';
 import 'config.dart';
 import 'l10n.dart';
 
@@ -45,7 +46,10 @@ class _PressableState extends State<Pressable> {
       onTapDown: (_) => setState(() => _s = 0.95),
       onTapCancel: () => setState(() => _s = 1),
       onTapUp: (_) => setState(() => _s = 1),
-      onTap: widget.onTap,
+      onTap: () {
+        AudioService.uiTap();
+        widget.onTap();
+      },
       child: AnimatedScale(
         scale: _s,
         alignment: widget.alignment,
@@ -190,7 +194,12 @@ class SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: onTap == null
+          ? null
+          : () {
+              AudioService.uiTap();
+              onTap!();
+            },
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
@@ -233,7 +242,10 @@ class ThemeSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => onChanged(!value),
+      onTap: () {
+        AudioService.uiTap();
+        onChanged(!value);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,

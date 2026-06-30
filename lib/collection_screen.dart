@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'audio.dart';
 import 'challenge.dart';
 import 'l10n.dart';
 import 'collection_icons.dart';
@@ -452,7 +453,12 @@ class _RecordCard extends StatelessWidget {
             ),
           );
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap == null
+          ? null
+          : () {
+              AudioService.uiTap();
+              onTap!();
+            },
       behavior: HitTestBehavior.opaque,
       child: Column(
         children: [
@@ -559,7 +565,10 @@ class _AwardCard extends StatelessWidget {
     );
     if (onTap == null) return column;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        AudioService.uiTap();
+        onTap!();
+      },
       behavior: HitTestBehavior.opaque,
       child: column,
     );
@@ -605,8 +614,11 @@ class _TrophyGrid extends StatelessWidget {
         final completed = played >= days;
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => showTrophyDetail(context, year: year, month: i + 1,
-              played: played, totalDays: days, completed: completed),
+          onTap: () {
+            AudioService.uiTap();
+            showTrophyDetail(context, year: year, month: i + 1,
+                played: played, totalDays: days, completed: completed);
+          },
           child: Column(
             children: [
               _IconBox(
@@ -695,7 +707,10 @@ class _AwardDetailScreen extends StatelessWidget {
               const Spacer(flex: 4),
               Center(
                 child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: () {
+                    AudioService.uiTap();
+                    Navigator.of(context).pop();
+                  },
                   behavior: HitTestBehavior.opaque,
                   child: Container(
                     width: 230,
@@ -1143,7 +1158,10 @@ class _CloseButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        AudioService.uiTap();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: 230,
@@ -1772,7 +1790,10 @@ class _PressButtonState extends State<_PressButton> {
       onTapDown: (_) => setState(() => _down = true),
       onTapUp: (_) => setState(() => _down = false),
       onTapCancel: () => setState(() => _down = false),
-      onTap: widget.onTap,
+      onTap: () {
+        AudioService.uiTap();
+        widget.onTap();
+      },
       child: AnimatedScale(
         scale: _down ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 110),
@@ -1948,7 +1969,12 @@ class _DayCell extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap == null
+          ? null
+          : () {
+              AudioService.uiTap();
+              onTap!();
+            },
       behavior: HitTestBehavior.opaque,
       child: Center(child: content),
     );

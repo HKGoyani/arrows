@@ -135,11 +135,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.description_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('privacy'),
+                    onTap: () {},
                   ),
                   SettingsTile(
                     icon: Icons.info_outline_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('termsOfService'),
+                    onTap: () {},
                   ),
                 ],
               ),
@@ -284,6 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
+                            AudioService.uiTap();
                             Prefs.setLanguage(lang);
                             setDialogState(() {});
                             setState(() {});

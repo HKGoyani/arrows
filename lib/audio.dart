@@ -38,6 +38,7 @@ class AudioService {
   static void tap() => _play('tap.wav', 0.7);
   static void clash() => _play('clash.wav', 0.85);
   static void win() => _play('win.wav', 0.9);
+  static void uiTap() => _play('ui_tap.wav', 0.5);
 
   static void vibrate(Haptic h) {
     if (!vibrationOn.value) return;

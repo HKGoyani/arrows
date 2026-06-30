@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'audio.dart';
 import 'config.dart';
 import 'l10n.dart';
 import 'prefs.dart';
@@ -84,7 +85,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     child: streak == 0
                         ? const SizedBox(height: 19)
                         : GestureDetector(
-                            onTap: () => showStreakDetail(context, streak),
+                            onTap: () {
+                              AudioService.uiTap();
+                              showStreakDetail(context, streak);
+                            },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 11, vertical: 4),
