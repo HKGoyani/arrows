@@ -7,7 +7,7 @@ void main() {
   final gen = LevelGenerator();
 
   testWidgets('boots to home with Play button and bottom nav', (tester) async {
-    await tester.pumpWidget(const ArrowsApp());
+    await tester.pumpWidget(ArrowsApp());
     await tester.pump();
     expect(find.text('Play'), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
