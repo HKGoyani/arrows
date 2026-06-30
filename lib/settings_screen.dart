@@ -71,16 +71,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Account Connection
-            _SettingsCard(
-              child: SettingsTile(
-                icon: Icons.person_rounded,
-                tint: AppColors.navInk,
-                title: Tr.get('accountConnection'),
-                trailing: _comingSoon(),
-              ),
-            ),
-            const SizedBox(height: 16),
             // Remove Ads, Restore purchases
             _SettingsCard(
               child: Column(
@@ -107,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // How to play, Restore progress, Reset progress
+            // How to play, Reset progress
             _SettingsCard(
               child: Column(
                 children: [
@@ -117,12 +107,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Tr.get('howToPlay'),
                     trailing: Icon(Icons.chevron_right_rounded, color: AppColors.muted),
                     onTap: () => _howToPlay(context),
-                  ),
-                  SettingsTile(
-                    icon: Icons.cloud_download_rounded,
-                    tint: AppColors.navInk,
-                    title: Tr.get('restoreProgress'),
-                    trailing: _comingSoon(),
                   ),
                   SettingsTile(
                     icon: Icons.restart_alt_rounded,
@@ -135,23 +119,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Rate us, Write us
+            // Rate us
             _SettingsCard(
-              child: Column(
-                children: [
-                  SettingsTile(
-                    icon: Icons.star_rounded,
-                    tint: AppColors.navInk,
-                    title: Tr.get('rateUs'),
-                    onTap: () => _rateUs(context),
-                  ),
-                  SettingsTile(
-                    icon: Icons.edit_rounded,
-                    tint: AppColors.navInk,
-                    title: Tr.get('writeUs'),
-                    trailing: _comingSoon(),
-                  ),
-                ],
+              child: SettingsTile(
+                icon: Icons.star_rounded,
+                tint: AppColors.navInk,
+                title: Tr.get('rateUs'),
+                onTap: () => _rateUs(context),
               ),
             ),
             const SizedBox(height: 16),
