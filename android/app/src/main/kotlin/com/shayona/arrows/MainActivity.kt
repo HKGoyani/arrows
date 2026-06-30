@@ -1,4 +1,4 @@
-package com.shoolin.arrows_game
+package com.shayona.arrows
 
 import io.flutter.embedding.android.FlutterActivity
 

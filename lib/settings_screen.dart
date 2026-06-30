@@ -244,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   static const _appStoreId = ''; // TODO: add App Store ID after publishing
-  static const _playStoreId = 'com.shoolin.arrows_game';
+  static const _playStoreId = 'com.shayona.arrows';
   static const _supportEmail = 'akashmangukiya10@gmail.com';
 
   void _openStore() {
