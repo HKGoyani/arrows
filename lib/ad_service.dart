@@ -11,6 +11,18 @@ class AdService {
   static int _winCount = 0;
   static bool _isPlaying = false;
 
+  // Tracks whether ANY full-screen ad (rewarded/interstitial/app-open) is
+  // currently up, plus a brief cooldown after one closes. Dismissing a
+  // full-screen ad fires AppLifecycleState.resumed (the ad's view controller
+  // tears down), which would otherwise immediately trigger an App Open ad
+  // stacked right on top of the one that just closed.
+  static bool _showingFullScreenAd = false;
+  static DateTime? _lastFullScreenAdClosedAt;
+  static bool get _inFullScreenAdCooldown {
+    final t = _lastFullScreenAdClosedAt;
+    return t != null && DateTime.now().difference(t) < const Duration(seconds: 1);
+  }
+
   // ── Test Ad Unit IDs ──
   static String get _rewardedId => Platform.isIOS
       ? 'ca-app-pub-3940256099942544/1712485313'
@@ -99,13 +111,19 @@ class AdService {
       _rewardedBackup = null;
     }
     ad.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (a) => AnalyticsService.adShown('rewarded'),
+      onAdShowedFullScreenContent: (a) {
+        _showingFullScreenAd = true;
+        AnalyticsService.adShown('rewarded');
+      },
       onAdDismissedFullScreenContent: (a) {
+        _showingFullScreenAd = false;
+        _lastFullScreenAdClosedAt = DateTime.now();
         a.dispose();
         _loadRewarded();
         _loadRewardedBackup();
       },
       onAdFailedToShowFullScreenContent: (a, error) {
+        _showingFullScreenAd = false;
         a.dispose();
         _loadRewarded();
         _loadRewardedBackup();
@@ -150,14 +168,20 @@ class AdService {
       return;
     }
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (ad) => AnalyticsService.adShown('interstitial'),
+      onAdShowedFullScreenContent: (ad) {
+        _showingFullScreenAd = true;
+        AnalyticsService.adShown('interstitial');
+      },
       onAdDismissedFullScreenContent: (ad) {
+        _showingFullScreenAd = false;
+        _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
         _interstitialAd = null;
         _loadInterstitial();
         onDone?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
+        _showingFullScreenAd = false;
         ad.dispose();
         _interstitialAd = null;
         _loadInterstitial();
@@ -181,13 +205,19 @@ class AdService {
       return; // not loaded — skip, don't block user
     }
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (ad) => AnalyticsService.adShown('interstitial'),
+      onAdShowedFullScreenContent: (ad) {
+        _showingFullScreenAd = true;
+        AnalyticsService.adShown('interstitial');
+      },
       onAdDismissedFullScreenContent: (ad) {
+        _showingFullScreenAd = false;
+        _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
         _interstitialAd = null;
         _loadInterstitial();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
+        _showingFullScreenAd = false;
         ad.dispose();
         _interstitialAd = null;
         _loadInterstitial();
@@ -241,9 +271,12 @@ class AdService {
     );
   }
 
-  /// Call on app resume / cold start. Skipped if user is actively playing.
+  /// Call on app resume / cold start. Skipped if user is actively playing,
+  /// or if a rewarded/interstitial ad is currently showing or just closed
+  /// (its dismissal triggers the same resume event this responds to).
   static void showAppOpenIfReady() {
     if (_adsRemoved || _isPlaying) return;
+    if (_showingFullScreenAd || _inFullScreenAdCooldown) return;
     if (_appOpenAd == null) {
       _loadAppOpen(); // not ready — reload for next opportunity
       return;
