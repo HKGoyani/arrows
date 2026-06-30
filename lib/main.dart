@@ -45,7 +45,7 @@ class _ArrowsAppState extends State<ArrowsApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Arrow Escape',
+      title: 'Arrows – Escape Puzzle',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(scaffoldBackgroundColor: AppColors.bg, useMaterial3: true),
       home: MainShell(),
