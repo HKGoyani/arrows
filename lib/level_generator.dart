@@ -36,7 +36,8 @@ class LevelGenerator {
   /// Shaped levels cycle every 5-6-7 levels from L16 to L99.
   static const _shapeLevels = <int, String>{
     16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
-    39: 'star', 45: 'cross', 88: 'circle', 99: 'peach',
+    39: 'star', 45: 'cross', 52: 'hexagon', 81: 'octagon',
+    88: 'circle', 99: 'peach',
   };
 
   /// Builds a shape mask for the current grid, or null for rectangular.
@@ -137,6 +138,38 @@ class LevelGenerator {
             final inHBar = (y - cy).abs() <= armH;
             final inVBar = (x - cx).abs() <= armW;
             if (inHBar || inVBar) mask.add(cellKey(x, y));
+          }
+        }
+      case 'hexagon':
+        // Flat-top hexagon: width tapers linearly from full at the
+        // vertical center straight to a flat half-width edge at top and
+        // bottom — no flat waist band, so it's a true 6-sided hexagon
+        // (not 8-sided like a waist+taper octagon).
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            final halfW = 1.0 - ny.abs() * 0.5;
+            if (nx.abs() <= halfW + 0.05) mask.add(cellKey(x, y));
+          }
+        }
+      case 'octagon':
+        // Full-width middle band + linear taper to a flat half-width edge
+        // at top and bottom — 8 sides (this is what 'hexagon' originally
+        // produced before being corrected to a true 6-sided hexagon).
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            final ay = ny.abs();
+            double halfW;
+            if (ay <= 0.5) {
+              halfW = 1.0;
+            } else {
+              final t = (ay - 0.5) / 0.5;
+              halfW = 1.0 - t * 0.5;
+            }
+            if (nx.abs() <= halfW + 0.05) mask.add(cellKey(x, y));
           }
         }
       default:
@@ -600,6 +633,12 @@ class LevelGenerator {
       } else if (shapeName == 'cross') {
         cols = max(cols, 29);
         rows = max(rows, 34);
+      } else if (shapeName == 'hexagon') {
+        cols = max(cols, 30);
+        rows = max(rows, 28);
+      } else if (shapeName == 'octagon') {
+        cols = max(cols, 33);
+        rows = max(rows, 33);
       } else {
         cols = (cols * 1.4).round();
         rows = (rows * 1.4).round();
