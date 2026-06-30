@@ -1,6 +1,7 @@
 import 'dart:io';
 import "dart:ui";
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'analytics_service.dart';
 import 'prefs.dart';
 
 /// Centralized ad management: rewarded, interstitial, banner, app-open.
@@ -98,6 +99,7 @@ class AdService {
       _rewardedBackup = null;
     }
     ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (a) => AnalyticsService.adShown('rewarded'),
       onAdDismissedFullScreenContent: (a) {
         a.dispose();
         _loadRewarded();
@@ -148,6 +150,7 @@ class AdService {
       return;
     }
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) => AnalyticsService.adShown('interstitial'),
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _interstitialAd = null;
@@ -178,6 +181,7 @@ class AdService {
       return; // not loaded — skip, don't block user
     }
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) => AnalyticsService.adShown('interstitial'),
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _interstitialAd = null;
@@ -204,6 +208,7 @@ class AdService {
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
+        onAdLoaded: (ad) => AnalyticsService.adShown('banner'),
         onAdFailedToLoad: (ad, error) => ad.dispose(),
       ),
     )..load();
@@ -244,6 +249,7 @@ class AdService {
       return;
     }
     _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) => AnalyticsService.adShown('app_open'),
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _appOpenAd = null;

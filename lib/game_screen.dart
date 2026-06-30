@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'ad_service.dart';
+import 'analytics_service.dart';
 import 'audio.dart';
 import 'l10n.dart';
 import 'board_painter.dart';
@@ -119,6 +120,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ..addListener(_onZoomIntroTick);
     c.addListener(_rebuild);
     AdService.setPlaying(true);
+    AnalyticsService.levelStart(widget.level, daily: widget.isDaily);
     c.loadLevel(widget.level, daily: widget.isDaily);
     if (widget.isDaily) {
       widget.onLoaded?.call(c); // restore saved board if any
@@ -153,6 +155,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _startHintTimer();
       return;
     }
+    AnalyticsService.hintUsed(widget.level);
     if (Prefs.hasFreeHint) {
       _applyHint(safe.first);
     } else {
@@ -273,6 +276,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _showHint = false;
         PerfectPlay.onFail(); // lost all hearts → attempt no longer perfect
         RecordsService.onLoss(); // breaks the win streak
+        AnalyticsService.levelLose(widget.level, daily: widget.isDaily);
       }
       _lurchArrow = a;
       _lurchDist = _calcBlockerDist(a);
@@ -376,6 +380,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _restart() {
+    AnalyticsService.levelRestart(widget.level);
     // Hide board BEFORE ad plays — prevents any visible jump
     setState(() => _restartHidden = true);
     AdService.onRestart(onDone: () {

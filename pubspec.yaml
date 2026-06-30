@@ -45,6 +45,8 @@ dependencies:
   url_launcher: ^6.3.2
   google_mobile_ads: ^9.0.0
   in_app_purchase: ^3.3.0
+  firebase_core: ^4.11.0
+  firebase_analytics: ^12.4.3
 
 dev_dependencies:
   flutter_test:

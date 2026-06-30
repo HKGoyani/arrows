@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'analytics_service.dart';
 import 'prefs.dart';
 
 /// In-app purchase: "Remove Ads" non-consumable.
@@ -45,10 +46,13 @@ class IapService {
 
   static void _onPurchaseUpdate(List<PurchaseDetails> purchases) {
     for (final p in purchases) {
-      if (p.productID == removeAdsId &&
-          (p.status == PurchaseStatus.purchased ||
-              p.status == PurchaseStatus.restored)) {
-        Prefs.setRemoveAds(true);
+      if (p.productID == removeAdsId) {
+        if (p.status == PurchaseStatus.purchased) {
+          AnalyticsService.purchaseRemoveAds(); // new purchase only, not restore
+          Prefs.setRemoveAds(true);
+        } else if (p.status == PurchaseStatus.restored) {
+          Prefs.setRemoveAds(true);
+        }
       }
       if (p.pendingCompletePurchase) {
         _iap.completePurchase(p);

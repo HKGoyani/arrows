@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_service.dart';
+import 'analytics_service.dart';
 import 'iap_service.dart';
 import 'audio.dart';
 import 'l10n.dart';
@@ -25,6 +26,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Prefs.init();
+  await AnalyticsService.init();
   await AudioService.init();
   await AdService.init();
   await IapService.init();
@@ -333,14 +335,20 @@ class _GameFlowState extends State<GameFlow> {
       onWin: (next) async {
         final streakExtended = !StreakService.playedToday;
         StreakService.registerPlayToday();
+        if (streakExtended) {
+          AnalyticsService.streakExtended(StreakService.current);
+        }
         if (_isDaily) {
           await _completeDaily();
           AdService.onDailyComplete();
+          AnalyticsService.levelWin(_level, daily: true);
+          AnalyticsService.dailyChallengeComplete();
           if (!mounted) return;
         } else {
           Prefs.setLevel(next);
           LevelLegend.onWin(next);
           AdService.onLevelWin();
+          AnalyticsService.levelWin(_level);
           if (next == 10) Prefs.setCollectionUnseen(true);
           if (!mounted) return;
         }
