@@ -135,13 +135,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.description_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('privacy'),
-                    onTap: () {},
+                    onTap: () => _openUrl(_privacyUrl),
                   ),
                   SettingsTile(
                     icon: Icons.info_outline_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('termsOfService'),
-                    onTap: () {},
+                    onTap: () => _openUrl(_termsUrl),
                   ),
                 ],
               ),
@@ -243,9 +243,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  static const _appStoreId = ''; // TODO: add App Store ID after publishing
+  static const _appStoreId = '6785821757';
   static const _playStoreId = 'com.shayona.arrows';
   static const _supportEmail = 'akashmangukiya10@gmail.com';
+  static const _privacyUrl = 'https://hkgoyani.github.io/arrows-legal/privacy-policy.html';
+  static const _termsUrl = 'https://hkgoyani.github.io/arrows-legal/terms-and-conditions.html';
+
+  void _openUrl(String url) =>
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 
   void _openStore() {
     final uri = Uri.parse(
