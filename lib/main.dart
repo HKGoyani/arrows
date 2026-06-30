@@ -81,13 +81,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
     });
   }
   late final AnimationController _navSlideCtrl;
-  BannerAd? _bannerAd;
+  BannerAd? _bannerAd; // collapsible — shared across all bottom nav tabs
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _bannerAd = AdService.createBanner();
+    _bannerAd = AdService.createBanner(collapsible: true);
     _navSlideCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),

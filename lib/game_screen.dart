@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_service.dart';
 import 'analytics_service.dart';
 import 'audio.dart';
@@ -75,6 +76,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   double _scale = 1;
   bool _winHandled = false;
   bool _restartHidden = false;
+  BannerAd? _bannerAd;
 
   // Pinch-to-zoom: board is scaled to fit viewport at 1x.
   // User can zoom in up to _maxZoom. Intro animates from 1x to _defaultZoom.
@@ -120,6 +122,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ..addListener(_onZoomIntroTick);
     c.addListener(_rebuild);
     AdService.setPlaying(true);
+    _bannerAd = AdService.createBanner();
     AnalyticsService.levelStart(widget.level, daily: widget.isDaily);
     c.loadLevel(widget.level, daily: widget.isDaily);
     if (widget.isDaily) {
@@ -193,6 +196,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _disposeFlight(f);
     }
     AdService.setPlaying(false);
+    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -538,6 +542,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
+                if (_bannerAd != null)
+                  SizedBox(
+                    height: _bannerAd!.size.height.toDouble(),
+                    width: _bannerAd!.size.width.toDouble(),
+                    child: AdWidget(ad: _bannerAd!),
+                  ),
               ],
             ),
             if (_showHint && c.status == GameStatus.playing && !_isTutorial)
@@ -609,7 +619,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             if (!_isTutorial)
               Positioned(
               right: 14,
-              bottom: 10 + MediaQuery.of(context).padding.bottom,
+              bottom: 10 + MediaQuery.of(context).padding.bottom +
+                  (_bannerAd?.size.height.toDouble() ?? 0),
               child: AnimatedBuilder(
                 animation: _heartCtrl,
                 builder: (_, child) => Opacity(
