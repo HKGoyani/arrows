@@ -17,7 +17,8 @@ class AudioService {
 
   static Future<void> init() async {
     soundOn.value = Prefs.sound;
-    musicOn.value = Prefs.music;
+    // Music toggle hidden in Settings for now — force off until re-enabled.
+    musicOn.value = false;
     vibrationOn.value = Prefs.vibration;
     try {
       await _sfx.setReleaseMode(ReleaseMode.stop);

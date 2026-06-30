@@ -47,8 +47,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Tr.get('vibrations'), null, AudioService.setVibration),
                   _toggle(AudioService.soundOn, Icons.volume_up_rounded, AppColors.navInk,
                       Tr.get('sounds'), null, AudioService.setSound),
-                  _toggle(AudioService.musicOn, Icons.music_note_rounded, AppColors.navInk,
-                      Tr.get('music'), null, AudioService.setMusic),
                   SettingsTile(
                     icon: Icons.dark_mode_rounded,
                     tint: AppColors.navInk,
