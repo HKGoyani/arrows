@@ -11,6 +11,13 @@ class AudioService {
   static final AudioPlayer _sfx = AudioPlayer(playerId: 'arrows_sfx');
   static final AudioPlayer _bgm = AudioPlayer(playerId: 'arrows_bgm');
 
+  // Pool of players for sounds that can overlap (e.g. multiple arrows
+  // firing in quick succession) — a single shared player would cut off
+  // the previous sound instead of letting them play simultaneously.
+  static final List<AudioPlayer> _pool =
+      List.generate(6, (i) => AudioPlayer(playerId: 'arrows_pool_$i'));
+  static int _poolIdx = 0;
+
   static final ValueNotifier<bool> soundOn = ValueNotifier(true);
   static final ValueNotifier<bool> musicOn = ValueNotifier(true);
   static final ValueNotifier<bool> vibrationOn = ValueNotifier(true);
@@ -22,6 +29,9 @@ class AudioService {
     vibrationOn.value = Prefs.vibration;
     try {
       await _sfx.setReleaseMode(ReleaseMode.stop);
+      for (final p in _pool) {
+        await p.setReleaseMode(ReleaseMode.stop);
+      }
       await _bgm.setReleaseMode(ReleaseMode.loop);
       await _bgm.setVolume(0.45);
       if (musicOn.value) await _bgm.play(AssetSource('audio/bgm.mp3'));
@@ -35,11 +45,23 @@ class AudioService {
     } catch (_) {}
   }
 
+  /// Plays via a small player pool so overlapping calls (e.g. several
+  /// arrows firing in quick succession) sound simultaneously instead of
+  /// cutting each other off.
+  static Future<void> _playOverlap(String file, double vol) async {
+    if (!soundOn.value) return;
+    try {
+      final player = _pool[_poolIdx];
+      _poolIdx = (_poolIdx + 1) % _pool.length;
+      await player.play(AssetSource('audio/$file'), volume: vol);
+    } catch (_) {}
+  }
+
   static void tap() => _play('tap.wav', 0.7);
   static void clash() => _play('clash.wav', 0.85);
   static void win() => _play('win.wav', 0.9);
   static void uiTap() => _play('ui_tap.wav', 0.5);
-  static void swipe() => _play('swipe.wav', 0.7);
+  static void swipe() => _playOverlap('swipe.wav', 0.7);
 
   static void vibrate(Haptic h) {
     if (!vibrationOn.value) return;
