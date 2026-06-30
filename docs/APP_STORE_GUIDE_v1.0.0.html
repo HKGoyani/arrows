@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App Store Submission Guide — Arrows – Escape Puzzle v1.0.0</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F9FD;
+      --card: #FFFFFF;
+      --blue: #667CFF;
+      --red: #F23A5C;
+      --ink: #2B2E4F;
+      --muted: #8C90A6;
+      --border: #E7E8F3;
+      --green: #1AAB67;
+      --orange: #FF8A3D;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 0 16px 60px;
+    }
+    header {
+      text-align: center;
+      padding: 52px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    header .arrow {
+      width: 0; height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid var(--blue);
+      margin: 0 auto 14px;
+    }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; color: var(--ink); }
+    .subtitle { color: var(--muted); font-size: 13px; letter-spacing: 1px; margin-top: 8px; }
+    .updated {
+      display: inline-block; margin-top: 12px; padding: 4px 12px;
+      border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--muted);
+    }
+    .container { max-width: 880px; margin: 0 auto; }
+    nav.toc {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px 28px; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+    }
+    nav.toc h2 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+    nav.toc li { margin-bottom: 6px; break-inside: avoid; }
+    nav.toc a { color: var(--blue); text-decoration: none; font-size: 14px; }
+    nav.toc a:hover { text-decoration: underline; }
+
+    .alert {
+      background: rgba(242,58,92,0.06);
+      border: 1px solid rgba(242,58,92,0.25);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+    }
+    .alert h2 { color: var(--red); font-size: 15px; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .alert h2::before { content: '⚠'; font-size: 18px; }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+      scroll-margin-top: 20px;
+    }
+    h2 {
+      font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    h2::before { content: ''; display: block; width: 3px; height: 16px; background: var(--blue); border-radius: 2px; }
+    h3 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 18px 0 8px; }
+    p { color: #555977; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol.steps { margin-bottom: 12px; padding-left: 0; list-style: none; }
+    ul li {
+      padding: 6px 0 6px 20px; color: #555977; position: relative;
+    }
+    ul li::before { content: '›'; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+    ol.steps { counter-reset: step; }
+    ol.steps li {
+      padding: 6px 0 6px 28px; color: #555977; position: relative; counter-increment: step;
+    }
+    ol.steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 6px;
+      width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    td strong { color: var(--ink); }
+    tr.checklist td:first-child { width: 24px; }
+    code, .code {
+      background: #F1F2F8; border: 1px solid var(--border); border-radius: 6px;
+      padding: 1px 6px; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; color: var(--red);
+    }
+    pre {
+      background: #1F2236; color: #E0E4F0; border-radius: 12px; padding: 18px 20px;
+      overflow-x: auto; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; line-height: 1.6;
+      margin: 12px 0;
+    }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      padding: 2px 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle;
+    }
+    .tag-block { background: rgba(242,58,92,0.12); color: var(--red); border: 1px solid rgba(242,58,92,0.3); }
+    .tag-ok { background: rgba(26,171,103,0.12); color: var(--green); border: 1px solid rgba(26,171,103,0.3); }
+    .tag-warn { background: rgba(255,138,61,0.12); color: var(--orange); border: 1px solid rgba(255,138,61,0.3); }
+    .contact-box {
+      background: rgba(102,124,255,0.05); border: 1px solid rgba(102,124,255,0.18);
+      border-radius: 10px; padding: 16px 20px;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="arrow"></div>
+    <h1>App Store Submission Guide</h1>
+    <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.0</p>
+    <span class="updated">Last reviewed against codebase: June 30, 2026</span>
+  </header>
+
+  <div class="container">
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#critical">Critical — must fix before submission</a></li>
+        <li><a href="#info">1. App Information</a></li>
+        <li><a href="#devices">2. Device &amp; Platform Support</a></li>
+        <li><a href="#icon">3. App Icon</a></li>
+        <li><a href="#screenshots">4. Screenshots</a></li>
+        <li><a href="#listing">5. App Store Listing Copy</a></li>
+        <li><a href="#privacy">6. Privacy &amp; Data Collection</a></li>
+        <li><a href="#pricing">7. Pricing</a></li>
+        <li><a href="#iap">8. In-App Purchases</a></li>
+        <li><a href="#ads">9. Ads Disclosure</a></li>
+        <li><a href="#age">10. Age Rating</a></li>
+        <li><a href="#encryption">11. Export Compliance</a></li>
+        <li><a href="#review">12. App Review Notes</a></li>
+        <li><a href="#checklist">13. Build &amp; Archive Checklist</a></li>
+        <li><a href="#links">14. Reference Links</a></li>
+      </ol>
+    </nav>
+
+    <div class="alert" id="critical">
+      <h2>Critical — must fix before submission</h2>
+      <p>These are <strong>blocking</strong> issues. The app as built today will not function correctly for real users if shipped as-is.</p>
+      <table>
+        <tr><th>Item</th><th>Current state</th><th>Required action</th></tr>
+        <tr>
+          <td><strong>AdMob App ID</strong></td>
+          <td>Test ID <code>ca-app-pub-3940256099942544~1458002511</code> in <code>ios/Runner/Info.plist</code></td>
+          <td>Replace with your real AdMob App ID from the AdMob console</td>
+        </tr>
+        <tr>
+          <td><strong>Ad Unit IDs</strong></td>
+          <td>All 4 ad formats use Google's shared test IDs in <code>lib/ad_service.dart</code></td>
+          <td>Create real ad units in AdMob console for <code>com.shayona.arrows</code> and swap in production IDs</td>
+        </tr>
+        <tr>
+          <td><strong>App Tracking Transparency</strong></td>
+          <td><code>NSUserTrackingUsageDescription</code> is <strong>missing</strong> from <code>Info.plist</code></td>
+          <td>Add this key with a user-facing string. Without it, the ATT prompt won't show and Apple may reject the build for undisclosed IDFA use</td>
+        </tr>
+        <tr>
+          <td><strong>In-App Purchase product</strong></td>
+          <td>Only exists in the local <code>Configuration.storekit</code> test file</td>
+          <td>Create the real <code>remove_ads</code> non-consumable product in App Store Connect and submit for review</td>
+        </tr>
+        <tr>
+          <td><strong>App screenshots</strong></td>
+          <td>None created yet</td>
+          <td>Required for all supported device sizes (see Section 4)</td>
+        </tr>
+      </table>
+    </div>
+
+    <section id="info">
+      <h2>1. App Information</h2>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>App Name</td><td><strong>Arrows – Escape Puzzle</strong></td></tr>
+        <tr><td>Subtitle (30 char max)</td><td>Arrow puzzle, escape &amp; relax</td></tr>
+        <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>SKU</td><td><code>arrows-escape-puzzle-ios</code> (or any internal identifier)</td></tr>
+        <tr><td>Primary Language</td><td>English (U.S.)</td></tr>
+        <tr><td>Apple ID (App Store Connect)</td><td><strong>6785821757</strong></td></tr>
+        <tr><td>Version</td><td>1.0.0</td></tr>
+        <tr><td>Build number</td><td>1</td></tr>
+        <tr><td>Bundle Display Name</td><td>Arrows – Escape Puzzle</td></tr>
+        <tr><td>Category (Primary)</td><td>Games &rarr; Puzzle</td></tr>
+        <tr><td>Category (Secondary)</td><td>Games &rarr; Casual <em>(optional)</em></td></tr>
+        <tr><td>Content Rights</td><td>"Does not use third-party content" (confirm)</td></tr>
+        <tr><td>Age Rating</td><td>4+ (see Section 10)</td></tr>
+      </table>
+    </section>
+
+    <section id="devices">
+      <h2>2. Device &amp; Platform Support</h2>
+      <table>
+        <tr><th>Setting</th><th>Value</th><th>Where it's set</th></tr>
+        <tr>
+          <td>Supported devices</td>
+          <td><strong>iPhone only</strong> — iPad, Mac (Designed for iPad), and Apple Vision Pro are explicitly excluded</td>
+          <td><code>TARGETED_DEVICE_FAMILY = "1"</code> in <code>project.pbxproj</code></td>
+        </tr>
+        <tr>
+          <td>Minimum iOS version</td>
+          <td><strong>15.0</strong></td>
+          <td><code>IPHONEOS_DEPLOYMENT_TARGET = 15.0</code> (required by <code>firebase_analytics</code>)</td>
+        </tr>
+        <tr>
+          <td>Orientation</td>
+          <td>Portrait only</td>
+          <td><code>SystemChrome.setPreferredOrientations</code> in <code>lib/main.dart</code></td>
+        </tr>
+      </table>
+    </section>
+
+    <section id="icon">
+      <h2>3. App Icon</h2>
+      <table>
+        <tr><th>Detail</th><th>Value</th></tr>
+        <tr><td>Design</td><td>Black arrows (one up, two left) with a red diagonal "ESCAPE" banner</td></tr>
+        <tr><td>Master asset</td><td><code>assets/icon/app_icon_master.png</code> (1254×1254, RGB, no alpha)</td></tr>
+        <tr><td>Marketing icon</td><td><code>Icon-App-1024x1024@1x.png</code> (1024×1024)</td></tr>
+        <tr><td>All other sizes</td><td>Generated and present in the <code>.appiconset</code> folder</td></tr>
+      </table>
+      <p><span class="tag tag-ok">READY</span> No further action needed — icon is fully wired in Xcode.</p>
+    </section>
+
+    <section id="screenshots">
+      <h2>4. Screenshots</h2>
+      <p><span class="tag tag-block">NOT CREATED</span> App Store Connect requires screenshots for at least one device size. Since this is iPhone-only, you need:</p>
+      <table>
+        <tr><th>Required size</th><th>Used for</th><th>Status</th></tr>
+        <tr><td>6.9" (iPhone 16/15 Pro Max class)</td><td>Required — largest current iPhone</td><td>❌ Not created</td></tr>
+        <tr><td>6.5" (iPhone 11/XS Max class)</td><td>Optional if 6.9" provided and scales</td><td>❌ Not created</td></tr>
+      </table>
+      <h3>Recommended shots (5–10 total)</h3>
+      <ul>
+        <li>Home screen with Play button and streak</li>
+        <li>Mid-game board (Hard or Super Hard tier, visually dense)</li>
+        <li>Win celebration screen</li>
+        <li>Daily Challenge calendar screen</li>
+        <li>Collection screen (badges/records)</li>
+        <li>Dark mode variant of one of the above</li>
+        <li>A shaped-level board (heart, star, or peach) for visual variety</li>
+      </ul>
+      <p>Capture with <code>xcrun simctl io &lt;device&gt; screenshot</code> on the 6.9" simulator class, or on a real device.</p>
+    </section>
+
+    <section id="listing">
+      <h2>5. App Store Listing Copy</h2>
+      <h3>Promotional Text (170 char, editable without re-review)</h3>
+      <p>Free, relaxing arrow-puzzle escape game. New daily challenges, streaks, and brain-teasing boards that get trickier the further you go!</p>
+
+      <h3>Description</h3>
+      <pre>Arrows – Escape Puzzle is a calm, satisfying logic puzzle: tap an arrow,
+watch it slide free if the path is clear, or turn red if it's blocked.
+Clear the whole board to win — no timers, no pressure, just you and
+the puzzle.
+
+HOW TO PLAY
+• Tap any arrow to fire it off the board
+• A clear path means it flies free
+• A blocked path costs you a life — you have 3
+• Clear every arrow to win the level
+
+FEATURES
+• Hundreds of procedurally generated levels that scale in difficulty
+• Four difficulty tiers: Normal, Hard, Super Hard, and Nightmare
+• Daily Challenges with their own streak and trophy calendar
+• Track your longest streak, best win streak, and most wins in a day
+• Unlock Level Legend, Perfect Play, and Unstoppable badges
+• Specially shaped boards (circle, heart, star, and more) at milestone levels
+• Free hints, with extra hints available any time
+• Full dark mode support
+• Available in 10 languages
+
+Arrows – Escape Puzzle is free to play, with optional ads and a
+one-time Remove Ads purchase for an uninterrupted experience.</pre>
+
+      <h3>Keywords (100 char max, comma-separated, no spaces after commas)</h3>
+      <p><code>arrow,puzzle,escape,maze,logic,brain,relax,daily challenge,streak,offline</code></p>
+
+      <h3>URLs</h3>
+      <table>
+        <tr><td>Support URL</td><td><a href="https://hkgoyani.github.io/arrows-legal/support.html" target="_blank">hkgoyani.github.io/arrows-legal/support.html</a></td></tr>
+        <tr><td>Marketing URL (optional)</td><td><a href="https://hkgoyani.github.io/arrows-legal/" target="_blank">hkgoyani.github.io/arrows-legal/</a></td></tr>
+        <tr><td>Privacy Policy URL (required)</td><td><a href="https://hkgoyani.github.io/arrows-legal/privacy-policy.html" target="_blank">hkgoyani.github.io/arrows-legal/privacy-policy.html</a></td></tr>
+      </table>
+    </section>
+
+    <section id="privacy">
+      <h2>6. Privacy &amp; Data Collection</h2>
+      <p>Based on the actual implementation — fill in App Store Connect's Privacy questionnaire as follows.</p>
+      <table>
+        <tr><th>Data Type</th><th>Collected?</th><th>Linked to identity?</th><th>Tracking?</th><th>Notes</th></tr>
+        <tr><td>Identifiers (Device ID / IDFA)</td><td>Yes</td><td>No</td><td>Yes (advertising)</td><td>Via Google AdMob, only if user grants ATT</td></tr>
+        <tr><td>Usage Data</td><td>Yes</td><td>No</td><td>No</td><td>Via Firebase Analytics — level_start, level_win, level_lose, level_restart, hint_used, daily_challenge_complete, streak_extended, ad_shown, purchase_remove_ads</td></tr>
+        <tr><td>Purchases</td><td>Yes</td><td>No</td><td>No</td><td>Product ID only, no payment details — processed by Apple</td></tr>
+        <tr><td>Diagnostics</td><td>No</td><td>—</td><td>—</td><td>No Crashlytics integrated</td></tr>
+        <tr><td>Contact, Health, Financial, Location, Browsing, Photos, Contacts</td><td>No</td><td>—</td><td>—</td><td>App collects none of these</td></tr>
+      </table>
+      <p><strong>Tracking:</strong> answer <strong>Yes</strong> to "Does this app track users?" — AdMob may use IDFA for personalization if ATT consent is granted. The ATT prompt must be implemented first (see Critical section).</p>
+      <p>Full policy text: <a href="https://hkgoyani.github.io/arrows-legal/privacy-policy.html" target="_blank">hkgoyani.github.io/arrows-legal/privacy-policy.html</a></p>
+    </section>
+
+    <section id="pricing">
+      <h2>7. Pricing</h2>
+      <table>
+        <tr><th>Setting</th><th>Value</th></tr>
+        <tr><td>App price</td><td>Free</td></tr>
+        <tr><td>Availability</td><td>All territories (or restrict as desired)</td></tr>
+        <tr><td>Pre-order</td><td>Not used</td></tr>
+      </table>
+    </section>
+
+    <section id="iap">
+      <h2>8. In-App Purchases</h2>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Reference Name</td><td>Remove Ads</td></tr>
+        <tr><td>Product ID</td><td><code>remove_ads</code></td></tr>
+        <tr><td>Type</td><td>Non-Consumable</td></tr>
+        <tr><td>Price</td><td>$3.99 USD (Apple auto-localizes to other currencies)</td></tr>
+        <tr><td>Display Name</td><td>Remove Ads</td></tr>
+        <tr><td>Description</td><td>Remove all fullscreen ads between levels. Life refill and Hint ads will still be available.</td></tr>
+        <tr><td>Review screenshot</td><td>Capture the in-app "Remove Ads" popup (Settings → Remove Ads) showing price and description</td></tr>
+      </table>
+      <h3>Setup steps in App Store Connect</h3>
+      <ol class="steps">
+        <li>Go to <strong>App → Monetization → In-App Purchases → +</strong></li>
+        <li>Choose <strong>Non-Consumable</strong></li>
+        <li>Enter Reference Name "Remove Ads", Product ID <code>remove_ads</code> (must exactly match <code>IapService.removeAdsId</code> in <code>lib/iap_service.dart</code>)</li>
+        <li>Set price tier equivalent to $3.99 USD</li>
+        <li>Add the display name/description above, attach the review screenshot</li>
+        <li>Submit for review — can be submitted alongside the app binary in the same review</li>
+      </ol>
+      <p>Local testing reference: a StoreKit Configuration file already exists at <code>ios/Runner/Configuration.storekit</code> for Simulator testing — dev-only, not part of the shipped app.</p>
+    </section>
+
+    <section id="ads">
+      <h2>9. Ads Disclosure</h2>
+      <p>The app shows ads via <strong>Google AdMob</strong> in 4 formats:</p>
+      <table>
+        <tr><th>Format</th><th>Trigger</th></tr>
+        <tr><td>Rewarded</td><td>Hint (after 5 free hints), Add More Lives (lose screen)</td></tr>
+        <tr><td>Interstitial</td><td>Every 3rd level win, level restart, daily challenge complete</td></tr>
+        <tr><td>Banner</td><td>Bottom of Home, Challenge, Collection, Settings tabs</td></tr>
+        <tr><td>App Open</td><td>App resume from background / cold start (never during active gameplay)</td></tr>
+      </table>
+      <p>All ads can be permanently disabled (except rewarded, which is opt-in) via the <strong>Remove Ads</strong> IAP.</p>
+    </section>
+
+    <section id="age">
+      <h2>10. Age Rating Questionnaire</h2>
+      <p>Recommended answers — the game has no objectionable content of any kind:</p>
+      <table>
+        <tr><th>Category</th><th>Answer</th></tr>
+        <tr><td>Cartoon/Fantasy/Realistic Violence</td><td>None</td></tr>
+        <tr><td>Sexual Content/Nudity</td><td>None</td></tr>
+        <tr><td>Profanity/Crude Humor</td><td>None</td></tr>
+        <tr><td>Alcohol/Tobacco/Drugs</td><td>None</td></tr>
+        <tr><td>Mature/Suggestive Themes</td><td>None</td></tr>
+        <tr><td>Horror/Fear Themes</td><td>None</td></tr>
+        <tr><td>Gambling (Simulated)</td><td>None</td></tr>
+        <tr><td>Unrestricted Web Access</td><td>No</td></tr>
+        <tr><td>Loot Boxes / random in-app purchases</td><td>No — Remove Ads is a fixed-price, non-randomized purchase</td></tr>
+      </table>
+      <p>Expected result: <strong>4+</strong></p>
+    </section>
+
+    <section id="encryption">
+      <h2>11. Export Compliance (Encryption)</h2>
+      <table>
+        <tr><th>Question</th><th>Answer</th><th>Why</th></tr>
+        <tr><td>Does the app use encryption?</td><td>Yes (standard HTTPS/TLS only)</td><td>All network calls (Firebase, AdMob, StoreKit) use standard OS-provided HTTPS</td></tr>
+        <tr><td>Does it qualify for exemption?</td><td>Yes — standard encryption exemption</td><td>No custom/proprietary encryption implemented</td></tr>
+      </table>
+      <p><span class="tag tag-warn">ACTION NEEDED</span> Add <code>ITSAppUsesNonExemptEncryption = false</code> to <code>ios/Runner/Info.plist</code> to skip the manual export-compliance question on every build upload. This key is currently <strong>not set</strong>.</p>
+    </section>
+
+    <section id="review">
+      <h2>12. App Review Notes</h2>
+      <p>Paste this into the "Notes" field on submission:</p>
+      <pre>Arrows – Escape Puzzle is a single-player offline puzzle game. No login
+or account is required to play.
+
+- All gameplay progress is stored locally on-device (no server backend).
+- Ads are served via Google AdMob (test ad units must be swapped for
+  production IDs before this build is approved for release — see
+  internal notes).
+- One in-app purchase: "Remove Ads" ($3.99, non-consumable, product ID
+  remove_ads) disables banner/interstitial/app-open ads. Rewarded ads
+  (opt-in, for hints/extra lives) remain available even after purchase
+  by design — this is disclosed in the purchase description shown to
+  users in Settings.
+- Firebase Analytics is used for anonymous, aggregated usage events only
+  (no PII collected).
+- No account creation, no chat, no user-generated content, no web view
+  with unrestricted browsing.
+
+Test path: tap Play on the Home screen to start Level 1 (tutorial),
+or tap an in-progress level number to continue.</pre>
+    </section>
+
+    <section id="checklist">
+      <h2>13. Build &amp; Archive Checklist</h2>
+      <p>Run through this immediately before archiving in Xcode:</p>
+      <ul>
+        <li>Swap test AdMob App ID → production App ID in <code>Info.plist</code></li>
+        <li>Swap all 4 test ad unit IDs → production IDs in <code>lib/ad_service.dart</code></li>
+        <li>Add <code>NSUserTrackingUsageDescription</code> to <code>Info.plist</code></li>
+        <li>Add <code>ITSAppUsesNonExemptEncryption = false</code> to <code>Info.plist</code></li>
+        <li>Create real <code>remove_ads</code> IAP product in App Store Connect</li>
+        <li>Capture and upload App Store screenshots (6.9" minimum)</li>
+        <li>Confirm <code>pubspec.yaml</code> version is <code>1.0.0+1</code> (already set)</li>
+        <li>Run <code>flutter build ipa</code> (or archive via Xcode with <code>ios/Runner.xcworkspace</code>)</li>
+        <li>Test the production build on a real device — confirm ATT prompt appears, ads load, IAP purchase flow works end-to-end with a Sandbox tester account</li>
+        <li>Upload via Xcode Organizer or Transporter</li>
+        <li>Submit for review with the notes from Section 12</li>
+      </ul>
+    </section>
+
+    <section id="links">
+      <h2>14. Reference Links</h2>
+      <table>
+        <tr><th>Resource</th><th>Value</th></tr>
+        <tr><td>Privacy Policy</td><td><a href="https://hkgoyani.github.io/arrows-legal/privacy-policy.html" target="_blank">hkgoyani.github.io/arrows-legal/privacy-policy.html</a></td></tr>
+        <tr><td>Terms &amp; Conditions</td><td><a href="https://hkgoyani.github.io/arrows-legal/terms-and-conditions.html" target="_blank">hkgoyani.github.io/arrows-legal/terms-and-conditions.html</a></td></tr>
+        <tr><td>Support page</td><td><a href="https://hkgoyani.github.io/arrows-legal/support.html" target="_blank">hkgoyani.github.io/arrows-legal/support.html</a></td></tr>
+        <tr><td>Support email</td><td><a href="mailto:akashmangukiya10@gmail.com">akashmangukiya10@gmail.com</a></td></tr>
+        <tr><td>Apple ID (App Store Connect numeric ID)</td><td>6785821757</td></tr>
+        <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>Firebase project</td><td>fitflow-759df</td></tr>
+      </table>
+    </section>
+
+  </div>
+
+  <footer>
+    &copy; 2026 Shayona. Internal submission guide — not for distribution.
+  </footer>
+</body>
+</html>
