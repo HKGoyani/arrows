@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_service.dart';
+import 'iap_service.dart';
 import 'audio.dart';
 import 'l10n.dart';
 import 'challenge.dart';
@@ -26,6 +27,7 @@ Future<void> main() async {
   await Prefs.init();
   await AudioService.init();
   await AdService.init();
+  await IapService.init();
   runApp(ArrowsApp());
 }
 

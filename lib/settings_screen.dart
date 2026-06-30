@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'audio.dart';
 import 'config.dart';
+import 'iap_service.dart';
 import 'main.dart' show appKey;
 import 'l10n.dart';
 import 'prefs.dart';
@@ -88,16 +89,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.block_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('removeAds'),
-                    trailing: ThemeSwitch(
-                      value: Prefs.removeAds,
-                      onChanged: (v) { Prefs.setRemoveAds(v); setState(() {}); },
-                    ),
-                    onTap: () { Prefs.setRemoveAds(!Prefs.removeAds); setState(() {}); },
+                    trailing: Prefs.removeAds
+                        ? Icon(Icons.check_circle, color: AppColors.blue, size: 24)
+                        : Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+                    onTap: Prefs.removeAds ? null : () => _showRemoveAds(context),
                   ),
                   SettingsTile(
                     icon: Icons.refresh_rounded,
                     tint: AppColors.navInk,
                     title: Tr.get('restorePurchases'),
+                    onTap: () async {
+                      await IapService.restorePurchases();
+                      if (mounted) setState(() {});
+                    },
                   ),
                 ],
               ),
@@ -186,6 +190,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
     child: Text(Tr.get('comingSoon'),
         style: poppins(11, FontWeight.w800, AppColors.muted)),
   );
+
+  void _showRemoveAds(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: AppColors.bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(Tr.get('removeAds'),
+                  style: poppins(22, FontWeight.w900, AppColors.ink)),
+              const SizedBox(height: 18),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  'Remove all fullscreen ads between levels. Life refill and Hint ads will still be available.',
+                  textAlign: TextAlign.center,
+                  style: poppins(15, FontWeight.w600, AppColors.ink),
+                ),
+              ),
+              const SizedBox(height: 28),
+              Pressable(
+                onTap: () async {
+                  Navigator.pop(context);
+                  await IapService.buyRemoveAds();
+                  if (mounted) setState(() {});
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.blue,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(IapService.priceText,
+                      style: poppins(20, FontWeight.w900, Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Pressable(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: AppColors.cardBorder, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(Tr.get('close'),
+                      style: poppins(18, FontWeight.w900, AppColors.muted)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _toggle(ValueNotifier<bool> n, IconData icon, Color tint, String title,
       String? subtitle, Future<void> Function(bool) setter) {
