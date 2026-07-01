@@ -37,7 +37,7 @@ class LevelGenerator {
   static const _shapeLevels = <int, String>{
     16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
     39: 'star', 45: 'cross', 52: 'hexagon', 57: 'pentagon',
-    63: 'crescent', 81: 'octagon', 88: 'circle', 99: 'peach',
+    63: 'crescent', 70: 'clover', 81: 'octagon', 88: 'circle', 99: 'peach',
   };
 
   /// Builds a shape mask for the current grid, or null for rectangular.
@@ -213,6 +213,27 @@ class LevelGenerator {
             if (inOuter && !inInner) mask.add(cellKey(x, y));
           }
         }
+      case 'clover':
+        // 4-leaf clover rotated 45° — leaves point to the four corners.
+        // offN > radN       → + gap at cardinal centres (no circle reaches)
+        // 2·radN > offN·√2  → adjacent leaves overlap slightly → connected
+        const offN = 0.55;
+        const radN = 0.44;
+        // Diagonal offset: same Euclidean distance offN·rx from centre,
+        // split equally across x and y via ÷√2.
+        final dOff = rx * offN * 0.7071;
+        // NE, SE, SW, NW
+        final lobeCX2 = [cx + dOff, cx + dOff, cx - dOff, cx - dOff];
+        final lobeCY2 = [cy - dOff, cy + dOff, cy + dOff, cy - dOff];
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            for (var i = 0; i < 4; i++) {
+              final dxl = (x - lobeCX2[i]) / (rx * radN);
+              final dyl = (y - lobeCY2[i]) / (ry * radN);
+              if (dxl*dxl + dyl*dyl <= 1.0) { mask.add(cellKey(x, y)); break; }
+            }
+          }
+        }
       default:
         return null;
     }
@@ -330,6 +351,15 @@ class LevelGenerator {
     return _Walk(pts, body, headDir, cx, cy);
   }
 
+  /// When true, [_exitClear] must walk all the way to the full grid
+  /// rectangle edge instead of stopping as soon as it leaves the shape mask.
+  /// Needed for multi-lobe/concave shapes (clover) where a corridor can exit
+  /// one lobe's mask and re-enter a DIFFERENT lobe further along the same
+  /// straight line — [greedySolvable]'s real corridor check (which the game
+  /// actually uses to verify removability) only stops at the rectangle edge,
+  /// not the mask, so exiting the mask early is not a true guarantee there.
+  bool _strictRectExit = false;
+
   /// True if the exit corridor (head → edge) is clear of [occ]. Used by the
   /// reverse-construction packer to guarantee solvability.
   bool _exitClear(_Walk w, Set<String> occ) {
@@ -337,7 +367,8 @@ class LevelGenerator {
     while (true) {
       fx += w.headDir.dx;
       fy += w.headDir.dy;
-      if (!_inB(fx, fy)) return true;
+      if (fx < 0 || fx > cols || fy < 0 || fy > rows) return true;
+      if (!_strictRectExit && !_inB(fx, fy)) return true;
       final k = cellKey(fx, fy);
       if (occ.contains(k) || w.body.contains(k)) return false;
     }
@@ -389,6 +420,8 @@ class LevelGenerator {
   /// Reverse-construction packer: each arrow's exit corridor must be clear of
   /// already-placed arrows ⇒ removing in reverse order always works ⇒
   /// GUARANTEED solvable. Fills less tightly than [_packFill]; gap-fill cleans up.
+  int _rcRetries = 6;
+
   List<Arrow> _packRC(int seed) {
     final rng = SeededRandom(seed);
     final occ = <String>{};
@@ -396,7 +429,7 @@ class LevelGenerator {
     for (final (x, y) in _shuffledCells(rng)) {
       if (occ.contains(cellKey(x, y))) continue;
       _Walk? chosen;
-      for (var r = 0; r < 6; r++) {
+      for (var r = 0; r < _rcRetries; r++) {
         final w = _grow(rng, occ, x, y);
         if (w == null) continue;
         if (_exitClear(w, occ)) {
@@ -435,6 +468,8 @@ class LevelGenerator {
   /// Fills remaining gaps with the longest winding arrow that fits and keeps
   /// the board solvable. Prefers 3+ cell L-shapes/straights; 2-cell only as a
   /// last resort. Each candidate is solvability-checked individually.
+  bool _allow2CellGapFill = false;
+
   void _applyGapFill(List<Arrow> arrows) {
     final occ = <String>{};
     for (final a in arrows) {
@@ -443,8 +478,40 @@ class LevelGenerator {
 
     bool free(int x, int y) => _inB(x, y) && !occ.contains(cellKey(x, y));
 
+    bool exitClearFor(Point<int> head, Direction dir, Set<String> body) {
+      var fx = head.x, fy = head.y;
+      while (true) {
+        fx += dir.dx;
+        fy += dir.dy;
+        if (fx < 0 || fx > cols || fy < 0 || fy > rows) return true;
+        if (!_strictRectExit && !_inB(fx, fy)) return true;
+        final k = cellKey(fx, fy);
+        if (occ.contains(k) || body.contains(k)) return false;
+      }
+    }
+
     bool tryPlace(List<Point<int>> pts, Direction dir) {
       final cells = {for (final p in pts) cellKey(p.x, p.y)};
+      // Two-phase acceptance for clover: first the cheap exit-corridor test
+      // (accept immediately if the arrow has a guaranteed clear flight path),
+      // otherwise fall back to the full greedySolvable check — which is LESS
+      // restrictive than exit-clear (an arrow may be blocked as long as its
+      // blockers can clear first), so it packs many more arrows into the
+      // lobes while still guaranteeing the whole board stays solvable.
+      if (_allow2CellGapFill) {
+        if (exitClearFor(pts.last, dir, cells)) {
+          occ.addAll(cells);
+          arrows.add(Arrow(id: arrows.length, pts: pts, dir: dir, cells: cells));
+          return true;
+        }
+        arrows.add(Arrow(id: arrows.length, pts: pts, dir: dir, cells: cells));
+        if (greedySolvable(arrows)) {
+          occ.addAll(cells);
+          return true;
+        }
+        arrows.removeLast();
+        return false;
+      }
       arrows.add(Arrow(id: arrows.length, pts: pts, dir: dir, cells: cells));
       if (greedySolvable(arrows)) {
         occ.addAll(cells);
@@ -483,19 +550,56 @@ class LevelGenerator {
         }
       }
       // No 2-cell stubs — minimum 3 cells. Isolated single cells left unfilled.
+      if (_allow2CellGapFill) {
+        for (final d in Direction.values) {
+          final a = Point(x + d.dx, y + d.dy);
+          if (free(a.x, a.y)) out.add(([Point(x, y), a], d));
+        }
+      }
       return out;
+    }
+
+    int freeNeighborCount(int x, int y) {
+      var n = 0;
+      for (final d in Direction.values) {
+        if (free(x + d.dx, y + d.dy)) n++;
+      }
+      return n;
     }
 
     var placed = true;
     while (placed) {
       placed = false;
-      for (var y = 0; y <= rows; y++) {
-        for (var x = 0; x <= cols; x++) {
+      if (_allow2CellGapFill) {
+        // Most-constrained-cell-first: cells in tight corners/pockets have
+        // fewer valid candidate directions, so filling them before open
+        // cells unlocks more of the board overall than a fixed raster scan.
+        final freeCells = <(int, int)>[];
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            if (free(x, y)) freeCells.add((x, y));
+          }
+        }
+        freeCells.sort((a, b) =>
+            freeNeighborCount(a.$1, a.$2).compareTo(freeNeighborCount(b.$1, b.$2)));
+        for (final (x, y) in freeCells) {
           if (occ.contains(cellKey(x, y))) continue;
           for (final (pts, dir) in candidates(x, y)) {
             if (tryPlace(pts, dir)) {
               placed = true;
               break;
+            }
+          }
+        }
+      } else {
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            if (occ.contains(cellKey(x, y))) continue;
+            for (final (pts, dir) in candidates(x, y)) {
+              if (tryPlace(pts, dir)) {
+                placed = true;
+                break;
+              }
             }
           }
         }
@@ -686,6 +790,9 @@ class LevelGenerator {
       } else if (shapeName == 'crescent') {
         cols = max(cols, 32);
         rows = max(rows, 32);
+      } else if (shapeName == 'clover') {
+        cols = max(cols, 40);
+        rows = max(rows, 40);
       } else {
         cols = (cols * 1.4).round();
         rows = (rows * 1.4).round();
@@ -720,16 +827,34 @@ class LevelGenerator {
       } else if (shapeName == 'crescent') {
         shapeAttempts = 40;
         shapeFillTarget = 0.72;
+      } else if (shapeName == 'clover') {
+        shapeAttempts = 12;
+        shapeFillTarget = 0.70;
+      }
+      // Clover only: shorten walk length for RC packing. The default Hard-tier
+      // walk (6-25 cells) is too long for the curved lobes — arrows can't find
+      // a clear exit corridor and get skipped, leaving cells for gap-fill
+      // (which only places 3-4 cell stubs). Short arrows (3-9) pack RC's
+      // guaranteed-solvable corridors much more densely. Saved/restored so
+      // nothing else changes.
+      final savedMin = _walkMin, savedMax = _walkMax, savedBias = _straightBias;
+      final savedRetries = _rcRetries;
+      if (shapeName == 'clover') {
+        _walkMin = 2; _walkMax = 6; _straightBias = 0.50;
+        _rcRetries = 6;
+        _strictRectExit = true;
       }
       for (var att = 0; att < shapeAttempts; att++) {
         final arr = _packRC((seed + att * 7919) & 0xFFFFFFFF);
         if (arr.isEmpty) continue;
         final sc = score(arr);
-        if (sc > bestScore) {
-          bestScore = sc;
-          best = arr;
-        }
+        if (sc > bestScore) { bestScore = sc; best = arr; }
         if (bestScore > area * shapeFillTarget) break;
+      }
+      if (shapeName == 'clover') {
+        _walkMin = savedMin; _walkMax = savedMax; _straightBias = savedBias;
+        _rcRetries = savedRetries;
+        _strictRectExit = false;
       }
     } else if (daily) {
       // Daily: _packFill FIRST — produces the signature long winding maze
@@ -809,7 +934,13 @@ class LevelGenerator {
     }
 
     best ??= <Arrow>[];
+    if (shapeName == 'clover') {
+      _allow2CellGapFill = true;
+      _strictRectExit = true;
+    }
     _applyGapFill(best);
+    _allow2CellGapFill = false;
+    _strictRectExit = false;
     final result = _trimToFit(best);
     _shapeMask = null;
     return result;
