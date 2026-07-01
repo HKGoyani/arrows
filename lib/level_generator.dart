@@ -856,7 +856,9 @@ class LevelGenerator {
         cols = max(cols, 40);
         rows = max(rows, 40);
       } else if (shapeName == 'bolt') {
-        cols = max(cols, 44);
+        // Bolt polygon spans ~0.48 of the width, so a 62-wide design grid
+        // trims to a ~30-wide rendered board (wider/chunkier than 44→20).
+        cols = max(cols, 62);
         rows = max(rows, 50);
       } else {
         cols = (cols * 1.4).round();
