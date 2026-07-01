@@ -888,13 +888,12 @@ class LevelGenerator {
       // own (independently tunable) extra attempts + fill target.
       int shapeAttempts = 10;
       double shapeFillTarget = 0.55;
-      if (shapeName == 'crescent') {
-        shapeAttempts = 40;
-        shapeFillTarget = 0.72;
-      } else if (shapeName == 'pentagon' ||
+      if (shapeName == 'pentagon' ||
+          shapeName == 'crescent' ||
           shapeName == 'clover' ||
           shapeName == 'flower' ||
-          shapeName == 'bolt') {
+          shapeName == 'bolt' ||
+          shapeName == 'octagon') {
         shapeAttempts = 12;
         shapeFillTarget = 0.70;
       }
@@ -910,9 +909,11 @@ class LevelGenerator {
       // arrows exist outside a convex mask to re-enter). Saved/restored so
       // nothing else changes.
       final densePipeline = shapeName == 'pentagon' ||
+          shapeName == 'crescent' ||
           shapeName == 'clover' ||
           shapeName == 'flower' ||
-          shapeName == 'bolt';
+          shapeName == 'bolt' ||
+          shapeName == 'octagon';
       final savedMin = _walkMin, savedMax = _walkMax, savedBias = _straightBias;
       final savedRetries = _rcRetries;
       if (densePipeline) {
@@ -1011,9 +1012,11 @@ class LevelGenerator {
 
     best ??= <Arrow>[];
     if (shapeName == 'pentagon' ||
+        shapeName == 'crescent' ||
         shapeName == 'clover' ||
         shapeName == 'flower' ||
-        shapeName == 'bolt') {
+        shapeName == 'bolt' ||
+        shapeName == 'octagon') {
       _allow2CellGapFill = true;
       _strictRectExit = true;
     }
