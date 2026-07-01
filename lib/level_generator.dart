@@ -888,32 +888,34 @@ class LevelGenerator {
       // own (independently tunable) extra attempts + fill target.
       int shapeAttempts = 10;
       double shapeFillTarget = 0.55;
-      if (shapeName == 'pentagon') {
-        shapeAttempts = 28;
-        shapeFillTarget = 0.66;
-      } else if (shapeName == 'crescent') {
+      if (shapeName == 'crescent') {
         shapeAttempts = 40;
         shapeFillTarget = 0.72;
-      } else if (shapeName == 'clover' ||
+      } else if (shapeName == 'pentagon' ||
+          shapeName == 'clover' ||
           shapeName == 'flower' ||
           shapeName == 'bolt') {
         shapeAttempts = 12;
         shapeFillTarget = 0.70;
       }
-      // Multi-lobe / hollow shapes (clover, flower): shorten walk length for
-      // RC packing. The default Hard-tier walk (6-25 cells) is too long for the
-      // curved lobes — arrows can't find a clear exit corridor and get skipped,
-      // leaving cells for gap-fill. Short arrows pack RC's guaranteed-solvable
-      // corridors much more densely. _strictRectExit makes the exit check walk
-      // to the full grid rectangle edge (not the mask edge) so an arrow flying
-      // across a hole/gap into another lobe is correctly accounted for.
-      // Saved/restored so nothing else changes.
-      final denseHollow = shapeName == 'clover' ||
+      // Fast dense pipeline: shorten walk length for RC packing (the default
+      // Hard-tier 6-25 walk is too long for curved/irregular masks — arrows
+      // can't find a clear exit corridor and get skipped, leaving cells for
+      // gap-fill). Short arrows pack RC's guaranteed-solvable corridors much
+      // more densely, and the two-phase gap-fill (see _applyGapFill) finishes
+      // the fill fast. _strictRectExit makes the exit check walk to the full
+      // grid rectangle edge (not the mask edge) so an arrow flying across a
+      // hole/gap into another lobe is correctly accounted for — needed for the
+      // concave/hollow shapes; a harmless no-op for the convex pentagon (no
+      // arrows exist outside a convex mask to re-enter). Saved/restored so
+      // nothing else changes.
+      final densePipeline = shapeName == 'pentagon' ||
+          shapeName == 'clover' ||
           shapeName == 'flower' ||
           shapeName == 'bolt';
       final savedMin = _walkMin, savedMax = _walkMax, savedBias = _straightBias;
       final savedRetries = _rcRetries;
-      if (denseHollow) {
+      if (densePipeline) {
         _walkMin = 2; _walkMax = 6; _straightBias = 0.50;
         _rcRetries = 6;
         _strictRectExit = true;
@@ -925,7 +927,7 @@ class LevelGenerator {
         if (sc > bestScore) { bestScore = sc; best = arr; }
         if (bestScore > area * shapeFillTarget) break;
       }
-      if (denseHollow) {
+      if (densePipeline) {
         _walkMin = savedMin; _walkMax = savedMax; _straightBias = savedBias;
         _rcRetries = savedRetries;
         _strictRectExit = false;
@@ -1008,7 +1010,8 @@ class LevelGenerator {
     }
 
     best ??= <Arrow>[];
-    if (shapeName == 'clover' ||
+    if (shapeName == 'pentagon' ||
+        shapeName == 'clover' ||
         shapeName == 'flower' ||
         shapeName == 'bolt') {
       _allow2CellGapFill = true;
