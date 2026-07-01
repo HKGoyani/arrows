@@ -1577,7 +1577,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen>
         children: [
           Column(
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   const SizedBox(width: 16),
@@ -1587,8 +1587,8 @@ class _MonthDetailScreenState extends State<MonthDetailScreen>
                   Expanded(
                     child: Center(
                       child: SizedBox(
-                        width: 128,
-                        height: 128,
+                        width: 108,
+                        height: 108,
                         child: CustomPaint(
                           painter: TrophyPainter(unlocked: completed),
                         ),
@@ -1610,7 +1610,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen>
                   target: totalDays,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text('${_monthNames[_month - 1]} $_year',
                   style: poppins(22, FontWeight.w900, AppColors.blue)),
               const SizedBox(height: 14),
