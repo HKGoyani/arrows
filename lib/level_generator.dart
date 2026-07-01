@@ -37,7 +37,8 @@ class LevelGenerator {
   static const _shapeLevels = <int, String>{
     16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
     39: 'star', 45: 'cross', 52: 'hexagon', 57: 'pentagon',
-    63: 'crescent', 70: 'clover', 81: 'octagon', 88: 'circle', 99: 'peach',
+    63: 'crescent', 70: 'clover', 81: 'octagon', 88: 'circle',
+    93: 'flower', 99: 'peach',
   };
 
   /// Builds a shape mask for the current grid, or null for rectangular.
@@ -231,6 +232,33 @@ class LevelGenerator {
               final dxl = (x - lobeCX2[i]) / (rx * radN);
               final dyl = (y - lobeCY2[i]) / (ry * radN);
               if (dxl*dxl + dyl*dyl <= 1.0) { mask.add(cellKey(x, y)); break; }
+            }
+          }
+        }
+      case 'flower':
+        // 5-petal flower 🌸: five circles evenly spaced 72° apart around the
+        // centre, one petal pointing straight up (θ = -90° + i·72°).
+        //   offN > radN                → hollow hole in the middle (no petal
+        //                                reaches the centre)
+        //   2·radN > inter-petal dist  → adjacent petals overlap slightly, so
+        //                                the ring of petals stays connected
+        // Round/plump petals, matching the 4-leaf clover (L70).
+        const petalN = 5;
+        const offN = 0.60;
+        const radN = 0.42;
+        final petalCX = <double>[];
+        final petalCY = <double>[];
+        for (var i = 0; i < petalN; i++) {
+          final ang = -pi / 2 + i * 2 * pi / petalN;
+          petalCX.add(cx + rx * offN * cos(ang));
+          petalCY.add(cy + ry * offN * sin(ang));
+        }
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            for (var i = 0; i < petalN; i++) {
+              final dxl = (x - petalCX[i]) / (rx * radN);
+              final dyl = (y - petalCY[i]) / (ry * radN);
+              if (dxl * dxl + dyl * dyl <= 1.0) { mask.add(cellKey(x, y)); break; }
             }
           }
         }
@@ -790,7 +818,7 @@ class LevelGenerator {
       } else if (shapeName == 'crescent') {
         cols = max(cols, 32);
         rows = max(rows, 32);
-      } else if (shapeName == 'clover') {
+      } else if (shapeName == 'clover' || shapeName == 'flower') {
         cols = max(cols, 40);
         rows = max(rows, 40);
       } else {
@@ -827,19 +855,22 @@ class LevelGenerator {
       } else if (shapeName == 'crescent') {
         shapeAttempts = 40;
         shapeFillTarget = 0.72;
-      } else if (shapeName == 'clover') {
+      } else if (shapeName == 'clover' || shapeName == 'flower') {
         shapeAttempts = 12;
         shapeFillTarget = 0.70;
       }
-      // Clover only: shorten walk length for RC packing. The default Hard-tier
-      // walk (6-25 cells) is too long for the curved lobes — arrows can't find
-      // a clear exit corridor and get skipped, leaving cells for gap-fill
-      // (which only places 3-4 cell stubs). Short arrows (3-9) pack RC's
-      // guaranteed-solvable corridors much more densely. Saved/restored so
-      // nothing else changes.
+      // Multi-lobe / hollow shapes (clover, flower): shorten walk length for
+      // RC packing. The default Hard-tier walk (6-25 cells) is too long for the
+      // curved lobes — arrows can't find a clear exit corridor and get skipped,
+      // leaving cells for gap-fill. Short arrows pack RC's guaranteed-solvable
+      // corridors much more densely. _strictRectExit makes the exit check walk
+      // to the full grid rectangle edge (not the mask edge) so an arrow flying
+      // across a hole/gap into another lobe is correctly accounted for.
+      // Saved/restored so nothing else changes.
+      final denseHollow = shapeName == 'clover' || shapeName == 'flower';
       final savedMin = _walkMin, savedMax = _walkMax, savedBias = _straightBias;
       final savedRetries = _rcRetries;
-      if (shapeName == 'clover') {
+      if (denseHollow) {
         _walkMin = 2; _walkMax = 6; _straightBias = 0.50;
         _rcRetries = 6;
         _strictRectExit = true;
@@ -851,7 +882,7 @@ class LevelGenerator {
         if (sc > bestScore) { bestScore = sc; best = arr; }
         if (bestScore > area * shapeFillTarget) break;
       }
-      if (shapeName == 'clover') {
+      if (denseHollow) {
         _walkMin = savedMin; _walkMax = savedMax; _straightBias = savedBias;
         _rcRetries = savedRetries;
         _strictRectExit = false;
@@ -934,7 +965,7 @@ class LevelGenerator {
     }
 
     best ??= <Arrow>[];
-    if (shapeName == 'clover') {
+    if (shapeName == 'clover' || shapeName == 'flower') {
       _allow2CellGapFill = true;
       _strictRectExit = true;
     }

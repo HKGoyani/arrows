@@ -30,6 +30,7 @@ const _shapedLevelTiers = <int, Tier>{
   70: Tier.hard,     // clover — 34×34, four lobes, Hard
   81: Tier.normal,   // octagon
   88: Tier.normal,   // circle
+  93: Tier.hard,     // flower — 40×40, five petals + hollow center, Hard
   99: Tier.normal,   // peach
 };
 
