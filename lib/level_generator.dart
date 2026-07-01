@@ -37,7 +37,7 @@ class LevelGenerator {
   static const _shapeLevels = <int, String>{
     16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
     39: 'star', 45: 'cross', 52: 'hexagon', 57: 'pentagon',
-    81: 'octagon', 88: 'circle', 99: 'peach',
+    63: 'crescent', 81: 'octagon', 88: 'circle', 99: 'peach',
   };
 
   /// Builds a shape mask for the current grid, or null for rectangular.
@@ -190,6 +190,27 @@ class LevelGenerator {
             final a = (angle + pentSector / 2) % pentSector - pentSector / 2;
             final r = pentApothem / cos(a);
             if (dist <= r + 0.08) mask.add(cellKey(x, y));
+          }
+        }
+      case 'crescent':
+        // Crescent moon: a large circle with a smaller, offset circle
+        // subtracted from one side, leaving a curved sliver. Inner circle
+        // pushed further toward center (and slightly smaller) so the
+        // crescent body reads bolder/thicker, with the inner cut edge
+        // landing near the grid's vertical center.
+        final outerCx = cx, outerCy = cy;
+        const outerR = 1.0;
+        final innerCx = cx + rx * 0.65, innerCy = cy;
+        const innerR = 0.70;
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final dxo = (x - outerCx) / (rx * outerR);
+            final dyo = (y - outerCy) / (ry * outerR);
+            final inOuter = dxo * dxo + dyo * dyo <= 1.05;
+            final dxi = (x - innerCx) / (rx * innerR);
+            final dyi = (y - innerCy) / (ry * innerR);
+            final inInner = dxi * dxi + dyi * dyi <= 1.0;
+            if (inOuter && !inInner) mask.add(cellKey(x, y));
           }
         }
       default:
@@ -662,6 +683,9 @@ class LevelGenerator {
       } else if (shapeName == 'pentagon') {
         cols = max(cols, 32);
         rows = max(rows, 34);
+      } else if (shapeName == 'crescent') {
+        cols = max(cols, 32);
+        rows = max(rows, 32);
       } else {
         cols = (cols * 1.4).round();
         rows = (rows * 1.4).round();
@@ -685,11 +709,18 @@ class LevelGenerator {
 
     if (_shapeMask != null) {
       // Shaped levels: RC-only (guaranteed solvable by construction).
-      // Pentagon (L57) gets extra attempts + a higher fill target — it
-      // was visibly sparser than the other shapes at the default count.
-      final isPentagon = shapeName == 'pentagon';
-      final shapeAttempts = isPentagon ? 28 : 10;
-      final shapeFillTarget = isPentagon ? 0.66 : 0.55;
+      // Pentagon (L57) and crescent (L63) are thin/irregular shapes with
+      // a higher sparse-fill risk than the others, so they each get their
+      // own (independently tunable) extra attempts + fill target.
+      int shapeAttempts = 10;
+      double shapeFillTarget = 0.55;
+      if (shapeName == 'pentagon') {
+        shapeAttempts = 28;
+        shapeFillTarget = 0.66;
+      } else if (shapeName == 'crescent') {
+        shapeAttempts = 40;
+        shapeFillTarget = 0.72;
+      }
       for (var att = 0; att < shapeAttempts; att++) {
         final arr = _packRC((seed + att * 7919) & 0xFFFFFFFF);
         if (arr.isEmpty) continue;

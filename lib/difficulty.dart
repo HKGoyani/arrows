@@ -14,12 +14,31 @@ enum Tier {
   String get label => Tr.get(_key);
 }
 
+// Manual overrides for shaped levels whose hash tier doesn't match actual
+// difficulty (shaped levels fill only a fraction of the full grid, so the
+// hash-assigned tier can be misleading).
+const _shapedLevelTiers = <int, Tier>{
+  16: Tier.normal,   // circle — small grid, light fill
+  21: Tier.hard,     // heart
+  27: Tier.normal,   // diamond
+  34: Tier.normal,   // triangle
+  39: Tier.normal,   // star
+  45: Tier.hard,     // cross
+  52: Tier.normal,   // hexagon
+  57: Tier.normal,   // pentagon
+  63: Tier.hard,     // crescent — 32×32 partial fill, Hard is appropriate
+  81: Tier.normal,   // octagon
+  88: Tier.normal,   // circle
+  99: Tier.normal,   // peach
+};
+
 /// Deterministic tier for a level. Calibrated from 99 reference levels (L4-102):
 ///   L4-102: 70% Normal, 20% Hard, 9% SH, 1% NM (L100 hardcoded)
 ///   L103+:  Normal gradually gives way; Nightmare grows to 40% by L1000+
 ///
 /// Hard first at L6, Super Hard at L26, Nightmare at L100.
 Tier tierForLevel(int level) {
+  if (_shapedLevelTiers.containsKey(level)) return _shapedLevelTiers[level]!;
   if (level < 6) return Tier.normal;
   if (level == 100) return Tier.nightmare;
 
