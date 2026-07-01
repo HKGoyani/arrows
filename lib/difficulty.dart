@@ -28,6 +28,7 @@ const _shapedLevelTiers = <int, Tier>{
   57: Tier.normal,   // pentagon
   63: Tier.hard,     // crescent — 32×32 partial fill, Hard is appropriate
   70: Tier.hard,     // clover — 34×34, four lobes, Hard
+  75: Tier.hard,     // bolt — 44×50 lightning zigzag, Hard
   81: Tier.normal,   // octagon
   88: Tier.normal,   // circle
   93: Tier.hard,     // flower — 40×40, five petals + hollow center, Hard

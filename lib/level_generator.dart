@@ -37,7 +37,7 @@ class LevelGenerator {
   static const _shapeLevels = <int, String>{
     16: 'circle', 21: 'heart', 27: 'diamond', 34: 'triangle',
     39: 'star', 45: 'cross', 52: 'hexagon', 57: 'pentagon',
-    63: 'crescent', 70: 'clover', 81: 'octagon', 88: 'circle',
+    63: 'crescent', 70: 'clover', 75: 'bolt', 81: 'octagon', 88: 'circle',
     93: 'flower', 99: 'peach',
   };
 
@@ -260,6 +260,40 @@ class LevelGenerator {
               final dyl = (y - petalCY[i]) / (ry * radN);
               if (dxl * dxl + dyl * dyl <= 1.0) { mask.add(cellKey(x, y)); break; }
             }
+          }
+        }
+      case 'bolt':
+        // Lightning bolt ⚡: a single chunky zigzag band leaning down-left with
+        // a sharp point at the bottom. Defined as a normalized polygon (x,y in
+        // [0,1], y-down) traced clockwise, filled via ray-casting point-in-
+        // polygon. Vertices: top edge → down-left upper arm → step-right notch
+        // → down-left to the sharp bottom point → back up the lower arm → step-
+        // left notch → up the upper arm's left edge.
+        const boltPoly = <List<double>>[
+          [0.40, 0.00], // top-left
+          [0.70, 0.00], // top-right
+          [0.48, 0.46], // upper-arm bottom-right (kink)
+          [0.68, 0.46], // step right → notch outer
+          [0.46, 0.86], // lower-arm right edge (stays wide/chunky)
+          [0.34, 1.00], // sharp bottom point
+          [0.26, 0.88], // lower-arm left, near the tip
+          [0.42, 0.54], // lower-arm top-left (kink)
+          [0.22, 0.54], // step left → notch
+        ];
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final px = x / cols, py = y / rows;
+            var inside = false;
+            for (var i = 0, j = boltPoly.length - 1;
+                i < boltPoly.length; j = i++) {
+              final xi = boltPoly[i][0], yi = boltPoly[i][1];
+              final xj = boltPoly[j][0], yj = boltPoly[j][1];
+              if (((yi > py) != (yj > py)) &&
+                  (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
+                inside = !inside;
+              }
+            }
+            if (inside) mask.add(cellKey(x, y));
           }
         }
       default:
@@ -821,6 +855,9 @@ class LevelGenerator {
       } else if (shapeName == 'clover' || shapeName == 'flower') {
         cols = max(cols, 40);
         rows = max(rows, 40);
+      } else if (shapeName == 'bolt') {
+        cols = max(cols, 44);
+        rows = max(rows, 50);
       } else {
         cols = (cols * 1.4).round();
         rows = (rows * 1.4).round();
@@ -855,7 +892,9 @@ class LevelGenerator {
       } else if (shapeName == 'crescent') {
         shapeAttempts = 40;
         shapeFillTarget = 0.72;
-      } else if (shapeName == 'clover' || shapeName == 'flower') {
+      } else if (shapeName == 'clover' ||
+          shapeName == 'flower' ||
+          shapeName == 'bolt') {
         shapeAttempts = 12;
         shapeFillTarget = 0.70;
       }
@@ -867,7 +906,9 @@ class LevelGenerator {
       // to the full grid rectangle edge (not the mask edge) so an arrow flying
       // across a hole/gap into another lobe is correctly accounted for.
       // Saved/restored so nothing else changes.
-      final denseHollow = shapeName == 'clover' || shapeName == 'flower';
+      final denseHollow = shapeName == 'clover' ||
+          shapeName == 'flower' ||
+          shapeName == 'bolt';
       final savedMin = _walkMin, savedMax = _walkMax, savedBias = _straightBias;
       final savedRetries = _rcRetries;
       if (denseHollow) {
@@ -965,7 +1006,9 @@ class LevelGenerator {
     }
 
     best ??= <Arrow>[];
-    if (shapeName == 'clover' || shapeName == 'flower') {
+    if (shapeName == 'clover' ||
+        shapeName == 'flower' ||
+        shapeName == 'bolt') {
       _allow2CellGapFill = true;
       _strictRectExit = true;
     }
