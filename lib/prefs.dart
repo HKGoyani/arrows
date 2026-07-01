@@ -62,6 +62,14 @@ class Prefs {
   static bool get removeAds => _p?.getBool('removeAds') ?? false;
   static Future<void> setRemoveAds(bool v) async => _p?.setBool('removeAds', v);
 
+  // --- rate-us prompt (after-win) ---
+  static int get ratePromptCount => _p?.getInt('ratePromptCount') ?? 0;
+  static Future<void> setRatePromptCount(int v) async =>
+      _p?.setInt('ratePromptCount', v);
+  static int get ratePromptLastAtLevel => _p?.getInt('ratePromptLastLevel') ?? 0;
+  static Future<void> setRatePromptLastAtLevel(int v) async =>
+      _p?.setInt('ratePromptLastLevel', v);
+
   // --- hints ---
   static const int freeHints = 5;
   static int get hintsUsed => _p?.getInt('hintsUsed') ?? 0;

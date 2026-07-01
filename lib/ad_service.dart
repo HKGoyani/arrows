@@ -225,13 +225,22 @@ class AdService {
     );
   }
 
-  /// Call after a level win. Shows interstitial every 3rd win.
-  static void onLevelWin() {
-    if (_adsRemoved) return;
+  /// Call after a level win. Shows an interstitial every 3rd win, then calls
+  /// [onDone] once the ad is dismissed. If no ad shows (not the 3rd win, ads
+  /// removed, not loaded, or shown too recently) [onDone] fires immediately.
+  /// [onDone] always runs exactly once — callers sequence the streak/rate
+  /// celebration off it so nothing stacks on top of the ad.
+  static void onLevelWin({void Function(bool adShown)? onDone}) {
+    if (_adsRemoved) {
+      onDone?.call(false);
+      return;
+    }
     _winCount++;
     if (_winCount >= 3) {
       _winCount = 0;
-      _showInterstitial();
+      _showInterstitial(onDone: onDone);
+    } else {
+      onDone?.call(false);
     }
   }
 
@@ -275,20 +284,30 @@ class AdService {
     _interstitialAd!.show();
   }
 
-  /// Call after daily challenge completion.
-  static void onDailyComplete() {
-    if (_adsRemoved) return;
-    _showInterstitial();
+  /// Call after daily challenge completion. Calls [onDone] after the ad is
+  /// dismissed (or immediately if none shows).
+  static void onDailyComplete({void Function(bool adShown)? onDone}) {
+    if (_adsRemoved) {
+      onDone?.call(false);
+      return;
+    }
+    _showInterstitial(onDone: onDone);
   }
 
-  /// Shows interstitial if loaded. Never blocks — if not loaded or shown
-  /// too recently, skips silently and preloads for next time.
-  static void _showInterstitial() {
+  /// Shows interstitial if loaded, then calls [onDone] when it's dismissed —
+  /// with `true` if an ad actually displayed, `false` otherwise. Never blocks:
+  /// if not loaded or shown too recently, skips silently, preloads for next
+  /// time, and calls `onDone(false)` immediately. [onDone] runs exactly once.
+  static void _showInterstitial({void Function(bool adShown)? onDone}) {
     if (_interstitialAd == null) {
       _loadInterstitial();
-      return; // not loaded — skip, don't block user
+      onDone?.call(false); // not loaded — skip, don't block user
+      return;
     }
-    if (!_interstitialGapOk) return; // shown too recently — avoid stacking
+    if (!_interstitialGapOk) {
+      onDone?.call(false); // shown too recently — avoid stacking
+      return;
+    }
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _showingFullScreenAd = true;
@@ -301,12 +320,14 @@ class AdService {
         ad.dispose();
         _interstitialAd = null;
         _loadInterstitial();
+        onDone?.call(true);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         _showingFullScreenAd = false;
         ad.dispose();
         _interstitialAd = null;
         _loadInterstitial();
+        onDone?.call(false);
       },
     );
     _interstitialAd!.show();

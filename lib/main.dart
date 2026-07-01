@@ -17,6 +17,7 @@ import 'level_legend.dart';
 import 'perfect.dart';
 import 'unstoppable.dart';
 import 'prefs.dart';
+import 'rate_prompt.dart';
 import 'settings_screen.dart';
 import 'streak.dart';
 import 'streak_screen.dart';
@@ -296,8 +297,10 @@ class _GameFlowState extends State<GameFlow> {
     }
   }
 
-  void _showLevelLegendCelebration(int newLevel) {
-    Navigator.of(context).pushReplacement(
+  // Return the pushReplacement future so callers can run code (the rate prompt)
+  // after the celebration is dismissed.
+  Future<void> _showLevelLegendCelebration(int newLevel) {
+    return Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => _LevelLegendCelebration(milestone: newLevel),
         transitionsBuilder: (_, anim, __, child) =>
@@ -307,8 +310,8 @@ class _GameFlowState extends State<GameFlow> {
     );
   }
 
-  void _showPerfectPlayCelebration() {
-    Navigator.of(context).pushReplacement(
+  Future<void> _showPerfectPlayCelebration() {
+    return Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => _PerfectPlayCelebration(milestone: PerfectPlay.reached),
         transitionsBuilder: (_, anim, __, child) =>
@@ -316,6 +319,28 @@ class _GameFlowState extends State<GameFlow> {
         transitionDuration: const Duration(milliseconds: 300),
       ),
     );
+  }
+
+  /// Shows the after-win rate prompt (if gated) once we're back on home. Called
+  /// from the plain-win branch after maybePop(). Uses the app-level [context]
+  /// (above the game/home navigator) so the dialog — and its 1-4★ feedback /
+  /// 5★ native-review follow-ups — layer cleanly over home instead of racing
+  /// the just-popped game screen.
+  void _maybeShowRatePrompt() {
+    if (_isDaily) return;
+    if (!RatePrompt.shouldShowForNotedWin()) return;
+    RatePrompt.markShown();
+    // By the time this runs we're back on home and this GameFlow route (and its
+    // State) is gone — so show the prompt on the home shell's context, which
+    // survives, once the return transition settles. Layering the dialog over
+    // home (rather than the game screen) is also what keeps the 1-4★ feedback
+    // follow-up from corrupting the navigation stack.
+    Future.delayed(const Duration(milliseconds: 350), () {
+      final ctx = mainShellKey.currentContext;
+      if (ctx != null) {
+        showRateDialog(ctx, onFiveStars: requestNativeReview);
+      }
+    });
   }
 
   @override
@@ -340,14 +365,12 @@ class _GameFlowState extends State<GameFlow> {
         }
         if (_isDaily) {
           await _completeDaily();
-          AdService.onDailyComplete();
           AnalyticsService.levelWin(_level, daily: true);
           AnalyticsService.dailyChallengeComplete();
           if (!mounted) return;
         } else {
           Prefs.setLevel(next);
           LevelLegend.onWin(next);
-          AdService.onLevelWin();
           AnalyticsService.levelWin(_level);
           if (next == 10) Prefs.setCollectionUnseen(true);
           if (!mounted) return;
@@ -358,22 +381,47 @@ class _GameFlowState extends State<GameFlow> {
         final showStreak = isFirstDay
             ? (!_isDaily && next == 10)
             : streakExtended;
-        if (showStreak) {
-          Navigator.of(context).pushReplacement(PageRouteBuilder(
-            pageBuilder: (ctx, __, ___) => StreakCelebration(
-              streak: StreakService.current,
-              onContinue: () => Navigator.of(ctx).maybePop(),
-            ),
-            transitionsBuilder: (_, anim, __, child) =>
-                FadeTransition(opacity: anim, child: child),
-            transitionDuration: const Duration(milliseconds: 300),
-          ));
-        } else if (!_isDaily && LevelLegend.justUnlockedMilestone(next)) {
-          _showLevelLegendCelebration(next);
-        } else if (!_isDaily && PerfectPlay.justUnlockedMilestone()) {
-          _showPerfectPlayCelebration();
+
+        // Interstitial has top priority (every 3rd win / each daily complete).
+        // Everything else — streak/legend/perfect celebration, then the rate
+        // prompt — is sequenced AFTER the ad is dismissed so nothing stacks on
+        // top of it. When no ad shows, [afterAd] fires immediately with
+        // adShown=false. The rate prompt runs after a celebration too, EXCEPT
+        // when an ad also played this win (ad + celebration + rate = too much).
+        void afterAd(bool adShown) {
+          if (!mounted) return;
+          if (showStreak) {
+            Navigator.of(context).pushReplacement(PageRouteBuilder(
+              pageBuilder: (ctx, __, ___) => StreakCelebration(
+                streak: StreakService.current,
+                onContinue: () => Navigator.of(ctx).maybePop(),
+              ),
+              transitionsBuilder: (_, anim, __, child) =>
+                  FadeTransition(opacity: anim, child: child),
+              transitionDuration: const Duration(milliseconds: 300),
+            )).then((_) {
+              if (!adShown) _maybeShowRatePrompt();
+            });
+          } else if (!_isDaily && LevelLegend.justUnlockedMilestone(next)) {
+            _showLevelLegendCelebration(next).then((_) {
+              if (!adShown) _maybeShowRatePrompt();
+            });
+          } else if (!_isDaily && PerfectPlay.justUnlockedMilestone()) {
+            _showPerfectPlayCelebration().then((_) {
+              if (!adShown) _maybeShowRatePrompt();
+            });
+          } else {
+            // Plain win → return home, then (occasionally) ask for a rating
+            // (whether or not an ad played this win).
+            Navigator.of(context).maybePop();
+            _maybeShowRatePrompt();
+          }
+        }
+
+        if (_isDaily) {
+          AdService.onDailyComplete(onDone: afterAd);
         } else {
-          Navigator.of(context).maybePop();
+          AdService.onLevelWin(onDone: afterAd);
         }
       },
     );

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'audio.dart';
@@ -7,6 +6,7 @@ import 'iap_service.dart';
 import 'main.dart' show appKey;
 import 'l10n.dart';
 import 'prefs.dart';
+import 'rate_prompt.dart';
 import 'ui_kit.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -243,23 +243,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  static const _appStoreId = '6785821757';
-  static const _playStoreId = 'com.shayona.arrows';
-  static const _supportEmail = 'akashmangukiya10@gmail.com';
   static const _privacyUrl = 'https://hkgoyani.github.io/arrows-legal/privacy-policy.html';
   static const _termsUrl = 'https://hkgoyani.github.io/arrows-legal/terms-and-conditions.html';
 
   void _openUrl(String url) =>
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-
-  void _openStore() {
-    final uri = Uri.parse(
-      defaultTargetPlatform == TargetPlatform.iOS
-          ? 'https://apps.apple.com/app/id$_appStoreId'
-          : 'https://play.google.com/store/apps/details?id=$_playStoreId',
-    );
-    launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
 
   static const _languages = [
     'English', 'Deutsch', 'français', 'italiano', '日本語',
@@ -342,176 +330,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showFeedback(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: AppColors.bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(Tr.get('howCanWeImprove'),
-                  style: poppins(22, FontWeight.w800, AppColors.ink)),
-              const SizedBox(height: 20),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: TextField(
-                  controller: controller,
-                  maxLines: 5,
-                  decoration: InputDecoration(
-                    hintText: Tr.get('enterYourFeedback'),
-                    hintStyle: poppins(14, FontWeight.w800, AppColors.muted),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(16),
-                  ),
-                  style: poppins(14, FontWeight.w800, AppColors.ink),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Pressable(
-                onTap: () {
-                  Navigator.pop(context);
-                  if (controller.text.trim().isNotEmpty) {
-                    final uri = Uri(
-                      scheme: 'mailto',
-                      path: _supportEmail,
-                      queryParameters: {
-                        'subject': 'Arrow Escape Feedback',
-                        'body': controller.text.trim(),
-                      },
-                    );
-                    launchUrl(uri);
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.blue,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Center(
-                    child: Text(Tr.get('submit'),
-                        style: poppins(17, FontWeight.w800, Colors.white)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Pressable(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: AppColors.cardBorder, width: 1),
-                  ),
-                  child: Center(
-                    child: Text(Tr.get('cancel'),
-                        style: poppins(16, FontWeight.w800, AppColors.muted)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _rateUs(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: AppColors.bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(Tr.get('enjoyingArrows'),
-                  style: poppins(22, FontWeight.w800, AppColors.ink)),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (_) => const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(Icons.star_rounded, size: 42, color: Color(0xFFFFB800)),
-                )),
-              ),
-              const SizedBox(height: 18),
-              Text(Tr.get('rateMessage'),
-                  textAlign: TextAlign.center,
-                  style: poppins(14, FontWeight.w800, AppColors.muted, height: 1.4)),
-              const SizedBox(height: 24),
-              Pressable(
-                onTap: () {
-                  Navigator.pop(context);
-                  _showFeedback(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: AppColors.cardBorder, width: 1),
-                  ),
-                  child: Center(
-                    child: Text(Tr.get('oneToFourStars'),
-                        style: poppins(16, FontWeight.w800, AppColors.muted)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Pressable(
-                onTap: () {
-                  Navigator.pop(context);
-                  _openStore();
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.blue,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Center(
-                    child: Text(Tr.get('fiveStars'),
-                        style: poppins(17, FontWeight.w800, Colors.white)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Pressable(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: AppColors.cardBorder, width: 1),
-                  ),
-                  child: Center(
-                    child: Text(Tr.get('close'),
-                        style: poppins(16, FontWeight.w800, AppColors.muted)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // The rate-us love-gate and feedback form live in rate_prompt.dart (shared
+  // with the after-win prompt). Settings' 5-star action opens the store
+  // reliably, since the user explicitly tapped "Rate us".
+  void _rateUs(BuildContext context) =>
+      showRateDialog(context, onFiveStars: openAppStore);
 
   void _howToPlay(BuildContext context) {
     showDialog(

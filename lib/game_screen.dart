@@ -16,6 +16,7 @@ import 'game_controller.dart';
 import 'hand_levels.dart';
 import 'models.dart';
 import 'perfect.dart';
+import 'rate_prompt.dart';
 import 'records.dart';
 import 'unstoppable.dart';
 import 'prefs.dart';
@@ -395,6 +396,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     AudioService.win();
     AudioService.vibrate(Haptic.medium);
     if (!_heartCtrl.isAnimating) _heartCtrl.forward(from: 0);
+    // Record this win for the after-win rate prompt (a clean win — no hearts
+    // lost — is a genuine high point). The prompt itself is shown later from
+    // the win-navigation flow (main.dart onWin), on the no-celebration path,
+    // so it never competes with the streak/legend/perfect screens.
+    if (!widget.isDaily) {
+      RatePrompt.noteWin(level: c.level, cleanWin: c.hearts >= 3);
+    }
     Future.delayed(const Duration(milliseconds: 2800), () {
       if (mounted) widget.onWin(c.level + 1);
     });
