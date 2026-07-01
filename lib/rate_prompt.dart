@@ -221,8 +221,8 @@ void showFeedbackDialog(BuildContext context) {
 
 /// Decides when the after-win rate prompt may appear. Kept deliberately
 /// conservative so the prompt only surfaces at genuine high points and never
-/// nags: main-progression wins only, at least level 8, on a clean win (no
-/// hearts lost), once per app session, spaced by 10 levels, capped at 3 ever.
+/// nags: main-progression wins only, at least level 7, on a clean win (no
+/// hearts lost), once per app session, spaced by 10 levels (no lifetime cap).
 class RatePrompt {
   static bool _shownThisSession = false;
   static int _lastWinLevel = 0;
@@ -240,7 +240,7 @@ class RatePrompt {
   static bool shouldShowForNotedWin() {
     if (_shownThisSession) return false;
     if (!_lastWinClean) return false; // only ask on a positive moment
-    if (_lastWinLevel < 8) return false;
+    if (_lastWinLevel < 7) return false;
     // No lifetime cap: the prompt may recur (once per session, spaced ≥10
     // levels, clean wins only). Apple still throttles the native 5★ sheet
     // to ~3×/year on its own.
