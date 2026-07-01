@@ -159,7 +159,7 @@
 
     <div class="alert" id="critical">
       <h2>Critical — must fix before submission</h2>
-      <p>Updated 2026-06-30 — 3 of the original 5 blocking items are resolved. Two remain.</p>
+      <p>Updated 2026-07-01 — all original blocking items are resolved. iOS is submission-ready. (Android is a separate, later effort — still on test ad IDs.)</p>
       <table>
         <tr><th>Item</th><th>Status</th><th>Detail</th></tr>
         <tr>
@@ -184,13 +184,18 @@
         </tr>
         <tr>
           <td><strong>In-App Purchase product</strong></td>
-          <td><span class="tag tag-block">STILL BLOCKING</span></td>
-          <td>Only exists in the local <code>Configuration.storekit</code> test file. Create the real <code>remove_ads</code> non-consumable product in App Store Connect and submit for review</td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>The <code>remove_ads</code> non-consumable product was created in App Store Connect (2026-07-01). Product ID matches <code>IapService.removeAdsId</code></td>
         </tr>
         <tr>
           <td><strong>App screenshots</strong></td>
-          <td><span class="tag tag-block">STILL BLOCKING</span></td>
-          <td>None created yet. Required for all supported device sizes (see Section 4)</td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Uploaded to App Store Connect (2026-07-01)</td>
+        </tr>
+        <tr>
+          <td><strong>Export compliance key</strong></td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td><code>ITSAppUsesNonExemptEncryption = false</code> added to <code>Info.plist</code> (2026-07-01) — no more per-upload compliance prompt</td>
         </tr>
       </table>
     </div>
@@ -251,11 +256,11 @@
 
     <section id="screenshots">
       <h2>4. Screenshots</h2>
-      <p><span class="tag tag-block">NOT CREATED</span> App Store Connect requires screenshots for at least one device size. Since this is iPhone-only, you need:</p>
+      <p><span class="tag tag-ok">UPLOADED</span> Screenshots were uploaded to App Store Connect (2026-07-01). Reference of what's required (iPhone-only):</p>
       <table>
         <tr><th>Required size</th><th>Used for</th><th>Status</th></tr>
-        <tr><td>6.9" (iPhone 16/15 Pro Max class)</td><td>Required — largest current iPhone</td><td>❌ Not created</td></tr>
-        <tr><td>6.5" (iPhone 11/XS Max class)</td><td>Optional if 6.9" provided and scales</td><td>❌ Not created</td></tr>
+        <tr><td>6.9" (iPhone 16/15 Pro Max class)</td><td>Required — largest current iPhone</td><td>✅ Uploaded</td></tr>
+        <tr><td>6.5" (iPhone 11/XS Max class)</td><td>Optional if 6.9" provided and scales</td><td>—</td></tr>
       </table>
       <h3>Recommended shots (5–10 total)</h3>
       <ul>
@@ -413,7 +418,7 @@ one-time Remove Ads purchase for an uninterrupted experience.</pre>
         <tr><td>Does the app use encryption?</td><td>Yes (standard HTTPS/TLS only)</td><td>All network calls (Firebase, AdMob, StoreKit) use standard OS-provided HTTPS</td></tr>
         <tr><td>Does it qualify for exemption?</td><td>Yes — standard encryption exemption</td><td>No custom/proprietary encryption implemented</td></tr>
       </table>
-      <p><span class="tag tag-warn">ACTION NEEDED</span> Add <code>ITSAppUsesNonExemptEncryption = false</code> to <code>ios/Runner/Info.plist</code> to skip the manual export-compliance question on every build upload. This key is currently <strong>not set</strong>.</p>
+      <p><span class="tag tag-ok">DONE</span> <code>ITSAppUsesNonExemptEncryption = false</code> was added to <code>ios/Runner/Info.plist</code> (2026-07-01) — the manual export-compliance question no longer appears on build upload.</p>
     </section>
 
     <section id="review">
@@ -423,9 +428,7 @@ one-time Remove Ads purchase for an uninterrupted experience.</pre>
 or account is required to play.
 
 - All gameplay progress is stored locally on-device (no server backend).
-- Ads are served via Google AdMob (test ad units must be swapped for
-  production IDs before this build is approved for release — see
-  internal notes).
+- Ads are served via Google AdMob using production ad units.
 - One in-app purchase: "Remove Ads" ($3.99, non-consumable, product ID
   remove_ads) disables banner/interstitial/app-open ads. Rewarded ads
   (opt-in, for hints/extra lives) remain available even after purchase
