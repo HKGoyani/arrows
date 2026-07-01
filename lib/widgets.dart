@@ -222,7 +222,10 @@ class GameTopBar extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 90),
+          // Right reserve of 120 (vs 128 left controls) sits the hearts/label
+          // ~4px right of true screen center — matches the reference's slight
+          // rightward bias. (Each 2px cut here nudges the hearts 1px right.)
+          const SizedBox(width: 120),
         ],
       ),
     );

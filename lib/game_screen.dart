@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_service.dart';
 import 'analytics_service.dart';
@@ -65,6 +67,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   double _lurchDist = 0;
   bool _clashImpactFired = false;
   bool _showGrid = false;
+  Arrow? _peekArrow; // transient: exit path shown while long-pressing an arrow
   bool _showHint = false;
   Arrow? _hintArrow;
   final Set<int> _hintedIds = {};
@@ -255,6 +258,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     f.disposed = true;
     f.ctrl.removeListener(_rebuild);
     f.ctrl.dispose();
+  }
+
+  // Long-press an arrow to peek at ITS exit path; cleared on lift.
+  void _onLongPressStart(LongPressStartDetails d) {
+    if (c.status != GameStatus.playing) return;
+    final cell = d.localPosition / _scale;
+    final a = c.hitTest(cell.dx, cell.dy);
+    if (a == null) return; // only peek when the press lands on an arrow
+    HapticFeedback.selectionClick();
+    setState(() => _peekArrow = a);
+  }
+
+  void _onLongPressEnd() {
+    if (_peekArrow != null) setState(() => _peekArrow = null);
   }
 
   void _onTapUp(TapUpDetails d) {
@@ -716,9 +733,26 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           clipBehavior: Clip.none,
           children: [
             Positioned.fill(
-              child: GestureDetector(
+              child: RawGestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTapUp: _onTapUp,
+                gestures: {
+                  TapGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    () => TapGestureRecognizer(),
+                    (r) => r.onTapUp = _onTapUp,
+                  ),
+                  // Custom 300ms long-press (default is ~500ms) — a bit quicker
+                  // to peek an arrow's exit path.
+                  LongPressGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+                    () => LongPressGestureRecognizer(
+                        duration: const Duration(milliseconds: 300)),
+                    (r) => r
+                      ..onLongPressStart = _onLongPressStart
+                      ..onLongPressEnd = ((_) => _onLongPressEnd())
+                      ..onLongPressCancel = _onLongPressEnd,
+                  ),
+                },
                 child: CustomPaint(
                   painter: BoardPainter(
                     c: c,
@@ -730,6 +764,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     lurchT: _lurchCtrl.value,
                     lurchDist: _lurchDist,
                     showGrid: _showGrid,
+                    peekArrow: _peekArrow,
                     hintArrow: _hintArrow,
                     hintPulse: _hintPulseCtrl.value,
                     hintedIds: _hintedIds,

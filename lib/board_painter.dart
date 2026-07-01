@@ -19,6 +19,7 @@ class BoardPainter extends CustomPainter {
   final double lurchDist;
   final double clashTint;
   final bool showGrid;
+  final Arrow? peekArrow; // long-press: show only this arrow's exit path
   final bool hideDots;
   final Arrow? hintArrow;
   final double hintPulse;
@@ -36,6 +37,7 @@ class BoardPainter extends CustomPainter {
     this.lurchDist = 0,
     this.clashTint = 0,
     this.showGrid = false,
+    this.peekArrow,
     this.hideDots = false,
     this.hintArrow,
     this.hintPulse = 0,
@@ -69,8 +71,10 @@ class BoardPainter extends CustomPainter {
       }
     }
 
-    // grid lines (toggle) — exit path from each arrow's head in its direction
-    if (showGrid) {
+    // grid lines — exit path from an arrow's head in its direction.
+    //  • showGrid (# button toggle): show every arrow's path
+    //  • peekArrow (long-press): show only the pressed arrow's path
+    if (showGrid || peekArrow != null) {
       final far = vbW * 4;
       final normalPaint = Paint()
         ..color = Prefs.darkMode ? const Color(0xFF3A4060) : const Color(0xFFD0D3E8)
@@ -80,7 +84,8 @@ class BoardPainter extends CustomPainter {
         ..color = AppColors.red.withValues(alpha: 0.4)
         ..strokeWidth = Cfg.stroke
         ..strokeCap = StrokeCap.round;
-      for (final a in c.arrows) {
+      final targets = showGrid ? c.arrows : <Arrow>[peekArrow!];
+      for (final a in targets) {
         if (a.state == ArrowState.leaving) continue;
         final hx = Cfg.margin + a.head.x * Cfg.cell;
         final hy = Cfg.margin + a.head.y * Cfg.cell;
