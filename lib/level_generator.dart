@@ -41,12 +41,16 @@ class LevelGenerator {
     63: 'crescent', 70: 'clover', 75: 'bolt', 81: 'octagon', 88: 'circle',
     93: 'flower', 99: 'peach',
     // L100+ shapes use the gravity packer (see _gravityShapes).
-    104: 'shield',
+    104: 'shield', 112: 'teardrop', 120: 'kite', 128: 'house',
+    136: 'egg', 144: 'dome', 152: 'arrow', 160: 'crown', 168: 'tree',
   };
 
   /// Shapes generated with [GravityPacker] (100% fill, solvable by
   /// construction, fast generation) instead of RC packing.
-  static const _gravityShapes = <String>{'shield'};
+  static const _gravityShapes = <String>{
+    'shield', 'teardrop', 'kite', 'house', 'egg', 'dome', 'arrow', 'crown',
+    'tree',
+  };
 
   /// Builds a shape mask for the current grid, or null for rectangular.
   Set<String>? _buildShapeMask(String shape) {
@@ -226,6 +230,115 @@ class LevelGenerator {
               final t = (ny - 0.1) / 0.9;
               final halfW = 1.0 - pow(t, 1.8).toDouble();
               inside = nx.abs() <= halfW.clamp(0.0, 1.0) + 0.03;
+            }
+            if (inside) mask.add(cellKey(x, y));
+          }
+        }
+      case 'teardrop':
+        // Teardrop: sharp point at the top widening into a round bottom.
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            final halfW = ny <= 0
+                ? 0.95 * pow(ny + 1.0, 1.4).toDouble()
+                : 0.95 * sqrt(max(0.0, 1.0 - ny * ny));
+            if (nx.abs() <= halfW + 0.03) mask.add(cellKey(x, y));
+          }
+        }
+      case 'kite':
+        // Kite: tall quadrilateral — short peak on top, widest at 3/8
+        // height, long taper to the bottom point.
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            final halfW = ny <= -0.25
+                ? 0.85 * (ny + 1.0) / 0.75
+                : 0.85 * (1.0 - (ny + 0.25) / 1.25);
+            if (nx.abs() <= halfW + 0.03) mask.add(cellKey(x, y));
+          }
+        }
+      case 'house':
+        // House: triangular roof over a rectangular body, flat bottom.
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            final halfW =
+                ny <= -0.15 ? (ny + 1.0) / 0.85 : 0.78;
+            if (nx.abs() <= halfW + 0.03) mask.add(cellKey(x, y));
+          }
+        }
+      case 'egg':
+        // Egg: ellipse, slightly narrower toward the top.
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            final halfW = 0.94 *
+                sqrt(max(0.0, 1.0 - ny * ny)) *
+                (1.0 - 0.18 * max(0.0, -ny));
+            if (nx.abs() <= halfW + 0.03) mask.add(cellKey(x, y));
+          }
+        }
+      case 'dome':
+        // Dome: semicircle sitting on a flat full-width base.
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            final dy = (ny - 1.0) / 2.0;
+            if (nx * nx + dy * dy * 4.0 <= 1.06) mask.add(cellKey(x, y));
+          }
+        }
+      case 'arrow':
+        // Up arrow (the game's own icon): triangular head over a straight
+        // shaft — full-width head top 45%, 0.42-wide shaft below.
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            final halfW = ny <= -0.1 ? (ny + 1.0) / 0.9 : 0.42;
+            if (nx.abs() <= halfW + 0.03) mask.add(cellKey(x, y));
+          }
+        }
+      case 'crown':
+        // Crown: solid band below, three triangular spikes on top.
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            var inside = false;
+            if (ny >= 0.15) {
+              inside = nx.abs() <= 0.95;
+            } else {
+              final spikeHalf = 0.32 * (ny + 1.0) / 1.15;
+              for (final p in const [-0.63, 0.0, 0.63]) {
+                if ((nx - p).abs() <= spikeHalf + 0.03) inside = true;
+              }
+            }
+            if (inside) mask.add(cellKey(x, y));
+          }
+        }
+      case 'tree':
+        // Christmas tree: three stacked, widening triangles + short trunk.
+        for (var y = 0; y <= rows; y++) {
+          for (var x = 0; x <= cols; x++) {
+            final nx = (x - cx) / rx;
+            final ny = (y - cy) / ry;
+            var inside = false;
+            if (ny >= -1.0 && ny <= -0.45) {
+              inside = nx.abs() <= 0.52 * (ny + 1.0) / 0.55 + 0.02;
+            }
+            if (!inside && ny >= -0.6 && ny <= -0.05) {
+              inside = nx.abs() <= 0.74 * (ny + 0.6) / 0.55 + 0.02;
+            }
+            if (!inside && ny >= -0.2 && ny <= 0.55) {
+              inside = nx.abs() <= 0.98 * (ny + 0.2) / 0.75 + 0.02;
+            }
+            if (!inside && ny > 0.55) {
+              inside = nx.abs() <= 0.18;
             }
             if (inside) mask.add(cellKey(x, y));
           }
@@ -892,6 +1005,25 @@ class LevelGenerator {
       } else if (shapeName == 'shield') {
         cols = max(cols, 30);
         rows = max(rows, 34);
+      } else if (shapeName == 'teardrop' || shapeName == 'egg') {
+        cols = max(cols, 30);
+        rows = max(rows, 36);
+      } else if (shapeName == 'kite' || shapeName == 'arrow') {
+        cols = max(cols, 28);
+        rows = max(rows, 36);
+      } else if (shapeName == 'house') {
+        cols = max(cols, 30);
+        rows = max(rows, 32);
+      } else if (shapeName == 'dome') {
+        cols = max(cols, 36);
+        rows = max(rows, 26);
+      } else if (shapeName == 'crown') {
+        cols = max(cols, 34);
+        // Clamp height too: a crown taller than wide reads wrong.
+        rows = max(rows, 28).clamp(28, 30);
+      } else if (shapeName == 'tree') {
+        cols = max(cols, 30);
+        rows = max(rows, 38);
       } else if (shapeName == 'clover' || shapeName == 'flower') {
         cols = max(cols, 40);
         rows = max(rows, 40);
