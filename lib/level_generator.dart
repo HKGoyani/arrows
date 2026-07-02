@@ -283,13 +283,14 @@ class LevelGenerator {
           }
         }
       case 'dome':
-        // Dome: semicircle sitting on a flat full-width base.
+        // Dome: half-ellipse spanning the full grid height, flat base at
+        // the bottom edge.
         for (var y = 0; y <= rows; y++) {
           for (var x = 0; x <= cols; x++) {
             final nx = (x - cx) / rx;
             final ny = (y - cy) / ry;
-            final dy = (ny - 1.0) / 2.0;
-            if (nx * nx + dy * dy * 4.0 <= 1.06) mask.add(cellKey(x, y));
+            final dy = (ny - 1.0) / 2.0; // 0 at base, -1 at the top
+            if (nx * nx + dy * dy <= 1.06) mask.add(cellKey(x, y));
           }
         }
       case 'arrow':
@@ -1002,28 +1003,35 @@ class LevelGenerator {
       } else if (shapeName == 'crescent') {
         cols = max(cols, 32);
         rows = max(rows, 32);
+      // L100+ gravity shapes: sized to match the reference game's late-game
+      // boards (~26×44 rendered, 200-270 arrows). The mask trims some width,
+      // so design grids run a little larger than the rendered target.
       } else if (shapeName == 'shield') {
-        cols = max(cols, 30);
-        rows = max(rows, 34);
-      } else if (shapeName == 'teardrop' || shapeName == 'egg') {
-        cols = max(cols, 30);
-        rows = max(rows, 36);
-      } else if (shapeName == 'kite' || shapeName == 'arrow') {
-        cols = max(cols, 28);
-        rows = max(rows, 36);
-      } else if (shapeName == 'house') {
-        cols = max(cols, 30);
-        rows = max(rows, 32);
-      } else if (shapeName == 'dome') {
-        cols = max(cols, 36);
-        rows = max(rows, 26);
-      } else if (shapeName == 'crown') {
         cols = max(cols, 34);
-        // Clamp height too: a crown taller than wide reads wrong.
+        rows = max(rows, 44);
+      } else if (shapeName == 'teardrop' || shapeName == 'egg') {
+        cols = max(cols, 34);
+        rows = max(rows, 46);
+      } else if (shapeName == 'kite') {
+        cols = max(cols, 34);
+        rows = max(rows, 46);
+      } else if (shapeName == 'arrow') {
+        cols = max(cols, 32);
+        rows = max(rows, 46);
+      } else if (shapeName == 'house') {
+        cols = max(cols, 34);
+        rows = max(rows, 42);
+      } else if (shapeName == 'dome') {
+        cols = max(cols, 44);
+        // Clamp height: a dome must stay wider than tall.
         rows = max(rows, 28).clamp(28, 30);
+      } else if (shapeName == 'crown') {
+        cols = max(cols, 40);
+        // Clamp height too: a crown taller than wide reads wrong.
+        rows = max(rows, 32).clamp(32, 34);
       } else if (shapeName == 'tree') {
-        cols = max(cols, 30);
-        rows = max(rows, 38);
+        cols = max(cols, 34);
+        rows = max(rows, 48);
       } else if (shapeName == 'clover' || shapeName == 'flower') {
         cols = max(cols, 40);
         rows = max(rows, 40);

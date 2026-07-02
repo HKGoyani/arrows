@@ -96,8 +96,10 @@ class GravityPacker {
     final bandNearDir = vertical ? Direction.left : Direction.up;
     final bandFarDir = vertical ? Direction.right : Direction.down;
 
-    final nearBand = 4 + rng.nextInt(4); // band thickness 4-7
-    final farBand = 4 + rng.nextInt(4);
+    // Thick bands: the two bands supply the perpendicular directions, so
+    // they get ~40-50% of the board for an even 4-way direction split.
+    final nearBand = 6 + rng.nextInt(4); // band thickness 6-9
+    final farBand = 6 + rng.nextInt(4);
 
     // Strip layout across the a-axis.
     final stripOf = List<int>.filled(aMax + 1, 0);
@@ -354,9 +356,13 @@ class GravityPacker {
     return out;
   }
 
-  /// Welds snakes head→tail into LONG winding arrows (the classic 8-40 cell
-  /// look): when a snake's head cell touches a later-placed snake's tail
-  /// cell, the two become one train that exits along the later snake's head.
+  /// Welds snakes into longer arrows two ways:
+  ///
+  ///   • head→tail (staircase): the chain's head touches a later snake's
+  ///     tail — the combined path continues onward, and
+  ///   • tail→tail (U-TURN): the chain's TAIL touches a later snake's tail —
+  ///     the chain is reversed and appended, producing a path that doubles
+  ///     back on itself (U-turns, nested rectangles, spiral motifs).
   ///
   /// Soundness: a chain clears at its LAST member's reverse-placement slot.
   /// The last member has the highest placement index of the chain, so the
@@ -364,7 +370,11 @@ class GravityPacker {
   /// arrow waiting on a member's cells still finds them gone in time, and
   /// the chain's own head ray only crosses cells placed after the last
   /// member (cleared even earlier) or its own body (never blocks itself).
-  /// Chains are built strictly in ascending placement order.
+  /// Chains are built strictly in ascending placement order, and both weld
+  /// types keep the final head = the last member's head (exit-aligned).
+  ///
+  /// Chain length caps are sampled TRI-MODALLY — tiny stubs, medium paths,
+  /// long corridors — for visual rhythm instead of uniform arrow sizes.
   void _joinLocalSnakes(SeededRandom rng, List<List<Point<int>>> snakes) {
     final tailAt = <String, int>{};
     for (var j = 0; j < snakes.length; j++) {
@@ -375,21 +385,43 @@ class GravityPacker {
     for (var i = 0; i < snakes.length; i++) {
       if (consumed[i]) continue;
       consumed[i] = true;
-      final chain = List<Point<int>>.from(snakes[i]);
+      var chain = List<Point<int>>.from(snakes[i]);
       var lastIdx = i;
-      final cap = _joinMin + rng.nextInt(_joinMax - _joinMin + 1);
+      // Tri-modal length cap: 30% tiny (2-4), 40% medium (6-14),
+      // 30% long corridors (16-40).
+      final roll = rng.next();
+      final cap = roll < 0.30
+          ? 2 + rng.nextInt(3)
+          : roll < 0.70
+              ? 6 + rng.nextInt(9)
+              : 16 + rng.nextInt(25);
       while (chain.length < cap) {
-        final h = chain.last;
         int? next;
+        var uTurn = false;
+        // Head-extend: a later snake whose tail touches our head.
         for (final d in Direction.values) {
-          final j = tailAt[cellKey(h.x + d.dx, h.y + d.dy)];
+          final j = tailAt[cellKey(chain.last.x + d.dx, chain.last.y + d.dy)];
           if (j != null && !consumed[j] && j > lastIdx) {
             next = j;
             break;
           }
         }
+        // U-turn weld: a later snake whose tail touches our TAIL. Preferred
+        // ~35% of the time even when a head-extend exists, for variety.
+        if (next == null || rng.next() < 0.35) {
+          for (final d in Direction.values) {
+            final j =
+                tailAt[cellKey(chain.first.x + d.dx, chain.first.y + d.dy)];
+            if (j != null && !consumed[j] && j > lastIdx) {
+              next = j;
+              uTurn = true;
+              break;
+            }
+          }
+        }
         if (next == null) break;
         consumed[next] = true;
+        if (uTurn) chain = chain.reversed.toList();
         chain.addAll(snakes[next]);
         lastIdx = next;
       }
@@ -399,9 +431,6 @@ class GravityPacker {
       ..clear()
       ..addAll(out);
   }
-
-  /// Target length band for joined gravity arrows (classic long-arrow look).
-  static const _joinMin = 8, _joinMax = 40;
 
   /// Salt-and-pepper direction mixing: reverses individual arrows
   /// (head↔tail) so extra directions appear inside each region instead of
@@ -447,7 +476,7 @@ class GravityPacker {
         dir: flipDirOf(a)!,
         cells: a.cells);
     var checks = 0;
-    const maxChecks = 60, batchSize = 4;
+    const maxChecks = 90, batchSize = 4;
     for (var s = 0;
         s < candidates.length && checks < maxChecks;
         s += batchSize) {
