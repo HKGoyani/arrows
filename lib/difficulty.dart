@@ -33,6 +33,17 @@ const _shapedLevelTiers = <int, Tier>{
   88: Tier.normal,   // circle
   93: Tier.hard,     // flower — 40×40, five petals + hollow center, Hard
   99: Tier.normal,   // peach
+  // L100+ gravity-packed shapes: 100% fill at reference scale, so tiers are
+  // graded by real board weight (>1000 cells → Nightmare, else Super Hard).
+  104: Tier.nightmare, // shield — 34×43, ~1240 cells, ~147 arrows
+  112: Tier.superHard, // teardrop — 32×45, ~930 cells
+  120: Tier.superHard, // kite — 28×45, ~715 cells
+  128: Tier.superHard, // house — 31×42, ~980 cells
+  136: Tier.nightmare, // egg — 32×46, ~1150 cells
+  144: Tier.nightmare, // dome — 44×30, ~1120 cells
+  152: Tier.superHard, // arrow — 31×45, ~710 cells
+  160: Tier.nightmare, // crown — 38×33, ~1010 cells
+  168: Tier.superHard, // tree — 30×47, ~660 cells
 };
 
 /// Deterministic tier for a level. Calibrated from 99 reference levels (L4-102):
