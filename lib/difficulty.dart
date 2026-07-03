@@ -104,19 +104,18 @@ Tier tierForLevel(int level) {
   return Tier.nightmare;
 }
 
-/// Tier for a daily challenge — always Hard or above (never Normal), cycling
-/// through the harder tiers as the reference daily challenges do.
+/// Tier for a daily challenge — always Hard or above (never Normal). Daily
+/// challenges lean harder than the main progression, so the 7-day cycle is
+/// Nightmare-weighted: 2 Hard / 2 Super Hard / 3 Nightmare.
 Tier dailyTier(int ordinal) {
-  // Reference daily sequence cycles H / SH / NM, weighted toward Super Hard.
   switch (ordinal % 7) {
     case 0:
     case 3:
       return Tier.hard;
     case 1:
     case 4:
-    case 6:
       return Tier.superHard;
-    default:
+    default: // 2, 5, 6
       return Tier.nightmare;
   }
 }

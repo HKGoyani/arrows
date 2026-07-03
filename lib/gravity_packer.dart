@@ -13,12 +13,35 @@ import 'rng.dart';
 /// always works: solvable BY CONSTRUCTION at 100% mask fill, in
 /// single-digit milliseconds. Post passes weld snakes into long winding
 /// arrows and flip-mix directions (greedy-verified) for the classic look.
+/// Arrow-length density profile — the tri-modal split of joined-chain length
+/// caps into tiny stubs / medium paths / long corridors. Harder tiers use
+/// busier (more/shorter) arrows; easier tiers use fewer/longer ones. The two
+/// values are the cumulative probability thresholds: roll < [tiny] → a tiny
+/// cap (2-4), roll < [medium] → a medium cap (6-14), else a long cap (16-40).
+class ArrowProfile {
+  const ArrowProfile(this.tiny, this.medium);
+  final double tiny, medium;
+
+  /// Balanced — the original shaped-level feel (30% tiny / 40% med / 30% long).
+  static const balanced = ArrowProfile(0.30, 0.70);
+
+  /// Fewer, longer, cleaner arrows (Hard tier).
+  static const flowing = ArrowProfile(0.15, 0.50);
+
+  /// Even mix (Super Hard).
+  static const mixed = ArrowProfile(0.25, 0.70);
+
+  /// Many short arrows — busy/granular reference look (Nightmare).
+  static const busy = ArrowProfile(0.40, 0.85);
+}
+
 class GravityPacker {
   GravityPacker({
     required this.cols,
     required this.rows,
     required this.inMask,
     required this.solvable,
+    this.profile = ArrowProfile.balanced,
   });
 
   /// Grid extents (inclusive: cells span 0..cols × 0..rows).
@@ -29,6 +52,9 @@ class GravityPacker {
 
   /// Full-board solvability check (LevelGenerator.greedySolvable).
   final bool Function(List<Arrow> arrows) solvable;
+
+  /// Arrow-length density profile (busier for harder tiers).
+  final ArrowProfile profile;
 
   // ── Gravity packer (used by the newer shaped levels) ──
   //
@@ -52,8 +78,13 @@ class GravityPacker {
   /// Zero on almost every seed; genLevel retries when non-zero.
   int holes = 0;
 
+  /// Orphan cells (ORIGINAL coords) that region-local merging couldn't
+  /// absorb — rescued across region boundaries in [_attachOrphans].
+  final List<Point<int>> _orphans = [];
+
   List<Arrow> pack(int seed) {
     holes = 0;
+    _orphans.clear();
     final rng = SeededRandom(seed);
     // Collect the playable cells (whole rect if no mask).
     final mask = <String>{};
@@ -66,7 +97,101 @@ class GravityPacker {
     for (final region in _gravityRegions(rng, mask)) {
       _gravityFillRegion(rng, region.$1, region.$2, arrows);
     }
+    // Rescue boundary orphans while every arrow tail is still exposed, THEN
+    // weld arrows into long chains (joining consumes tails). Both run
+    // globally so chains and rescues can cross region boundaries.
+    _attachOrphans(arrows);
+    _joinArrows(rng, arrows);
     return arrows;
+  }
+
+  /// Cross-region orphan rescue. An orphan on a region boundary usually
+  /// touches the TAIL of an arrow from an adjacent region; prepending it
+  /// there keeps the path continuous and the head untouched. Attaching to a
+  /// LATER-placed arrow is provably sound (it clears no later than before);
+  /// attaching to an earlier arrow, or extending a head, is accepted too and
+  /// left to the caller's [solvable] gate. Iterates to a fixpoint (each
+  /// attach exposes a new tail/head that may rescue a neighbouring orphan).
+  /// Anything still unrescued is a genuine 1-cell hole (counted in [holes]).
+  void _attachOrphans(List<Arrow> arrows) {
+    var pending = List<Point<int>>.from(_orphans);
+    var progress = true;
+    while (progress && pending.isNotEmpty) {
+      progress = false;
+      final tailAt = <String, int>{};
+      final headAt = <String, int>{};
+      for (var i = 0; i < arrows.length; i++) {
+        final t = arrows[i].pts.first, h = arrows[i].pts.last;
+        tailAt[cellKey(t.x, t.y)] = i;
+        headAt[cellKey(h.x, h.y)] = i;
+      }
+      final rest = <Point<int>>[];
+      for (final c in pending) {
+        // Prefer prepending onto an adjacent arrow's tail (later-placed best).
+        int? target;
+        for (final d in Direction.values) {
+          final i = tailAt[cellKey(c.x + d.dx, c.y + d.dy)];
+          if (i != null && (target == null || i > target)) target = i;
+        }
+        if (target != null) {
+          final a = arrows[target];
+          final oldTail = a.pts.first;
+          a.pts.insert(0, c);
+          a.cells.add(cellKey(c.x, c.y));
+          // The tail moved: retire the old entry, register the new tail, so a
+          // second orphan later in this same sweep sees the updated position.
+          tailAt.remove(cellKey(oldTail.x, oldTail.y));
+          tailAt[cellKey(c.x, c.y)] = target;
+          progress = true;
+          continue;
+        }
+        // Else extend an adjacent arrow's HEAD into the orphan, redirecting
+        // the arrow along its new last segment if needed (still shaft-
+        // aligned). Prefer keeping the fire direction; else the shortest new
+        // exit ray (fewest cells to wait on → best solvability odds).
+        int? headTarget;
+        Direction? newDir;
+        var bestRay = 1 << 30;
+        for (final d in Direction.values) {
+          final i = headAt[cellKey(c.x - d.dx, c.y - d.dy)];
+          if (i == null) continue;
+          if (arrows[i].dir == d) {
+            headTarget = i;
+            newDir = d;
+            break;
+          }
+          final ray = switch (d) {
+            Direction.up => c.y,
+            Direction.down => rows - c.y,
+            Direction.left => c.x,
+            Direction.right => cols - c.x,
+          };
+          if (ray < bestRay) {
+            bestRay = ray;
+            headTarget = i;
+            newDir = d;
+          }
+        }
+        if (headTarget != null) {
+          final a = arrows[headTarget];
+          final oldHead = a.pts.last;
+          arrows[headTarget] = Arrow(
+            id: a.id,
+            pts: [...a.pts, c],
+            dir: newDir!,
+            cells: {...a.cells, cellKey(c.x, c.y)},
+          );
+          // The head moved: keep the lookup current within this sweep.
+          headAt.remove(cellKey(oldHead.x, oldHead.y));
+          headAt[cellKey(c.x, c.y)] = headTarget;
+          progress = true;
+          continue;
+        }
+        rest.add(c);
+      }
+      pending = rest;
+    }
+    holes = pending.length;
   }
 
   /// Splits the mask into directional regions that mix all four directions
@@ -198,7 +323,8 @@ class GravityPacker {
       lmask.add(cellKey(q.x, q.y));
     }
 
-    for (final snake in _gravityUp(rng, lw, lh, lmask)) {
+    final localOrphans = <Point<int>>[];
+    for (final snake in _gravityUp(rng, lw, lh, lmask, localOrphans)) {
       final pts = <Point<int>>[];
       final body = <String>{};
       for (final c in snake) {
@@ -208,6 +334,9 @@ class GravityPacker {
       }
       out.add(Arrow(id: out.length, pts: pts, dir: exitDir, cells: body));
     }
+    for (final c in localOrphans) {
+      _orphans.add(toOrig(c.x, c.y));
+    }
   }
 
   /// Fills [mask] (local space, exit = up) with winding snakes. Columns fill
@@ -215,8 +344,8 @@ class GravityPacker {
   /// or SIDEWAYS onto an equal-height neighbour column (a bend), so each
   /// snake's topmost cell — its head — always has a clear upward ray when
   /// placed. Returns snakes as cell lists, tail→head. Pocket-free, 100% fill.
-  List<List<Point<int>>> _gravityUp(
-      SeededRandom rng, int lw, int lh, Set<String> mask) {
+  List<List<Point<int>>> _gravityUp(SeededRandom rng, int lw, int lh,
+      Set<String> mask, List<Point<int>> orphansOut) {
     final filled = <String>{};
     final out = <List<Point<int>>>[];
     const pStraight = 0.34; // low = windier snakes
@@ -351,18 +480,20 @@ class GravityPacker {
       // cell: tail→head order with the head's upward ray clear.
       out.add(snake);
     }
-    _mergeLocalSingletons(out);
-    _joinLocalSnakes(rng, out);
+    _mergeLocalSingletons(out, orphansOut);
     return out;
   }
 
   /// Welds snakes into longer arrows two ways:
   ///
-  ///   • head→tail (staircase): the chain's head touches a later snake's
+  ///   • head→tail (staircase): the chain's head touches a later arrow's
   ///     tail — the combined path continues onward, and
-  ///   • tail→tail (U-TURN): the chain's TAIL touches a later snake's tail —
+  ///   • tail→tail (U-TURN): the chain's TAIL touches a later arrow's tail —
   ///     the chain is reversed and appended, producing a path that doubles
   ///     back on itself (U-turns, nested rectangles, spiral motifs).
+  ///
+  /// Runs GLOBALLY (after all regions are placed and orphans rescued), so
+  /// chains may cross region boundaries and change direction mid-path.
   ///
   /// Soundness: a chain clears at its LAST member's reverse-placement slot.
   /// The last member has the highest placement index of the chain, so the
@@ -371,47 +502,47 @@ class GravityPacker {
   /// the chain's own head ray only crosses cells placed after the last
   /// member (cleared even earlier) or its own body (never blocks itself).
   /// Chains are built strictly in ascending placement order, and both weld
-  /// types keep the final head = the last member's head (exit-aligned).
+  /// types keep the final head AND direction = the last member's (aligned).
   ///
-  /// Chain length caps are sampled TRI-MODALLY — tiny stubs, medium paths,
-  /// long corridors — for visual rhythm instead of uniform arrow sizes.
-  void _joinLocalSnakes(SeededRandom rng, List<List<Point<int>>> snakes) {
+  /// Chain length caps are sampled TRI-MODALLY (weighted by [profile]) —
+  /// tiny stubs, medium paths, long corridors — for visual rhythm.
+  void _joinArrows(SeededRandom rng, List<Arrow> arrows) {
     final tailAt = <String, int>{};
-    for (var j = 0; j < snakes.length; j++) {
-      tailAt[cellKey(snakes[j].first.x, snakes[j].first.y)] = j;
+    for (var j = 0; j < arrows.length; j++) {
+      final t = arrows[j].pts.first;
+      tailAt[cellKey(t.x, t.y)] = j;
     }
-    final consumed = List<bool>.filled(snakes.length, false);
-    final out = <List<Point<int>>>[];
-    for (var i = 0; i < snakes.length; i++) {
+    final consumed = List<bool>.filled(arrows.length, false);
+    final out = <Arrow>[];
+    for (var i = 0; i < arrows.length; i++) {
       if (consumed[i]) continue;
       consumed[i] = true;
-      var chain = List<Point<int>>.from(snakes[i]);
+      var pts = List<Point<int>>.from(arrows[i].pts);
+      final cells = <String>{...arrows[i].cells};
+      var dir = arrows[i].dir;
       var lastIdx = i;
-      // Tri-modal length cap: 30% tiny (2-4), 40% medium (6-14),
-      // 30% long corridors (16-40).
       final roll = rng.next();
-      final cap = roll < 0.30
+      final cap = roll < profile.tiny
           ? 2 + rng.nextInt(3)
-          : roll < 0.70
+          : roll < profile.medium
               ? 6 + rng.nextInt(9)
               : 16 + rng.nextInt(25);
-      while (chain.length < cap) {
+      while (pts.length < cap) {
         int? next;
         var uTurn = false;
-        // Head-extend: a later snake whose tail touches our head.
+        // Head-extend: a later arrow whose tail touches our head.
         for (final d in Direction.values) {
-          final j = tailAt[cellKey(chain.last.x + d.dx, chain.last.y + d.dy)];
+          final j = tailAt[cellKey(pts.last.x + d.dx, pts.last.y + d.dy)];
           if (j != null && !consumed[j] && j > lastIdx) {
             next = j;
             break;
           }
         }
-        // U-turn weld: a later snake whose tail touches our TAIL. Preferred
+        // U-turn weld: a later arrow whose tail touches our TAIL. Preferred
         // ~35% of the time even when a head-extend exists, for variety.
         if (next == null || rng.next() < 0.35) {
           for (final d in Direction.values) {
-            final j =
-                tailAt[cellKey(chain.first.x + d.dx, chain.first.y + d.dy)];
+            final j = tailAt[cellKey(pts.first.x + d.dx, pts.first.y + d.dy)];
             if (j != null && !consumed[j] && j > lastIdx) {
               next = j;
               uTurn = true;
@@ -421,13 +552,15 @@ class GravityPacker {
         }
         if (next == null) break;
         consumed[next] = true;
-        if (uTurn) chain = chain.reversed.toList();
-        chain.addAll(snakes[next]);
+        if (uTurn) pts = pts.reversed.toList();
+        pts.addAll(arrows[next].pts);
+        cells.addAll(arrows[next].cells);
+        dir = arrows[next].dir;
         lastIdx = next;
       }
-      out.add(chain);
+      out.add(Arrow(id: out.length, pts: pts, dir: dir, cells: cells));
     }
-    snakes
+    arrows
       ..clear()
       ..addAll(out);
   }
@@ -510,9 +643,11 @@ class GravityPacker {
   /// still clears first in reverse-placement order. A merge onto an
   /// EARLIER-placed snake is tried as a fallback — it can in theory break the
   /// ordering, so genLevel re-verifies with greedySolvable and retries the
-  /// seed if needed. An orphan with no adjacent tail at all is dropped,
-  /// leaving a 1-cell hole (counted in [holes] → seed retry).
-  void _mergeLocalSingletons(List<List<Point<int>>> snakes) {
+  /// seed if needed. An orphan with no adjacent tail in its own region is
+  /// handed to [orphansOut] (local coords) for the cross-region rescue in
+  /// [_attachOrphans].
+  void _mergeLocalSingletons(
+      List<List<Point<int>>> snakes, List<Point<int>> orphansOut) {
     // Iterate to a fixpoint: each merged orphan becomes that snake's new
     // tail, which can make a neighbouring orphan mergeable in a later sweep
     // (orphans on jagged mask edges often come in chains).
@@ -558,11 +693,11 @@ class GravityPacker {
         }
       }
     }
-    // Whatever is still a singleton now is a permanent hole.
+    // Whatever is still a singleton gets one more chance across regions.
     for (var i = snakes.length - 1; i >= 0; i--) {
       if (snakes[i].length < 2) {
+        orphansOut.add(snakes[i].first);
         snakes.removeAt(i);
-        holes++;
       }
     }
   }

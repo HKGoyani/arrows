@@ -892,23 +892,25 @@ class LevelGenerator {
 
     // ── Grid size ──
     if (daily) {
-      // Daily challenges are bigger than main levels at the same tier.
+      // Daily challenges are big reference-scale boards, ~25-30% larger than
+      // regular levels at the same tier. Daily level numbers span 40-99
+      // (dailyLevelFor), so growth is keyed on (lv - 40): floor at 40,
+      // reaching the cap near 99.
+      final d = (lv - 40).clamp(0, 59);
       switch (tier) {
         case Tier.normal:
-          // Shouldn't happen for daily, but fallback
-          cols = 15;
-          rows = 20;
+          // Shouldn't happen for daily, but fallback.
+          cols = 24;
+          rows = 34;
         case Tier.hard:
-          // avg 18×25, range 15×24 → 29×25
-          cols = (15 + lv * 0.05).clamp(15, 29).round();
-          rows = (24 + lv * 0.02).clamp(24, 27).round();
+          cols = (24 + d * 0.17).clamp(24, 34).round();
+          rows = (34 + d * 0.14).clamp(34, 42).round();
         case Tier.superHard:
-          // avg ~868 dots — tall rectangle
-          cols = (20 + lv * 0.08).clamp(20, 30).round();
-          rows = (25 + lv * 0.10).clamp(25, 37).round();
+          cols = (30 + d * 0.17).clamp(30, 40).round();
+          rows = (40 + d * 0.14).clamp(40, 48).round();
         case Tier.nightmare:
-          cols = (28 + lv * 0.08).clamp(28, 40).round();
-          rows = (35 + lv * 0.08).clamp(35, 45).round();
+          cols = (36 + d * 0.14).clamp(36, 44).round();
+          rows = (46 + d * 0.17).clamp(46, 56).round();
       }
     } else {
       switch (tier) {
@@ -951,6 +953,50 @@ class LevelGenerator {
           break;
       }
     }
+  }
+
+  /// Arrow-length density profile for a tier: harder tiers pack busier
+  /// (more, shorter) arrows, easier tiers fewer/longer ones.
+  ArrowProfile _profileForTier(Tier tier) {
+    switch (tier) {
+      case Tier.normal:
+      case Tier.hard:
+        return ArrowProfile.flowing;
+      case Tier.superHard:
+        return ArrowProfile.mixed;
+      case Tier.nightmare:
+        return ArrowProfile.busy;
+    }
+  }
+
+  /// Runs the gravity packer over several seeds and keeps the best board:
+  /// prefers a hole-free, greedy-verified result; otherwise the solvable
+  /// one with the fewest 1-cell holes. Always applies the direction-mixing
+  /// flip pass. The result is guaranteed solvable (every kept board passes
+  /// [greedySolvable]).
+  List<Arrow> _gravityBest(int seed, ArrowProfile profile) {
+    final packer = GravityPacker(
+        cols: cols,
+        rows: rows,
+        inMask: _inB,
+        solvable: greedySolvable,
+        profile: profile);
+    List<Arrow>? best;
+    var bestHoles = 1 << 30;
+    for (var att = 0; att < 12; att++) {
+      final arr = packer.pack((seed + att * 7919) & 0xFFFFFFFF);
+      if (!greedySolvable(arr)) continue;
+      if (packer.holes < bestHoles) {
+        bestHoles = packer.holes;
+        best = arr;
+      }
+      if (bestHoles == 0) break;
+    }
+    // Guaranteed non-null: attempt 0 with no risky merges is solvable by
+    // construction, so at least one attempt always passes the gate.
+    best ??= packer.pack(seed);
+    packer.mixByFlipping(SeededRandom(seed ^ 0x51F1), best);
+    return best;
   }
 
   GeneratedLevel genLevel(int level, {bool daily = false}) {
@@ -1060,26 +1106,14 @@ class LevelGenerator {
     final area = _shapeMask?.length ?? (cols + 1) * (rows + 1);
     List<Arrow>? best;
     var bestScore = -1;
+    var usedGravity = false;
 
     if (_shapeMask != null && _gravityShapes.contains(shapeName)) {
-      // Newer shaped levels: gravity packer — 100% fill, solvable by
-      // construction. Retry a few seeds if orphan singletons left holes or a
-      // fallback merge broke greedy solvability (rare; ~10ms per attempt).
-      final packer = GravityPacker(
-          cols: cols, rows: rows, inMask: _inB, solvable: greedySolvable);
-      var bestHoles = 1 << 30;
-      for (var att = 0; att < 6; att++) {
-        final arr = packer.pack((seed + att * 7919) & 0xFFFFFFFF);
-        if (!greedySolvable(arr)) continue;
-        if (packer.holes < bestHoles) {
-          bestHoles = packer.holes;
-          best = arr;
-        }
-        if (bestHoles == 0) break;
-      }
-      best ??= packer.pack(seed); // unreachable in practice
-      packer.mixByFlipping(SeededRandom(seed ^ 0x51F1), best);
+      // Shaped L100+ levels: gravity packer with the balanced profile (the
+      // look these shapes were tuned/approved with).
+      best = _gravityBest(seed, ArrowProfile.balanced);
       bestScore = score(best);
+      usedGravity = true;
     } else if (_shapeMask != null) {
       // Shaped levels: RC-only (guaranteed solvable by construction).
       // Pentagon (L57) and crescent (L63) are thin/irregular shapes with
@@ -1133,32 +1167,13 @@ class LevelGenerator {
         _strictRectExit = false;
       }
     } else if (daily) {
-      // Daily: _packFill FIRST — produces the signature long winding maze
-      // arrows. RC's exit-corridor constraint forces short arrows, so we only
-      // use it as a fallback if _packFill fails solvability.
-      for (var att = 0; att < 12; att++) {
-        final arr = _packFill((seed + att * 7919) & 0xFFFFFFFF);
-        if (arr.isEmpty) continue;
-        final sc = score(arr);
-        if (sc <= bestScore) continue;
-        if (!greedySolvable(arr)) continue;
-        bestScore = sc;
-        best = arr;
-        if (bestScore > area * 0.60) break;
-      }
-      // Fallback: RC if no solvable _packFill found
-      if (best == null) {
-        for (var att = 0; att < 6; att++) {
-          final arr = _packRC((seed + 313 + att * 7919) & 0xFFFFFFFF);
-          if (arr.isEmpty) continue;
-          final sc = score(arr);
-          if (sc > bestScore) {
-            bestScore = sc;
-            best = arr;
-          }
-          if (bestScore > area * 0.55) break;
-        }
-      }
+      // Daily challenges: gravity packer on the full rectangle — big
+      // reference-scale board, 100% fill (rarely a stray cell), solvable by
+      // construction, U-turn/tri-modal path variety, arrow density set by
+      // the daily tier's profile.
+      best = _gravityBest(seed, _profileForTier(tier));
+      bestScore = score(best);
+      usedGravity = true;
     } else if (tier == Tier.superHard || tier == Tier.nightmare) {
       // Super Hard / Nightmare: _packFill first for long winding maze arrows,
       // same strategy as daily.
@@ -1219,11 +1234,10 @@ class LevelGenerator {
       _allow2CellGapFill = true;
       _strictRectExit = true;
     }
-    // Gravity levels are already 100% filled; gap-fill would only touch the
+    // Gravity levels are already ~100% filled; gap-fill would only touch the
     // rare orphan holes and its arrows pick arbitrary directions, breaking
-    // the strict 4-quadrant direction pattern (up-arrows in the left-exit
-    // zone etc.), so it is skipped for them.
-    if (!_gravityShapes.contains(shapeName)) {
+    // the region direction pattern, so it is skipped for them.
+    if (!usedGravity) {
       _applyGapFill(best);
     }
     _allow2CellGapFill = false;
