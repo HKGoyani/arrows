@@ -972,6 +972,57 @@ class LevelGenerator {
     return _stuckArrows(arrows).isEmpty;
   }
 
+  /// Evens out the arrow-direction mix. The _packFill engine has an emergent
+  /// bias toward DOWN (and away from UP) — measured at ~40-55% down vs
+  /// ~10-20% up. This reverses individual over-represented-direction arrows
+  /// into an under-represented direction (a reversed arrow fires along its
+  /// old tail segment), keeping each flip only when the board stays solvable.
+  /// Cell-weighted so long arrows count for more. Bounded solvability-check
+  /// budget keeps it fast; deterministic (no RNG) so boards stay stable.
+  void _rebalanceDirections(List<Arrow> arrows) {
+    Direction? reversedDir(Arrow a) {
+      if (a.pts.length < 2) return null;
+      final p0 = a.pts.first, p1 = a.pts[1];
+      for (final d in Direction.values) {
+        if (d.dx == p0.x - p1.x && d.dy == p0.y - p1.y) return d;
+      }
+      return null;
+    }
+
+    final cellsPer = {for (final d in Direction.values) d: 0};
+    var total = 0;
+    for (final a in arrows) {
+      cellsPer[a.dir] = cellsPer[a.dir]! + a.pts.length;
+      total += a.pts.length;
+    }
+    if (total == 0) return;
+    final target = total / 4;
+
+    var budget = 400; // max solvability checks (cheap vs generation cost)
+    var changed = true;
+    while (changed && budget > 0) {
+      changed = false;
+      for (var i = 0; i < arrows.length && budget > 0; i++) {
+        final a = arrows[i];
+        if (cellsPer[a.dir]! <= target) continue; // dir not over-represented
+        final nd = reversedDir(a);
+        if (nd == null || nd == a.dir) continue;
+        if (cellsPer[nd]! >= target) continue; // target dir not under-rep
+        final rev = Arrow(
+            id: a.id, pts: a.pts.reversed.toList(), dir: nd, cells: a.cells);
+        arrows[i] = rev;
+        budget--;
+        if (greedySolvable(arrows)) {
+          cellsPer[a.dir] = cellsPer[a.dir]! - a.pts.length;
+          cellsPer[nd] = cellsPer[nd]! + a.pts.length;
+          changed = true;
+        } else {
+          arrows[i] = a; // reversal broke solvability — undo
+        }
+      }
+    }
+  }
+
   /// Sets grid size and arrow-shape params for a level (and daily mode).
   ///
   /// Reference grid sizes (measured from all 155 reference screenshots):
@@ -1348,6 +1399,12 @@ class LevelGenerator {
     }
     _allow2CellGapFill = false;
     _strictRectExit = false;
+    // Even out the _packFill down-bias on the generate-and-verify boards
+    // (dailies + regular L100+). L1-99 is left as originally shipped, and
+    // gravity/shaped levels already balance directions via their own mixing.
+    if (!usedGravity && (daily || level >= 100)) {
+      _rebalanceDirections(best);
+    }
     final result = _trimToFit(best);
     _shapeMask = null;
     return result;
