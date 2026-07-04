@@ -182,7 +182,11 @@ class GameTopBar extends StatelessWidget {
   const GameTopBar({super.key, required this.c, required this.onBack, required this.onRestart});
 
   (String, Color) get _difficultyInfo {
-    final tier = tierForLevel(c.level);
+    // Daily challenges have their own tier cycle (dailyTier), independent of
+    // the main-progression tier of the same level number — using
+    // tierForLevel here mislabels dailies (e.g. a Nightmare daily showing as
+    // Normal → no label). Always match the tier the board was generated with.
+    final tier = c.isDaily ? dailyTier(c.level) : tierForLevel(c.level);
     return (tier.label, tier.color);
   }
 

@@ -877,6 +877,101 @@ class LevelGenerator {
     return cleared == n;
   }
 
+  /// Like [greedySolvable] but returns the indices of arrows that can NEVER
+  /// clear (the deadlocked set). Empty ⇔ the board is solvable.
+  List<int> _stuckArrows(List<Arrow> arrows) {
+    final n = arrows.length;
+    if (n == 0) return const [];
+    final w = cols + 1, h = rows + 1;
+    final stride = w;
+    final owner = List<int>.filled(w * h, -1);
+    for (var i = 0; i < n; i++) {
+      for (final p in arrows[i].pts) {
+        owner[p.y * stride + p.x] = i;
+      }
+    }
+    final blockerCount = List<int>.filled(n, 0);
+    final waiters = <int, List<int>>{};
+    for (var i = 0; i < n; i++) {
+      final a = arrows[i];
+      var x = a.head.x, y = a.head.y;
+      final dx = a.dir.dx, dy = a.dir.dy;
+      while (true) {
+        x += dx;
+        y += dy;
+        if (x < 0 || x >= w || y < 0 || y >= h) break;
+        final idx = y * stride + x;
+        final o = owner[idx];
+        if (o != -1 && o != i) {
+          blockerCount[i]++;
+          (waiters[idx] ??= <int>[]).add(i);
+        }
+      }
+    }
+    final cleared = List<bool>.filled(n, false);
+    final queue = <int>[];
+    for (var i = 0; i < n; i++) {
+      if (blockerCount[i] == 0) queue.add(i);
+    }
+    while (queue.isNotEmpty) {
+      final i = queue.removeLast();
+      cleared[i] = true;
+      for (final p in arrows[i].pts) {
+        final ws = waiters[p.y * stride + p.x];
+        if (ws == null) continue;
+        for (final wi in ws) {
+          if (--blockerCount[wi] == 0) queue.add(wi);
+        }
+        ws.clear();
+      }
+    }
+    return [
+      for (var i = 0; i < n; i++)
+        if (!cleared[i]) i
+    ];
+  }
+
+  /// Local repair: makes a nearly-solvable [_packFill] board solvable by
+  /// REVERSING individual deadlocked arrows (a reversed arrow fires along
+  /// its old tail segment). Mutates [arrows] in place; returns whether it
+  /// succeeded. Cheap surgery on the few stuck arrows instead of re-rolling
+  /// the whole board — most _packFill boards that fail solvability fail by
+  /// only a handful of arrows. Bails (returns false) if the deadlock is too
+  /// large to be worth repairing, letting the caller try another seed.
+  bool _repairSolvable(List<Arrow> arrows) {
+    Arrow? flip(Arrow a) {
+      if (a.pts.length < 2) return null;
+      final p0 = a.pts.first, p1 = a.pts[1];
+      for (final d in Direction.values) {
+        if (d.dx == p0.x - p1.x && d.dy == p0.y - p1.y) {
+          return Arrow(
+              id: a.id, pts: a.pts.reversed.toList(), dir: d, cells: a.cells);
+        }
+      }
+      return null;
+    }
+
+    for (var round = 0; round < 30; round++) {
+      final stuck = _stuckArrows(arrows);
+      if (stuck.isEmpty) return true;
+      if (stuck.length > 25) return false; // too broken to repair cheaply
+      var improved = false;
+      for (final i in stuck) {
+        final f = flip(arrows[i]);
+        if (f == null) continue;
+        final prev = arrows[i];
+        arrows[i] = f;
+        if (_stuckArrows(arrows).length < stuck.length) {
+          improved = true;
+        } else {
+          arrows[i] = prev; // reversal didn't help — undo it
+        }
+      }
+      if (!improved) return false; // no single flip reduces the deadlock
+    }
+    return _stuckArrows(arrows).isEmpty;
+  }
+
   /// Sets grid size and arrow-shape params for a level (and daily mode).
   ///
   /// Reference grid sizes (measured from all 155 reference screenshots):
@@ -906,11 +1001,13 @@ class LevelGenerator {
           cols = (24 + d * 0.17).clamp(24, 34).round();
           rows = (34 + d * 0.14).clamp(34, 42).round();
         case Tier.superHard:
-          cols = (30 + d * 0.17).clamp(30, 40).round();
-          rows = (40 + d * 0.14).clamp(40, 48).round();
+          // Reference: ~32-38 × 40-46.
+          cols = (32 + d * 0.10).clamp(32, 38).round();
+          rows = (40 + d * 0.10).clamp(40, 46).round();
         case Tier.nightmare:
-          cols = (36 + d * 0.14).clamp(36, 44).round();
-          rows = (46 + d * 0.17).clamp(46, 56).round();
+          // Reference: ~38-42 × 50-54.
+          cols = (38 + d * 0.068).clamp(38, 42).round();
+          rows = (50 + d * 0.068).clamp(50, 54).round();
       }
     } else {
       switch (tier) {
@@ -952,20 +1049,6 @@ class LevelGenerator {
         default:
           break;
       }
-    }
-  }
-
-  /// Arrow-length density profile for a tier: harder tiers pack busier
-  /// (more, shorter) arrows, easier tiers fewer/longer ones.
-  ArrowProfile _profileForTier(Tier tier) {
-    switch (tier) {
-      case Tier.normal:
-      case Tier.hard:
-        return ArrowProfile.flowing;
-      case Tier.superHard:
-        return ArrowProfile.mixed;
-      case Tier.nightmare:
-        return ArrowProfile.busy;
     }
   }
 
@@ -1167,13 +1250,36 @@ class LevelGenerator {
         _strictRectExit = false;
       }
     } else if (daily) {
-      // Daily challenges: gravity packer on the full rectangle — big
-      // reference-scale board, 100% fill (rarely a stray cell), solvable by
-      // construction, U-turn/tri-modal path variety, arrow density set by
-      // the daily tier's profile.
-      best = _gravityBest(seed, _profileForTier(tier));
-      bestScore = score(best);
-      usedGravity = true;
+      // Daily challenges: generate-and-verify with _packFill — the organic
+      // "long winding maze" look that matches the reference daily boards
+      // (free-form directions, no construction skeleton). Try many attempts,
+      // keep the densest solvable one; if a rare board fails solvability,
+      // repair only the deadlocked arrows (see _repairSolvable) instead of
+      // re-rolling. RC is the last-resort fallback. Gap-fill (below, since
+      // usedGravity stays false) tops up any cells _packFill left open.
+      for (var att = 0; att < 14; att++) {
+        final arr = _packFill((seed + att * 7919) & 0xFFFFFFFF);
+        if (arr.isEmpty) continue;
+        if (!greedySolvable(arr) && !_repairSolvable(arr)) continue;
+        final sc = score(arr);
+        if (sc > bestScore) {
+          bestScore = sc;
+          best = arr;
+        }
+        if (bestScore > area * 0.62) break;
+      }
+      if (best == null) {
+        for (var att = 0; att < 8; att++) {
+          final arr = _packRC((seed + 313 + att * 7919) & 0xFFFFFFFF);
+          if (arr.isEmpty) continue;
+          final sc = score(arr);
+          if (sc > bestScore) {
+            bestScore = sc;
+            best = arr;
+          }
+          if (bestScore > area * 0.55) break;
+        }
+      }
     } else if (tier == Tier.superHard || tier == Tier.nightmare) {
       // Super Hard / Nightmare: _packFill first for long winding maze arrows,
       // same strategy as daily.

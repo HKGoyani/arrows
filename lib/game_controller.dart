@@ -6,12 +6,34 @@ import 'level_generator.dart';
 
 enum GameStatus { playing, won, lost }
 
+/// Top-level entry for [compute]: generates a level on a background isolate.
+/// Must be top-level (isolates can't capture instance state) and take/return
+/// only sendable objects — (int, bool) in, a plain GeneratedLevel out.
+GeneratedLevel _generateLevelIsolate((int, bool) args) =>
+    LevelGenerator().genLevel(args.$1, daily: args.$2);
+
+/// Deep-copies a level's arrows so a cached board can be replayed without the
+/// previous play's mutated arrow state leaking into the next.
+GeneratedLevel _cloneLevel(GeneratedLevel g) => GeneratedLevel(
+      [
+        for (final a in g.arrows)
+          Arrow(
+              id: a.id,
+              pts: List.of(a.pts),
+              dir: a.dir,
+              cells: Set.of(a.cells))
+      ],
+      g.cols,
+      g.rows,
+    );
+
 /// MVVM ViewModel: owns the game state + rules. Pure logic, no rendering.
 /// Per-frame animations live in the View (GameScreen) and call back here.
 class GameController extends ChangeNotifier {
   final LevelGenerator _gen = LevelGenerator();
 
   int level = 1;
+  bool isDaily = false;
   int cols = 9, rows = 11;
   List<Arrow> arrows = [];
   Map<String, int> occ = {};
@@ -32,9 +54,39 @@ class GameController extends ChangeNotifier {
   List<Arrow> get liveArrows =>
       arrows.where((a) => a.state != ArrowState.leaving).toList();
 
+  /// Synchronous load — used for small/fast boards (main progression) and
+  /// daily restarts (the board is already cached from the initial async
+  /// load, so this is instant). Only regenerates inline if no cache exists.
   void loadLevel(int lvl, {bool daily = false}) {
     level = lvl;
-    final g = _gen.genLevel(lvl, daily: daily);
+    isDaily = daily;
+    final cached = daily ? _dailyCache[lvl] : null;
+    _applyLevel(
+        cached != null ? _cloneLevel(cached) : _gen.genLevel(lvl, daily: daily));
+  }
+
+  /// Cache of generated daily boards, keyed by daily level number. Dailies
+  /// are the same board all day and can take seconds to generate, so we keep
+  /// the result to make replays/restarts within a session instant.
+  static final Map<int, GeneratedLevel> _dailyCache = {};
+
+  /// Asynchronous load: runs the (potentially slow) generation on a
+  /// background isolate so the UI thread stays free to animate a loading
+  /// spinner. Daily boards are cached; a cache hit applies instantly.
+  Future<void> loadLevelAsync(int lvl, {bool daily = false}) async {
+    level = lvl;
+    isDaily = daily;
+    final cached = daily ? _dailyCache[lvl] : null;
+    if (cached != null) {
+      _applyLevel(_cloneLevel(cached));
+      return;
+    }
+    final g = await compute(_generateLevelIsolate, (lvl, daily));
+    if (daily) _dailyCache[lvl] = g;
+    _applyLevel(daily ? _cloneLevel(g) : g);
+  }
+
+  void _applyLevel(GeneratedLevel g) {
     arrows = g.arrows;
     cols = g.cols;
     rows = g.rows;
