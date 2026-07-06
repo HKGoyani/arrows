@@ -475,6 +475,12 @@ class LevelGenerator {
   /// couldn't reach length >= 2.
   bool _relaxSelf = false; // set by _configure for daily mode
 
+  /// Maze-weaving walk style (daily + L100+): instead of steering toward the
+  /// most open space (which fills the board in aligned parallel corridors),
+  /// the walker hugs existing paths and turns constantly, producing the
+  /// interlocking L/U/zigzag maze texture of the reference boards.
+  bool _mazeStyle = false;
+
   /// Counts how many open exits a cell (nx,ny) has, excluding [body] and [occ].
   /// Used by the look-ahead walker to avoid dead ends.
   int _openExits(int nx, int ny, Set<String> occ, Set<String> body) {
@@ -515,20 +521,30 @@ class LevelGenerator {
           continue;
         }
         // Score: higher = preferred. Look-ahead avoids dead ends.
-        var score = _openExits(nx, ny, occ, body) * 10;
+        // Maze style weights open-space MUCH lower (a small anti-dead-end
+        // nudge only, backed up by the explicit avoidance below) so it
+        // doesn't steer everything into aligned open corridors; the pull
+        // instead comes from hugging existing paths + turning.
+        var score = _openExits(nx, ny, occ, body) * (_mazeStyle ? 2 : 10);
         // Corridor bonus: prefer cells adjacent to occupied cells (maze look)
         if (_relaxSelf) {
+          final hug = _mazeStyle ? 7 : 3;
           for (final a in Direction.values) {
-            if (occ.contains(cellKey(nx + a.dx, ny + a.dy))) score += 3;
+            if (occ.contains(cellKey(nx + a.dx, ny + a.dy))) score += hug;
           }
         }
-        // Direction preference
+        // Direction preference. Maze style strongly favours turning (the
+        // interlocking L/U/zigzag look) and penalises long straight runs.
         if (d == cur) {
-          score += rng.next() < _straightBias ? 8 : 2;
+          score += _mazeStyle
+              ? (rng.next() < _straightBias ? 3 : 0)
+              : (rng.next() < _straightBias ? 8 : 2);
         } else if (d == rev) {
           score += 1; // U-turn: last resort but allowed
         } else {
-          score += rng.next() < _straightBias ? 3 : 6; // perp = turn
+          score += _mazeStyle
+              ? (rng.next() < _straightBias ? 6 : 10) // perp = turn (favoured)
+              : (rng.next() < _straightBias ? 3 : 6);
         }
         // Small random jitter to avoid deterministic patterns
         score += rng.nextInt(4);
@@ -1083,10 +1099,24 @@ class LevelGenerator {
     // ── Arrow shape: look-ahead walker avoids dead ends → much longer arrows ──
     if (daily || tier == Tier.superHard || tier == Tier.nightmare) {
       _relaxSelf = true;
-      _walkMin = 8;
-      _walkMax = 40;
-      _straightBias = 0.38;
+      if (daily || level >= 100) {
+        // Daily + L100+ tall boards: maze-weaving walk — hugs existing paths
+        // and turns constantly for the ref's interlocking L/U/zigzag texture
+        // (not aligned parallel corridors). Longer walk cap gives long
+        // SNAKING corridors (winding, not straight) mixed with short stubs,
+        // matching the reference variety. L1-99 keeps its shipped style.
+        _mazeStyle = true;
+        _walkMin = 4;
+        _walkMax = 30;
+        _straightBias = 0.30;
+      } else {
+        _mazeStyle = false;
+        _walkMin = 8;
+        _walkMax = 40;
+        _straightBias = 0.38;
+      }
     } else {
+      _mazeStyle = false;
       _relaxSelf = false;
       switch (tier) {
         case Tier.normal:
