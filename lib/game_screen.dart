@@ -716,7 +716,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
             if (!_isTutorial)
               Positioned(
-              right: 14,
+              right: 24,
               bottom: 10 + MediaQuery.of(context).padding.bottom +
                   (_bannerAd?.size.height.toDouble() ?? 0),
               child: AnimatedBuilder(
