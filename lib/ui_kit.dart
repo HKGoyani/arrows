@@ -1,7 +1,61 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'audio.dart';
 import 'config.dart';
 import 'l10n.dart';
+
+/// Game-themed loading indicator: four rounded arrows pointing outward (the
+/// board's four fire directions) rotating as a pinwheel, in the flying-arrow
+/// colour. Manages its own controller so it only ticks while shown.
+class ArrowLoader extends StatefulWidget {
+  final double size;
+  const ArrowLoader({super.key, this.size = 68});
+
+  @override
+  State<ArrowLoader> createState() => _ArrowLoaderState();
+}
+
+class _ArrowLoaderState extends State<ArrowLoader>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1500),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = widget.size * 0.35;
+    Widget arrow(Alignment align, double angle) => Align(
+          alignment: align,
+          child: Transform.rotate(
+            angle: angle,
+            child: Icon(Icons.arrow_upward_rounded,
+                size: iconSize, color: AppColors.arrowBlue),
+          ),
+        );
+    return RotationTransition(
+      turns: _c,
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Stack(
+          children: [
+            arrow(Alignment.topCenter, 0),
+            arrow(Alignment.centerRight, pi / 2),
+            arrow(Alignment.bottomCenter, pi),
+            arrow(Alignment.centerLeft, -pi / 2),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 TextStyle poppins(double size, FontWeight w, Color c, {double? ls, double? height}) =>
     TextStyle(

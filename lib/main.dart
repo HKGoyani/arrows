@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -26,12 +27,57 @@ import 'ui_kit.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Show the arrow loader immediately so the launch gap (while the services
+  // below initialise) isn't a blank white screen.
+  runApp(const _SplashApp());
   await Prefs.init();
   await AnalyticsService.init();
   await AudioService.init();
   await AdService.init();
   await IapService.init();
   runApp(ArrowsApp());
+}
+
+/// Playful, on-theme loading lines — a different one each launch.
+const _splashMessages = <String>[
+  'Untangling the arrows…',
+  'Plotting escape routes…',
+  'Clearing the board…',
+  'Winding the maze…',
+  'Finding the way out…',
+  'Charting the corridors…',
+  'Lining up the shot…',
+  'Loosening the knots…',
+];
+
+/// Minimal loading screen shown during startup init, before the real app.
+class _SplashApp extends StatelessWidget {
+  const _SplashApp();
+  @override
+  Widget build(BuildContext context) {
+    final msg = _splashMessages[Random().nextInt(_splashMessages.length)];
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme:
+          ThemeData(scaffoldBackgroundColor: AppColors.bg, useMaterial3: true),
+      home: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ArrowLoader(size: 84),
+                const SizedBox(height: 30),
+                Text(msg,
+                    textAlign: TextAlign.center,
+                    style: poppins(15, FontWeight.w800, AppColors.muted)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 final appKey = GlobalKey<_ArrowsAppState>();

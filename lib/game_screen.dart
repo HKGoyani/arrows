@@ -71,6 +71,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Arrow? _peekArrow; // transient: exit path shown while long-pressing an arrow
   bool _showHint = false;
   bool _loading = false; // daily board generating on a background isolate
+  Timer? _loadingTimer; // delays the loader so fast loads show no spinner
   Arrow? _hintArrow;
   final Set<int> _hintedIds = {};
   Timer? _hintTimer;
@@ -130,11 +131,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _bannerAd = AdService.createBanner();
     AnalyticsService.levelStart(widget.level, daily: widget.isDaily);
     if (widget.isDaily) {
-      // Daily boards are big and can take a few seconds to generate — run it
-      // on a background isolate (loadLevelAsync) so the spinner animates,
-      // then reveal the board. Cached days load effectively instantly.
-      _loading = true;
+      // Daily boards generate on a background isolate (loadLevelAsync). The
+      // current generator is near-instant, so the loader is only shown as a
+      // safety net if generation runs long (>300ms — e.g. the rare fallback
+      // to the old engine); otherwise the board appears with no spinner flash.
+      _loadingTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) setState(() => _loading = true);
+      });
       c.loadLevelAsync(widget.level, daily: true).then((_) {
+        _loadingTimer?.cancel();
         if (!mounted) return;
         setState(() => _loading = false);
         widget.onLoaded?.call(c); // restore saved board if any
@@ -197,6 +202,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _hintTimer?.cancel();
+    _loadingTimer?.cancel();
     c.removeListener(_rebuild);
     _rippleCtrl.dispose();
     _heartCtrl.dispose();
@@ -534,27 +540,32 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    // Daily board still generating: show a blank bg until the delayed timer
+    // decides to reveal the loader (only if generation runs long), so a fast
+    // load neither flashes a spinner nor an empty board.
+    if (widget.isDaily && c.total == 0) {
       return Scaffold(
         backgroundColor: AppColors.bg,
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const _ArrowLoader(),
-                const SizedBox(height: 28),
-                Text('Preparing challenge',
-                    textAlign: TextAlign.center,
-                    style: poppins(18, FontWeight.w900, AppColors.ink)),
-                const SizedBox(height: 6),
-                Text('Untangling the arrows…',
-                    textAlign: TextAlign.center,
-                    style: poppins(13.5, FontWeight.w700, AppColors.muted)),
-              ],
-            ),
-          ),
-        ),
+        body: _loading
+            ? SafeArea(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const ArrowLoader(),
+                      const SizedBox(height: 28),
+                      Text('Preparing challenge',
+                          textAlign: TextAlign.center,
+                          style: poppins(18, FontWeight.w900, AppColors.ink)),
+                      const SizedBox(height: 6),
+                      Text('Untangling the arrows…',
+                          textAlign: TextAlign.center,
+                          style: poppins(13.5, FontWeight.w700, AppColors.muted)),
+                    ],
+                  ),
+                ),
+              )
+            : const SizedBox.shrink(),
       );
     }
     return Scaffold(
@@ -1079,55 +1090,4 @@ class _RedVignettePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RedVignettePainter old) => old.alpha != alpha;
-}
-
-/// Game-themed loading indicator: four rounded arrows pointing outward (the
-/// board's four fire directions) rotating as a pinwheel, in the flying-arrow
-/// colour. Manages its own controller so it only ticks while the loader shows.
-class _ArrowLoader extends StatefulWidget {
-  const _ArrowLoader();
-
-  @override
-  State<_ArrowLoader> createState() => _ArrowLoaderState();
-}
-
-class _ArrowLoaderState extends State<_ArrowLoader>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1500),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    Widget arrow(Alignment align, double angle) => Align(
-          alignment: align,
-          child: Transform.rotate(
-            angle: angle,
-            child: Icon(Icons.arrow_upward_rounded,
-                size: 24, color: AppColors.arrowBlue),
-          ),
-        );
-    return RotationTransition(
-      turns: _c,
-      child: SizedBox(
-        width: 68,
-        height: 68,
-        child: Stack(
-          children: [
-            arrow(Alignment.topCenter, 0), // up
-            arrow(Alignment.centerRight, pi / 2), // right
-            arrow(Alignment.bottomCenter, pi), // down
-            arrow(Alignment.centerLeft, -pi / 2), // left
-          ],
-        ),
-      ),
-    );
-  }
 }
