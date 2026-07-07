@@ -115,7 +115,9 @@ class BoardPainter extends CustomPainter {
     for (final a in c.arrows) {
       if (a.state == ArrowState.leaving) continue;
       Color color;
-      if (hintedIds.contains(a.id)) {
+      if (peekArrow != null && a.id == peekArrow!.id) {
+        color = AppColors.arrowBlue; // long-press highlight
+      } else if (hintedIds.contains(a.id)) {
         color = AppColors.arrowBlue;
       } else if (a.state == ArrowState.clashed) {
         color = AppColors.red;

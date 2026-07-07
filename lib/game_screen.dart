@@ -287,7 +287,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     setState(() => _peekArrow = a);
   }
 
-  void _onLongPressEnd() {
+  /// Finger moved during a long-press: the peek follows the arrow under the
+  /// finger, and clears (grid disabled) when the finger is over empty space.
+  void _onLongPressMoveUpdate(LongPressMoveUpdateDetails d) {
+    if (c.status != GameStatus.playing) return;
+    final cell = d.localPosition / _scale;
+    final a = c.hitTest(cell.dx, cell.dy);
+    if (a?.id != _peekArrow?.id) setState(() => _peekArrow = a);
+  }
+
+  /// Long-press released. If the finger lifted while still on an arrow (the
+  /// peek is showing it), trigger that arrow like a tap; if it had moved off
+  /// onto empty space, just clear the peek — no action.
+  void _onLongPressEnd(LongPressEndDetails d) {
+    final peeked = _peekArrow;
+    if (peeked != null) setState(() => _peekArrow = null);
+    if (peeked == null || c.status != GameStatus.playing) return;
+    final cell = d.localPosition / _scale;
+    final hit = c.hitTest(cell.dx, cell.dy);
+    if (hit != null && hit.id == peeked.id) {
+      _activateArrow(hit);
+    }
+  }
+
+  void _onLongPressCancel() {
     if (_peekArrow != null) setState(() => _peekArrow = null);
   }
 
@@ -295,6 +318,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final cell = d.localPosition / _scale;
     final a = c.hitTest(cell.dx, cell.dy);
     if (a == null || c.status != GameStatus.playing) return;
+    _activateArrow(a);
+  }
+
+  /// Fires (or clashes) the tapped/released arrow. Shared by tap and by a
+  /// long-press released on the same arrow.
+  void _activateArrow(Arrow a) {
     _spawnRipple(a);
     if (c.isClear(a)) {
       if (a.state == ArrowState.clashed) a.state = ArrowState.idle;
@@ -813,8 +842,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         duration: const Duration(milliseconds: 300)),
                     (r) => r
                       ..onLongPressStart = _onLongPressStart
-                      ..onLongPressEnd = ((_) => _onLongPressEnd())
-                      ..onLongPressCancel = _onLongPressEnd,
+                      ..onLongPressMoveUpdate = _onLongPressMoveUpdate
+                      ..onLongPressEnd = _onLongPressEnd
+                      ..onLongPressCancel = _onLongPressCancel,
                   ),
                 },
                 child: CustomPaint(
