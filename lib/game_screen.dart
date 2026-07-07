@@ -768,6 +768,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       }
 
       if (!_introPlayed) {
+        // Centre the board at fit-scale on the VERY FIRST frame (before the
+        // post-frame intro zoom runs), otherwise InteractiveViewer's default
+        // identity transform paints it at the top-left corner for one frame
+        // and it visibly jumps to centre. Matches the scale _playIntroZoom
+        // starts from, so the subsequent zoom is seamless.
+        if (c.total >= 15) {
+          final fit = min(constraints.maxWidth / boardPx.width,
+                  constraints.maxHeight / boardPx.height)
+              .clamp(0.1, 1.0);
+          final centered = _centeredMatrix(fit);
+          if (_zoomCtrl.value != centered) _zoomCtrl.value = centered;
+        }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _playIntroZoom();
         });
