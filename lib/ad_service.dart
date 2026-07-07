@@ -58,16 +58,17 @@ class AdService {
   static InterstitialAd? _interstitialAd;
   static AppOpenAd? _appOpenAd;
 
-  /// Call once at app startup. Requests Apple's ATT permission first (iOS),
-  /// then Google's GDPR/UMP consent (required by Google's EU User Consent
-  /// Policy for EEA/UK users, and recommended for US state privacy laws)
-  /// before any ad is loaded, then preloads all ad formats. ATT must run
-  /// first so the UMP form reflects the user's actual tracking choice
-  /// instead of asking to track again after they already said no.
+  /// Call once at app startup. Runs Google's GDPR/UMP consent flow FIRST and
+  /// waits for it to fully finish, THEN requests Apple's ATT permission, then
+  /// preloads all ad formats. Order matters for App Review (Guideline
+  /// 5.1.1(iv)): the ATT prompt must be the LAST tracking-related ask, so the
+  /// user is never shown a consent prompt about personalized ads *after* they
+  /// tapped "Ask App Not to Track". The consent step below is fully awaited
+  /// (form display is never time-boxed) so it can't leak past ATT.
   static Future<void> init() async {
     if (_initialized) return;
-    await _requestTrackingAuthorization();
     await _requestConsent();
+    await _requestTrackingAuthorization();
     await MobileAds.instance.initialize();
     _initialized = true;
     // Preload all formats in parallel for fastest availability
@@ -80,33 +81,40 @@ class AdService {
 
   /// Runs Google's User Messaging Platform consent flow. Shows a consent
   /// form only where legally required (EEA/UK/applicable US states) —
-  /// no-op elsewhere. Ad loading waits for this to complete so no ad
-  /// request fires before consent is resolved.
+  /// no-op elsewhere.
+  ///
+  /// Split into two awaited steps so the ordering guarantee holds (see
+  /// [init]): the 8s safety timeout guards ONLY the network info-update call
+  /// (which can stall with no connectivity); the consent form itself is then
+  /// awaited with NO timeout, so this method never returns while the form is
+  /// still on screen. That is what keeps the ATT prompt strictly after the
+  /// consent prompt and fixes the original race (form leaking past ATT).
   static Future<void> _requestConsent() async {
-    final completer = Completer<void>();
     final params = ConsentRequestParameters();
+    // Step 1 — fetch consent info (network round-trip). Time-boxed.
+    final infoCompleter = Completer<void>();
     ConsentInformation.instance.requestConsentInfoUpdate(
       params,
-      () async {
-        try {
-          if (await ConsentInformation.instance.isConsentFormAvailable()) {
-            await _loadAndShowConsentFormIfRequired();
-          }
-        } catch (_) {
-          // consent flow is non-critical — never block app startup
-        } finally {
-          if (!completer.isCompleted) completer.complete();
-        }
+      () {
+        if (!infoCompleter.isCompleted) infoCompleter.complete();
       },
       (error) {
-        // Consent info update failed — proceed without blocking (e.g. no
-        // network). Ads will load in non-personalized mode wherever consent
-        // is legally required and not obtained.
-        if (!completer.isCompleted) completer.complete();
+        // Info update failed (e.g. no network) — proceed without blocking.
+        if (!infoCompleter.isCompleted) infoCompleter.complete();
       },
     );
-    // Safety timeout — never let a stalled consent flow block the app.
-    await completer.future.timeout(const Duration(seconds: 8), onTimeout: () {});
+    await infoCompleter.future
+        .timeout(const Duration(seconds: 8), onTimeout: () {});
+
+    // Step 2 — if a form is required, show it and WAIT for the user to
+    // finish. No timeout: the form must fully resolve before ATT is shown.
+    try {
+      if (await ConsentInformation.instance.isConsentFormAvailable()) {
+        await _loadAndShowConsentFormIfRequired();
+      }
+    } catch (_) {
+      // consent flow is non-critical — never block app startup
+    }
   }
 
   static Future<void> _loadAndShowConsentFormIfRequired() {
