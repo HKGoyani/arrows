@@ -46,61 +46,58 @@ const _shapedLevelTiers = <int, Tier>{
   168: Tier.superHard, // tree — 30×47, ~660 cells
 };
 
-/// Deterministic tier for a level. Calibrated from 99 reference levels (L4-102):
-///   L4-102: 70% Normal, 20% Hard, 9% SH, 1% NM (L100 hardcoded)
-///   L103+:  Normal gradually gives way; Nightmare grows to 40% by L1000+
-///
-/// Hard first at L6, Super Hard at L26, Nightmare at L100.
+/// Deterministic tier for a level. Escalating Normal→Hard→Super Hard mix,
+/// with **Nightmare introduced only at L100** (never before). The board's
+/// real difficulty is driven by the grid size (which grows monotonically with
+/// the level number, see LevelGenerator); the tier is a label that rides that
+/// ramp with a deterministic per-level mix so consecutive levels vary.
 Tier tierForLevel(int level) {
   if (_shapedLevelTiers.containsKey(level)) return _shapedLevelTiers[level]!;
   if (level < 6) return Tier.normal;
-  if (level == 100) return Tier.nightmare;
+  if (level == 100) return Tier.nightmare; // Nightmare debut
 
   final hash = ((level * 2654435761 + level * 7919 + 0x1337) & 0xFFFFFFFF) /
       4294967296.0;
 
-  if (level < 26) {
-    // ~70% Normal, ~30% Hard
-    return hash < 0.70 ? Tier.normal : Tier.hard;
-  }
   if (level < 100) {
-    // ~70% Normal, ~20% Hard, ~10% Super Hard
-    if (hash < 0.70) return Tier.normal;
-    if (hash < 0.90) return Tier.hard;
+    // L6-99: escalating N/H/SH mix — NO Nightmare before L100.
+    if (level <= 20) {
+      // Normal-lean with Hard sprinkled in.
+      return hash < 0.70 ? Tier.normal : Tier.hard;
+    }
+    if (level <= 40) {
+      // Hard-heavy, Super Hard introduced.
+      if (hash < 0.45) return Tier.normal;
+      if (hash < 0.85) return Tier.hard;
+      return Tier.superHard;
+    }
+    if (level <= 65) {
+      // Hard / Super Hard mix, Normal fading.
+      if (hash < 0.25) return Tier.normal;
+      if (hash < 0.70) return Tier.hard;
+      return Tier.superHard;
+    }
+    // L66-99: Super Hard dominant, some Hard, rare Normal.
+    if (hash < 0.10) return Tier.normal;
+    if (hash < 0.55) return Tier.hard;
     return Tier.superHard;
   }
+  // L101+: Nightmare now in the mix and its share grows with level.
   if (level < 151) {
-    // ~55% Normal, ~18% Hard, ~18% SH, ~8% NM
-    if (hash < 0.55) return Tier.normal;
-    if (hash < 0.73) return Tier.hard;
-    if (hash < 0.92) return Tier.superHard;
+    // ~15% Hard, ~45% SH, ~40% Nightmare
+    if (hash < 0.15) return Tier.hard;
+    if (hash < 0.60) return Tier.superHard;
     return Tier.nightmare;
   }
   if (level < 251) {
-    // ~40% Normal, ~22% Hard, ~22% SH, ~16% NM
-    if (hash < 0.40) return Tier.normal;
-    if (hash < 0.62) return Tier.hard;
-    if (hash < 0.84) return Tier.superHard;
+    // ~10% Hard, ~35% SH, ~55% Nightmare
+    if (hash < 0.10) return Tier.hard;
+    if (hash < 0.45) return Tier.superHard;
     return Tier.nightmare;
   }
-  if (level < 501) {
-    // ~25% Normal, ~20% Hard, ~27% SH, ~28% NM
-    if (hash < 0.25) return Tier.normal;
-    if (hash < 0.45) return Tier.hard;
-    if (hash < 0.72) return Tier.superHard;
-    return Tier.nightmare;
-  }
-  if (level < 1001) {
-    // ~15% Normal, ~20% Hard, ~30% SH, ~35% NM
-    if (hash < 0.15) return Tier.normal;
-    if (hash < 0.35) return Tier.hard;
-    if (hash < 0.65) return Tier.superHard;
-    return Tier.nightmare;
-  }
-  // L1000+: plateau — ~10% Normal, ~18% Hard, ~32% SH, ~40% NM
-  if (hash < 0.10) return Tier.normal;
-  if (hash < 0.28) return Tier.hard;
-  if (hash < 0.60) return Tier.superHard;
+  // L251+: plateau — ~8% Hard, ~27% SH, ~65% Nightmare
+  if (hash < 0.08) return Tier.hard;
+  if (hash < 0.35) return Tier.superHard;
   return Tier.nightmare;
 }
 

@@ -1216,11 +1216,23 @@ class LevelGenerator {
     // larger to compensate — keeps arrow count visually dense.
     final shapeName = daily ? null : _shapeLevels[level];
 
-    // EXPERIMENTAL: route daily + regular L100+ RECTANGLES through the
-    // standalone arrow_maze generator (reverse-peel construction, ~99% fill,
-    // maze-woven corridors). Kept fully separate from the existing packing
-    // logic — shapes and L1-99 are untouched.
-    if (shapeName == null && (daily || level >= 100)) {
+    // Regular (non-daily, non-shaped) rectangles: MONOTONIC grid that grows
+    // smoothly with the level number — 10×12 cells at L6, up to a 44×56 cap —
+    // decoupled from the tier so it never zig-zags (the tier used to drive
+    // size, and its random flips made the grid jump around). Dailies keep
+    // their own tier-based sizing from _configure.
+    if (!daily && shapeName == null && level >= 6) {
+      final w = (10 + (level - 6) * (24 / 94)).clamp(10, 44).round();
+      final h = (12 + (level - 6) * (32 / 94)).clamp(12, 56).round();
+      cols = w - 1; // cols/rows are max indices; cells = (cols+1)×(rows+1)
+      rows = h - 1;
+    }
+
+    // EXPERIMENTAL: route ALL non-shaped rectangles (daily + every regular
+    // level, L6+) through the standalone arrow_maze generator (reverse-peel
+    // construction, ~99% fill, maze-woven corridors). Shaped levels keep the
+    // existing packing; L1-5 are hand-authored (returned earlier).
+    if (shapeName == null) {
       final board = _mazeBoard(level, daily);
       if (board != null) {
         _shapeMask = null;
