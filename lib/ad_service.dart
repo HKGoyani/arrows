@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
-import "dart:ui";
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'analytics_service.dart';
 import 'prefs.dart';
@@ -58,14 +58,16 @@ class AdService {
   static InterstitialAd? _interstitialAd;
   static AppOpenAd? _appOpenAd;
 
-  /// Call once at app startup. Requests GDPR/UMP consent (required by
-  /// Google's EU User Consent Policy for EEA/UK users, and recommended for
-  /// US state privacy laws) before any ad is loaded, then preloads all
-  /// ad formats.
+  /// Call once at app startup. Requests Apple's ATT permission first (iOS),
+  /// then Google's GDPR/UMP consent (required by Google's EU User Consent
+  /// Policy for EEA/UK users, and recommended for US state privacy laws)
+  /// before any ad is loaded, then preloads all ad formats. ATT must run
+  /// first so the UMP form reflects the user's actual tracking choice
+  /// instead of asking to track again after they already said no.
   static Future<void> init() async {
     if (_initialized) return;
-    await _requestConsent();
     await _requestTrackingAuthorization();
+    await _requestConsent();
     await MobileAds.instance.initialize();
     _initialized = true;
     // Preload all formats in parallel for fastest availability
@@ -97,9 +99,9 @@ class AdService {
         }
       },
       (error) {
-        // Consent info update failed — proceed without blocking (e.g. ATT
-        // not yet granted, no network). Ads will load in non-personalized
-        // mode wherever consent is legally required and not obtained.
+        // Consent info update failed — proceed without blocking (e.g. no
+        // network). Ads will load in non-personalized mode wherever consent
+        // is legally required and not obtained.
         if (!completer.isCompleted) completer.complete();
       },
     );
