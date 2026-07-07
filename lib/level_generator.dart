@@ -1,4 +1,6 @@
 import 'dart:math';
+import 'arrow_maze/generator.dart' as maze;
+import 'arrow_maze/model.dart' as maze;
 import 'difficulty.dart';
 import 'gravity_packer.dart';
 import 'hand_levels.dart';
@@ -1163,6 +1165,38 @@ class LevelGenerator {
     return best;
   }
 
+  /// Adapter for the standalone arrow_maze generator. Converts its Board
+  /// (Cell(row,col), tail→head paths, headDir) to the game's model
+  /// (Arrow with pts as Point(x=col, y=row), head = pts.last). The game grid
+  /// is inclusive 0..cols × 0..rows, i.e. (cols+1)×(rows+1) cells, so the
+  /// maze runs on rows+1 × cols+1 and directions map 1:1 by name. Returns
+  /// null if generation throws (caller falls back to the original engine).
+  GeneratedLevel? _mazeBoard(int level, bool daily) {
+    Direction mapDir(maze.Direction d) => switch (d) {
+          maze.Direction.up => Direction.up,
+          maze.Direction.down => Direction.down,
+          maze.Direction.left => Direction.left,
+          maze.Direction.right => Direction.right,
+        };
+    try {
+      final seed =
+          (0x9E37 + level * 2654435761 + (daily ? 0x5151 : 0)) & 0x3FFFFFFF;
+      final board = maze.PuzzleGenerator(
+              maze.GenConfig(rows: rows + 1, cols: cols + 1))
+          .generate(seed);
+      final arrows = <Arrow>[];
+      for (final p in board.paths) {
+        final pts = [for (final c in p.cells) Point(c.col, c.row)];
+        final cells = {for (final pt in pts) cellKey(pt.x, pt.y)};
+        arrows.add(
+            Arrow(id: p.id, pts: pts, dir: mapDir(p.headDir), cells: cells));
+      }
+      return GeneratedLevel(arrows, cols, rows);
+    } catch (_) {
+      return null;
+    }
+  }
+
   GeneratedLevel genLevel(int level, {bool daily = false}) {
     // Hand-authored onboarding levels (1–5) for the main progression only.
     if (!daily) {
@@ -1181,6 +1215,20 @@ class LevelGenerator {
     // Shaped boards lose ~30% of cells to the mask, so bump the grid
     // larger to compensate — keeps arrow count visually dense.
     final shapeName = daily ? null : _shapeLevels[level];
+
+    // EXPERIMENTAL: route daily + regular L100+ RECTANGLES through the
+    // standalone arrow_maze generator (reverse-peel construction, ~99% fill,
+    // maze-woven corridors). Kept fully separate from the existing packing
+    // logic — shapes and L1-99 are untouched.
+    if (shapeName == null && (daily || level >= 100)) {
+      final board = _mazeBoard(level, daily);
+      if (board != null) {
+        _shapeMask = null;
+        return board;
+      }
+      // else fall through to the original engine on failure.
+    }
+
     if (shapeName != null) {
       // Shape-specific grid sizing. Heart needs to be wide (34×25 ref).
       if (shapeName == 'heart') {
