@@ -77,12 +77,26 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Timer? _hintTimer;
   late final AnimationController _hintPulseCtrl;
   late final AnimationController _heartCtrl;
+  late final AnimationController _headerFadeCtrl;
+  bool _startHeartReveal = false;
   bool _showWinText = false;
   bool _showWinConfetti = false;
   double _scale = 1;
   bool _winHandled = false;
   bool _restartHidden = false;
   BannerAd? _bannerAd;
+
+  // "Add More Lives" reward: 3 hearts fly from the Continue dialog up to the
+  // header's HeartsRow, each from its own dialog position straight to its
+  // own header slot (in sync, no stagger while flying — the header's own
+  // staggered reveal picks up once they land).
+  final GlobalKey _stackKey = GlobalKey();
+  final List<GlobalKey> _heartKeys = List.generate(3, (_) => GlobalKey());
+  final List<GlobalKey> _loseHeartKeys = List.generate(3, (_) => GlobalKey());
+  late final AnimationController _flyHeartsCtrl;
+  List<Offset>? _flyStarts;
+  List<Offset>? _flyEnds;
+  bool _flyingHearts = false;
 
   // Pinch-to-zoom: board is scaled to fit viewport at 1x.
   // User can zoom in up to _maxZoom. Intro animates from 1x to _defaultZoom.
@@ -126,6 +140,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _zoomIntroCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1000))
       ..addListener(_onZoomIntroTick);
+    _flyHeartsCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500))
+      ..addListener(_rebuild);
+    // Header fade-in: starts invisible, fades in AFTER the intro zoom
+    // finishes, and only once IT finishes does the hearts reveal start.
+    // Tutorial has no header chrome to fade, so it starts fully visible.
+    _headerFadeCtrl = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 350),
+        value: _isTutorial ? 1.0 : 0.0)
+      ..addListener(_rebuild);
     c.addListener(_rebuild);
     AdService.setPlaying(true);
     _bannerAd = AdService.createBanner();
@@ -212,6 +237,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _fingerCtrl.dispose();
     _zoomIntroCtrl.dispose();
     _zoomCtrl.dispose();
+    _flyHeartsCtrl.dispose();
+    _headerFadeCtrl.dispose();
     for (final f in _flights) {
       _disposeFlight(f);
     }
@@ -252,7 +279,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _playIntroZoom() {
     if (_introPlayed || _isTutorial) return;
     _introPlayed = true;
-    if (c.total < 15) return;
+    if (c.total < 15) {
+      // No board zoom needed — go straight to the header fade-in, then hearts.
+      _revealHeaderThenHearts();
+      return;
+    }
     final bp = _lastBoardPx!;
     final vp = _lastViewportSize!;
     _introStartScale = min(vp.width / bp.width, vp.height / bp.height)
@@ -265,8 +296,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (mounted) {
         _zoomIntroCtrl.forward(from: 0).then((_) {
           if (mounted) setState(() => _introAnimating = false);
+          _revealHeaderThenHearts();
         });
       }
+    });
+  }
+
+  /// Header fades in, then — only once that finishes — the hearts' own
+  /// staggered reveal starts. Called after the board's intro zoom settles
+  /// (or immediately for small boards that skip the zoom).
+  void _revealHeaderThenHearts() {
+    if (!mounted) return;
+    _headerFadeCtrl.forward(from: 0).then((_) {
+      if (mounted) setState(() => _startHeartReveal = true);
     });
   }
 
@@ -550,6 +592,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _zoomIntroCtrl.reset();
     _introPlayed = false;
     _introAnimating = false;
+    _headerFadeCtrl.reset();
+    _startHeartReveal = false;
     c.loadLevel(c.level, daily: widget.isDaily);
     if (widget.isDaily) widget.onDidRestart?.call();
     _resetHintTimer();
@@ -602,14 +646,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       body: SafeArea(
         bottom: false,
         child: Stack(
+          key: _stackKey,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 AnimatedBuilder(
-                  animation: _heartCtrl,
+                  animation: Listenable.merge([_heartCtrl, _headerFadeCtrl]),
                   builder: (_, child) => Opacity(
-                    opacity: (1.0 - _heartCtrl.value * 3.0).clamp(0.0, 1.0),
+                    opacity: _headerFadeCtrl.value *
+                        (1.0 - _heartCtrl.value * 3.0).clamp(0.0, 1.0),
                     child: child,
                   ),
                   // Tutorial hides the header (back/restart/progress) and shows
@@ -622,7 +668,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       : Column(
                           children: [
                             GameTopBar(
-                                c: c, onBack: widget.onBack, onRestart: _confirmRestart),
+                                c: c, onBack: widget.onBack, onRestart: _confirmRestart,
+                                heartKeys: _heartKeys,
+                                startReveal: _startHeartReveal),
                             ProgressBar(progress: c.progress),
                           ],
                         ),
@@ -756,7 +804,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ),
             if (_showWinText || _showWinConfetti) _winOverlay(),
-            if (c.status == GameStatus.lost) _loseOverlay(),
+            if (c.status == GameStatus.lost && !_flyingHearts) _loseOverlay(),
+            if (_flyingHearts && _flyStarts != null && _flyEnds != null)
+              ..._buildFlyingHearts(),
           ],
         ),
       ),
@@ -1033,6 +1083,65 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     c.addLife();
   }
 
+  /// Reward flow after "Add More Lives": each of the 3 hearts flies from its
+  /// own position in the Continue dialog straight to its own matching slot
+  /// in the header's HeartsRow — in sync, no stagger while airborne — then
+  /// hearts are actually refilled once the flight lands, and the header's
+  /// own staggered reveal (HeartsRow) picks up right where this leaves off.
+  void _startHeartFlight() {
+    final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final startBoxes = _loseHeartKeys
+        .map((k) => k.currentContext?.findRenderObject() as RenderBox?)
+        .toList();
+    final endBoxes = _heartKeys
+        .map((k) => k.currentContext?.findRenderObject() as RenderBox?)
+        .toList();
+    if (stackBox == null ||
+        startBoxes.any((b) => b == null) ||
+        endBoxes.any((b) => b == null)) {
+      _addLife(); // positions unmeasurable — just refill, no flourish
+      return;
+    }
+    setState(() {
+      _flyStarts = startBoxes
+          .map((b) => stackBox.globalToLocal(
+              b!.localToGlobal(b.size.center(Offset.zero))))
+          .toList();
+      _flyEnds = endBoxes
+          .map((b) => stackBox.globalToLocal(
+              b!.localToGlobal(b.size.center(Offset.zero))))
+          .toList();
+      _flyingHearts = true;
+    });
+    _flyHeartsCtrl.forward(from: 0).whenComplete(() {
+      if (!mounted) return;
+      setState(() => _flyingHearts = false);
+      _addLife();
+    });
+  }
+
+  List<Widget> _buildFlyingHearts() {
+    final eased = Curves.easeOutCubic.transform(_flyHeartsCtrl.value);
+    final t = _flyHeartsCtrl.value;
+    final scale = 1.0 - 0.3 * eased;
+    final opacity =
+        (t >= 0.85 ? (1 - (t - 0.85) / 0.15) : 1.0).clamp(0.0, 1.0);
+    return List.generate(3, (i) {
+      final pos = Offset.lerp(_flyStarts![i], _flyEnds![i], eased)!;
+      return Positioned(
+        left: pos.dx - 14,
+        top: pos.dy - 14,
+        child: Opacity(
+          opacity: opacity,
+          child: Transform.scale(
+            scale: scale,
+            child: const Icon(Icons.favorite, size: 28, color: AppColors.heart),
+          ),
+        ),
+      );
+    });
+  }
+
   Widget _loseOverlay() {
     return Positioned.fill(
       child: Container(
@@ -1053,7 +1162,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(3, (_) => Padding(
+                  children: List.generate(3, (i) => Padding(
+                    key: _loseHeartKeys[i],
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Icon(Icons.favorite, size: 36, color: AppColors.heart),
                   )),
@@ -1065,7 +1175,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 const SizedBox(height: 24),
                 Pressable(
                   onTap: () => AdService.showRewarded(onRewarded: () {
-                    if (mounted) _addLife();
+                    if (mounted) _startHeartFlight();
                   }),
                   child: Container(
                     width: double.infinity,

@@ -43,6 +43,10 @@ class GameController extends ChangeNotifier {
   int hearts = 3;
   int total = 0;
   GameStatus status = GameStatus.playing;
+  // Bumped on every board load (fresh level or restart) — lets HeartsRow
+  // force a staggered reveal even when hearts happens to already be 3
+  // (loading/restarting doesn't always mean hearts actually "increased").
+  int loadGen = 0;
 
   double get progress {
     if (total == 0) return 0;
@@ -101,6 +105,7 @@ class GameController extends ChangeNotifier {
     hearts = 3;
     total = arrows.length;
     status = GameStatus.playing;
+    loadGen++;
     notifyListeners();
   }
 

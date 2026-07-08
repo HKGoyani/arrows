@@ -76,20 +76,38 @@ class CircleButton extends StatelessWidget {
 
 class HeartsRow extends StatefulWidget {
   final int hearts;
-  const HeartsRow({super.key, required this.hearts});
+  // Optional per-heart keys (exactly 3) so callers can measure each heart
+  // icon's own on-screen position — e.g. to fly a reward heart to the exact
+  // slot it will land in, rather than the row's overall center.
+  final List<GlobalKey>? heartKeys;
+  // When true (default), the staggered reveal plays immediately on mount.
+  // Pass false initially and flip to true later (e.g. once the header's own
+  // fade-in finishes) to defer the reveal until that external trigger.
+  final bool startReveal;
+  const HeartsRow({super.key, required this.hearts, this.heartKeys, this.startReveal = true});
   @override
   State<HeartsRow> createState() => _HeartsRowState();
 }
 
-class _HeartsRowState extends State<HeartsRow> with SingleTickerProviderStateMixin {
+class _HeartsRowState extends State<HeartsRow> with TickerProviderStateMixin {
   late final AnimationController _bounceCtrl;
+  late final AnimationController _revealCtrl;
   int _lastLost = -1;
+  bool _hasRevealed = false;
 
   @override
   void initState() {
     super.initState();
     _bounceCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 400));
+    _revealCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 650));
+    if (widget.startReveal) {
+      // Fresh mount (new level load) — reveal hearts staggered instead of
+      // just appearing instantly.
+      _hasRevealed = true;
+      _revealCtrl.forward(from: 0);
+    }
   }
 
   @override
@@ -98,42 +116,73 @@ class _HeartsRowState extends State<HeartsRow> with SingleTickerProviderStateMix
     if (widget.hearts < old.hearts) {
       _lastLost = widget.hearts;
       _bounceCtrl.forward(from: 0);
+    } else if (widget.hearts > old.hearts) {
+      // Gained lives (restart reset, or an "Add More Lives" ad refill) —
+      // replay the same staggered reveal used on first mount.
+      _hasRevealed = true;
+      _revealCtrl.forward(from: 0);
+    } else if (widget.startReveal && !old.startReveal) {
+      // External trigger fired (header fade-in finished) — start now.
+      _hasRevealed = true;
+      _revealCtrl.forward(from: 0);
     }
   }
 
   @override
   void dispose() {
     _bounceCtrl.dispose();
+    _revealCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _bounceCtrl,
+      animation: Listenable.merge([_bounceCtrl, _revealCtrl]),
       builder: (_, __) => Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(3, (i) {
           final filled = i < widget.hearts;
           final isLosing = i == _lastLost && _bounceCtrl.isAnimating;
+          final isRevealing = filled && _revealCtrl.isAnimating;
           double scale;
+          double opacity = 1;
           if (isLosing) {
             final t = _bounceCtrl.value;
             scale = t < 0.2 ? 1 + 0.3 * (t / 0.2) : 1.3 - 0.38 * ((t - 0.2) / 0.8);
+          } else if (isRevealing) {
+            // Each heart's own window within the shared controller, staggered
+            // left to right, with a slight pop/overshoot on arrival.
+            const start = 0.15;
+            final from = i * start;
+            final to = (from + 0.7).clamp(0.0, 1.0);
+            final t = ((_revealCtrl.value - from) / (to - from)).clamp(0.0, 1.0);
+            scale = Curves.easeOutBack.transform(t);
+            opacity = Curves.easeOut.transform(t);
+          } else if (filled && !_hasRevealed) {
+            // Filled but the reveal hasn't been triggered yet (waiting on an
+            // external signal, e.g. the header fade-in) — stay hidden rather
+            // than flashing solid right before the staggered reveal begins.
+            scale = 0.6;
+            opacity = 0;
           } else {
             scale = filled ? 1 : 0.92;
           }
           return Padding(
+            key: widget.heartKeys?[i],
             padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Transform.scale(
-              scale: scale,
-              child: Icon(Icons.favorite,
-                  size: 24,
-                  color: isLosing
-                      ? Color.lerp(AppColors.heart, AppColors.heartEmpty, _bounceCtrl.value)!
-                      : filled
-                          ? AppColors.heart
-                          : AppColors.heartEmpty),
+            child: Opacity(
+              opacity: opacity,
+              child: Transform.scale(
+                scale: scale,
+                child: Icon(Icons.favorite,
+                    size: 24,
+                    color: isLosing
+                        ? Color.lerp(AppColors.heart, AppColors.heartEmpty, _bounceCtrl.value)!
+                        : filled
+                            ? AppColors.heart
+                            : AppColors.heartEmpty),
+              ),
             ),
           );
         }),
@@ -179,7 +228,9 @@ class ProgressBar extends StatelessWidget {
 class GameTopBar extends StatelessWidget {
   final GameController c;
   final VoidCallback onBack, onRestart;
-  const GameTopBar({super.key, required this.c, required this.onBack, required this.onRestart});
+  final List<GlobalKey>? heartKeys;
+  final bool startReveal;
+  const GameTopBar({super.key, required this.c, required this.onBack, required this.onRestart, this.heartKeys, this.startReveal = true});
 
   (String, Color) get _difficultyInfo {
     // Daily challenges have their own tier cycle (dailyTier), independent of
@@ -222,7 +273,11 @@ class GameTopBar extends StatelessWidget {
                       style: poppins(14, FontWeight.w900, color)),
                   const SizedBox(height: 4),
                 ],
-                HeartsRow(hearts: c.hearts),
+                HeartsRow(
+                    key: ValueKey('hearts_${c.loadGen}'),
+                    hearts: c.hearts,
+                    heartKeys: heartKeys,
+                    startReveal: startReveal),
               ],
             ),
           ),
