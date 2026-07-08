@@ -143,6 +143,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Tr.get('termsOfService'),
                     onTap: () => _openUrl(_termsUrl),
                   ),
+                  SettingsTile(
+                    icon: Icons.help_outline_rounded,
+                    tint: AppColors.navInk,
+                    title: Tr.get('support'),
+                    onTap: () => _openUrl(_supportUrl),
+                  ),
                 ],
               ),
             ),
@@ -243,8 +249,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  static const _privacyUrl = 'https://hkgoyani.github.io/arrows-legal/privacy-policy.html';
-  static const _termsUrl = 'https://hkgoyani.github.io/arrows-legal/terms-and-conditions.html';
+  static const _privacyUrl = 'https://xmtechnologies.in/Arrow/privacy-policy.html';
+  static const _termsUrl = 'https://xmtechnologies.in/Arrow/terms-and-conditions.html';
+  static const _supportUrl = 'https://xmtechnologies.in/Arrow/support.html';
 
   void _openUrl(String url) =>
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
