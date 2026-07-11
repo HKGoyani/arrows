@@ -13,6 +13,14 @@ class Prefs {
   static int get level => _p?.getInt('level') ?? 1;
   static Future<void> setLevel(int v) async => _p?.setInt('level', v);
 
+  // Set once the app's first-ever session ends (backgrounded/killed). Used to
+  // skip showing an App Open ad on a brand-new user's very first launch —
+  // Google's own guidance advises against that as a first impression.
+  static bool get hasCompletedFirstSession =>
+      _p?.getBool('hasCompletedFirstSession') ?? false;
+  static Future<void> setHasCompletedFirstSession(bool v) async =>
+      _p?.setBool('hasCompletedFirstSession', v);
+
   // --- settings ---
   static bool get sound => _p?.getBool('sound') ?? true;
   static Future<void> setSound(bool v) async => _p?.setBool('sound', v);

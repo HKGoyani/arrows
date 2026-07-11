@@ -198,12 +198,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (_bannerAd != null)
-            SizedBox(
-              height: _bannerAd!.size.height.toDouble(),
-              width: _bannerAd!.size.width.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            ),
           SlideTransition(
         position: Tween<Offset>(
           begin: const Offset(0, 1),
@@ -224,6 +218,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
           showCollectionBadge: Prefs.collectionUnseen || LevelLegend.hasUnseen || PerfectPlay.hasUnseen || Unstoppable.hasUnseen,
         ),
       ),
+          // Anchored collapsible banner sits below the nav bar, at the very
+          // bottom edge of the screen — matches Google's anchored-adaptive
+          // banner placement guidance.
+          if (_bannerAd != null)
+            SizedBox(
+              height: _bannerAd!.size.height.toDouble(),
+              width: _bannerAd!.size.width.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
+            ),
         ],
       ),
     );

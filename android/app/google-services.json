@@ -1,0 +1,124 @@
+{
+  "project_info": {
+    "project_number": "874636059669",
+    "project_id": "fitflow-759df",
+    "storage_bucket": "fitflow-759df.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874636059669:android:9d47b0d3c94de6fcc1da1c",
+        "android_client_info": {
+          "package_name": "com.ai.ezviz.camera.app.ezvizcamera"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGtwZwlcLFlKV0AL80KXS-3jf6GOMxvjA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874636059669:android:1871a22e74b241e3c1da1c",
+        "android_client_info": {
+          "package_name": "com.shayona.arrows"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGtwZwlcLFlKV0AL80KXS-3jf6GOMxvjA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874636059669:android:7e8da200920ae587c1da1c",
+        "android_client_info": {
+          "package_name": "com.shayona.catdoku"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGtwZwlcLFlKV0AL80KXS-3jf6GOMxvjA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874636059669:android:2399da830a02f731c1da1c",
+        "android_client_info": {
+          "package_name": "com.shayona.fitflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGtwZwlcLFlKV0AL80KXS-3jf6GOMxvjA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874636059669:android:bc34fc503b7fad79c1da1c",
+        "android_client_info": {
+          "package_name": "com.shayona.neoncrowdrunner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGtwZwlcLFlKV0AL80KXS-3jf6GOMxvjA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874636059669:android:fd0bd15373f99e4fc1da1c",
+        "android_client_info": {
+          "package_name": "online.biodatamaker.biodatamaker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGtwZwlcLFlKV0AL80KXS-3jf6GOMxvjA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

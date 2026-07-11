@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for ads + Firebase on release builds. Flutter only adds
+         INTERNET to the debug/profile manifests, so it MUST be declared here
+         or the release build has no network access (ads/analytics dead). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Advertising ID — required by Google Mobile Ads on Android 13+. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
     <application
         android:label="Arrows – Escape Puzzle"
         android:name="${applicationName}"
@@ -30,7 +36,7 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>
+        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-4818503743858431~7394089061"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

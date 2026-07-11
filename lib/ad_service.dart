@@ -34,23 +34,24 @@ class AdService {
   static const _appOpenMinGap = Duration(minutes: 1);
   static const _interstitialMinGap = Duration(seconds: 45);
 
-  // ── Ad Unit IDs ── iOS: production (Arrows – Escape Puzzle). Android: test
-  // IDs until a separate Android AdMob app/ad units are created.
+  // ── Ad Unit IDs ── production for both platforms (Arrows – Escape Puzzle).
+  // iOS AdMob app ca-app-pub-4818503743858431~5166233161; Android AdMob app
+  // ca-app-pub-4818503743858431~7394089061.
   static String get _rewardedId => Platform.isIOS
       ? 'ca-app-pub-4818503743858431/1504787383'
-      : 'ca-app-pub-3940256099942544/5224354917';
+      : 'ca-app-pub-4818503743858431/8458959963';
 
   static String get _interstitialId => Platform.isIOS
       ? 'ca-app-pub-4818503743858431/7988636380'
-      : 'ca-app-pub-3940256099942544/1033173712';
+      : 'ca-app-pub-4818503743858431/9963613329';
 
   static String get _bannerId => Platform.isIOS
       ? 'ca-app-pub-4818503743858431/1614799726'
-      : 'ca-app-pub-3940256099942544/6300978111';
+      : 'ca-app-pub-4818503743858431/6704813607';
 
   static String get _appOpenId => Platform.isIOS
       ? 'ca-app-pub-4818503743858431/3939379036'
-      : 'ca-app-pub-3940256099942544/9257395921';
+      : 'ca-app-pub-4818503743858431/1075293965';
 
   // ── Preloaded ads ──
   static RewardedAd? _rewardedAd;
@@ -383,10 +384,17 @@ class AdService {
           _appOpenAd = ad;
           // Show immediately on cold start once the first load completes —
           // init() fires this load but nothing else triggers a show at
-          // launch, only app-resume does.
+          // launch, only app-resume does. EXCEPT on a brand-new user's very
+          // first-ever launch — Google's App Open Ads guidance advises
+          // against an ad being the first thing a new user sees, so that one
+          // launch is skipped; every launch after it shows normally.
           if (!_coldStartShown) {
             _coldStartShown = true;
-            showAppOpenIfReady();
+            if (Prefs.hasCompletedFirstSession) {
+              showAppOpenIfReady();
+            } else {
+              Prefs.setHasCompletedFirstSession(true);
+            }
           }
         },
         onAdFailedToLoad: (error) => _appOpenAd = null,
