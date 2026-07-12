@@ -709,6 +709,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     width: _bannerAd!.size.width.toDouble(),
                     child: AdWidget(ad: _bannerAd!),
                   ),
+                // Half the home-indicator inset below the banner (this screen
+                // uses SafeArea(bottom: false), so nothing else protects the
+                // bottom edge) — keeps the ad clear of the gesture zone.
+                // Matches the board background since there's no nav bar here.
+                if (_bannerAd != null)
+                  Container(
+                    color: AppColors.bg,
+                    height: MediaQuery.of(context).padding.bottom * 0.5,
+                  ),
               ],
             ),
             if (_showHint && c.status == GameStatus.playing && !_isTutorial)

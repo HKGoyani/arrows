@@ -242,6 +242,19 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
               width: _bannerAd!.size.width.toDouble(),
               child: AdWidget(ad: _bannerAd!),
             ),
+          // Safe-area bottom inset only (no extra fixed padding — the inset
+          // alone is enough to keep the ad off the home-indicator edge).
+          // Colored to match the nav bar so it reads as one continuous
+          // bottom bar, not a stray gap.
+          // Half the home-indicator safe-area inset — device-adaptive (0 on
+          // older home-button phones, ~17pt on notch/Dynamic-Island phones)
+          // but tighter than the full 34pt Apple inset, which is more than
+          // the gesture zone needs. Banner sits above this, so it stays clear
+          // of the home-indicator gesture. Colored to match the nav bar.
+          Container(
+            color: AppColors.navBg,
+            height: MediaQuery.of(context).padding.bottom * 0.5,
+          ),
         ],
       ),
     );

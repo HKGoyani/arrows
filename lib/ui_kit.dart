@@ -363,8 +363,10 @@ class AppBottomNav extends StatelessWidget {
         color: AppColors.navBg,
         boxShadow: [BoxShadow(color: Color(0x0A111430), blurRadius: 14, offset: Offset(0, -4))],
       ),
-      padding: EdgeInsets.fromLTRB(
-          12, 10, 12, 10 + MediaQuery.of(context).padding.bottom),
+      // Bottom safe-area inset is added by the caller (below this widget),
+      // not here — this nav is no longer always the screen's bottom-most
+      // element (a banner ad can render after it).
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(items.length, (i) {
