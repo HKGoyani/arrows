@@ -129,17 +129,32 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   }
   late final AnimationController _navSlideCtrl;
   BannerAd? _bannerAd; // collapsible — shared across all bottom nav tabs
+  bool _bannerRequested = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _bannerAd = AdService.createBanner(collapsible: true);
     _navSlideCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
       value: 1.0,
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Anchored adaptive banner needs the screen width, which isn't reliably
+    // available until dependencies (MediaQuery) are attached — not in
+    // initState.
+    if (!_bannerRequested) {
+      _bannerRequested = true;
+      final width = MediaQuery.of(context).size.width.truncate();
+      AdService.createBanner(width: width, collapsible: true).then((ad) {
+        if (mounted) setState(() => _bannerAd = ad);
+      });
+    }
   }
 
   @override

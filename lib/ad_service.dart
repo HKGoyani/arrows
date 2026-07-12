@@ -349,23 +349,50 @@ class AdService {
   // Settings, gameplay)
   // ═══════════════════════════════════════════════════════════════════
 
-  /// Creates a banner ad widget. Caller manages the lifecycle.
-  /// [collapsible] requests AdMob's collapsible banner format, anchored to
-  /// the bottom of the screen — used on Home; other placements use a
-  /// regular fixed banner.
-  static BannerAd? createBanner({bool collapsible = false}) {
+  /// Creates an Anchored Adaptive banner ad widget — spans the full device
+  /// width and picks the best height for the device, per Google's Anchored
+  /// Adaptive Banner format (replaces the old fixed 320x50 AdSize.banner).
+  /// Caller manages the lifecycle. [collapsible] requests AdMob's collapsible
+  /// banner format on top of that — used on Home; other placements (incl.
+  /// gameplay) use a plain (non-collapsible) anchored adaptive banner.
+  /// [width] is the available width in logical pixels (e.g. from
+  /// MediaQuery), used to compute the adaptive size — required because this
+  /// call is async and must resolve before the BannerAd is constructed.
+  static Future<BannerAd?> createBanner({
+    required int width,
+    bool collapsible = false,
+  }) async {
     if (_adsRemoved) return null;
-    return BannerAd(
+    // Deliberately NOT getLargeAnchoredAdaptiveBannerAdSize — despite the
+    // name, "Large" is Google's newer jumbo format and can return a banner
+    // several times taller than a normal one (confirmed: it overflowed off
+    // the bottom of the screen in testing). getCurrentOrientationAnchored...
+    // is deprecated but still fully functional, and is the one that's
+    // actually bounded (never > 15% of screen height, never < 50px) — the
+    // correct compact anchored adaptive format for a bottom banner strip.
+    // ignore: deprecated_member_use
+    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+    if (size == null) return null;
+    final completer = Completer<BannerAd?>();
+    final ad = BannerAd(
       adUnitId: _bannerId,
-      size: AdSize.banner,
+      size: size,
       request: collapsible
           ? const AdRequest(extras: {'collapsible': 'bottom'})
           : const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (ad) => AnalyticsService.adShown('banner'),
-        onAdFailedToLoad: (ad, error) => ad.dispose(),
+        onAdLoaded: (ad) {
+          AnalyticsService.adShown('banner');
+          if (!completer.isCompleted) completer.complete(ad as BannerAd);
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          if (!completer.isCompleted) completer.complete(null);
+        },
       ),
-    )..load();
+    );
+    ad.load();
+    return completer.future;
   }
 
   // ═══════════════════════════════════════════════════════════════════

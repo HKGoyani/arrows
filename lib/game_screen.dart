@@ -85,6 +85,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _winHandled = false;
   bool _restartHidden = false;
   BannerAd? _bannerAd;
+  bool _bannerRequested = false;
 
   // "Add More Lives" reward: 3 hearts fly from the Continue dialog up to the
   // header's HeartsRow, each from its own dialog position straight to its
@@ -153,7 +154,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ..addListener(_rebuild);
     c.addListener(_rebuild);
     AdService.setPlaying(true);
-    _bannerAd = AdService.createBanner();
     AnalyticsService.levelStart(widget.level, daily: widget.isDaily);
     if (widget.isDaily) {
       // Daily boards generate on a background isolate (loadLevelAsync). The
@@ -174,6 +174,21 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       c.loadLevel(widget.level, daily: false);
       PerfectPlay.onLevelStart(widget.level);
       _resetHintTimer();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Anchored adaptive banner needs the screen width, which isn't reliably
+    // available until dependencies (MediaQuery) are attached — not in
+    // initState.
+    if (!_bannerRequested) {
+      _bannerRequested = true;
+      final width = MediaQuery.of(context).size.width.truncate();
+      AdService.createBanner(width: width).then((ad) {
+        if (mounted) setState(() => _bannerAd = ad);
+      });
     }
   }
 
