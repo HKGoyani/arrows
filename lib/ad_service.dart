@@ -361,6 +361,7 @@ class AdService {
   static Future<BannerAd?> createBanner({
     required int width,
     bool collapsible = false,
+    int maxAttempts = 4,
   }) async {
     if (_adsRemoved) return null;
     // Deliberately NOT getLargeAnchoredAdaptiveBannerAdSize — despite the
@@ -373,6 +374,26 @@ class AdService {
     // ignore: deprecated_member_use
     final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
     if (size == null) return null;
+
+    // Retry with exponential backoff: a BannerAd is single-use, so a
+    // transient no-fill on the first try would otherwise leave the slot empty
+    // for the whole session. Each retry builds a fresh BannerAd after a
+    // growing delay (2s, 4s, 8s) — bounded so we never hammer AdMob or retry
+    // a sustained no-fill forever.
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        await Future.delayed(Duration(seconds: 2 << (attempt - 1)));
+        if (_adsRemoved) return null; // user bought Remove Ads mid-wait
+      }
+      final ad = await _loadOneBanner(size, collapsible);
+      if (ad != null) return ad;
+    }
+    return null;
+  }
+
+  /// One BannerAd load attempt. Completes with the ad on success, or null on
+  /// failure (disposing the dead ad object).
+  static Future<BannerAd?> _loadOneBanner(AdSize size, bool collapsible) {
     final completer = Completer<BannerAd?>();
     final ad = BannerAd(
       adUnitId: _bannerId,

@@ -187,7 +187,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _bannerRequested = true;
       final width = MediaQuery.of(context).size.width.truncate();
       AdService.createBanner(width: width).then((ad) {
-        if (mounted) setState(() => _bannerAd = ad);
+        // The load (with retries) can take several seconds; if this screen is
+        // gone by the time it resolves, dispose the ad so it doesn't leak.
+        if (!mounted) {
+          ad?.dispose();
+          return;
+        }
+        setState(() => _bannerAd = ad);
       });
     }
   }

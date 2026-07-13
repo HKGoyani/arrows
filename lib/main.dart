@@ -152,7 +152,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
       _bannerRequested = true;
       final width = MediaQuery.of(context).size.width.truncate();
       AdService.createBanner(width: width, collapsible: true).then((ad) {
-        if (mounted) setState(() => _bannerAd = ad);
+        // The load (with retries) can take several seconds; if this shell is
+        // gone by the time it resolves, dispose the ad so it doesn't leak.
+        if (!mounted) {
+          ad?.dispose();
+          return;
+        }
+        setState(() => _bannerAd = ad);
       });
     }
   }
