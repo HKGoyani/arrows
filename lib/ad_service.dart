@@ -37,21 +37,56 @@ class AdService {
   // ── Ad Unit IDs ── production for both platforms (Arrows – Escape Puzzle).
   // iOS AdMob app ca-app-pub-4818503743858431~5166233161; Android AdMob app
   // ca-app-pub-4818503743858431~7394089061.
-  static String get _rewardedId => Platform.isIOS
-      ? 'ca-app-pub-4818503743858431/1504787383'
-      : 'ca-app-pub-4818503743858431/8458959963';
+  //
+  // Debug builds use Google's official sample test ad unit IDs instead —
+  // unlike a real ID requested from an auto-recognized test device (which
+  // still runs through real inventory/fill logic and can genuinely no-fill,
+  // as seen repeatedly during dev testing), these are hardcoded by Google to
+  // always return a placeholder ad. Zero risk to the real ad units/account —
+  // release builds are completely unaffected, still real IDs as before.
+  static String get _rewardedId {
+    if (kDebugMode) {
+      return Platform.isIOS
+          ? 'ca-app-pub-3940256099942544/1712485313'
+          : 'ca-app-pub-3940256099942544/5224354917';
+    }
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/1504787383'
+        : 'ca-app-pub-4818503743858431/8458959963';
+  }
 
-  static String get _interstitialId => Platform.isIOS
-      ? 'ca-app-pub-4818503743858431/7988636380'
-      : 'ca-app-pub-4818503743858431/9963613329';
+  static String get _interstitialId {
+    if (kDebugMode) {
+      return Platform.isIOS
+          ? 'ca-app-pub-3940256099942544/4411468910'
+          : 'ca-app-pub-3940256099942544/1033173712';
+    }
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/7988636380'
+        : 'ca-app-pub-4818503743858431/9963613329';
+  }
 
-  static String get _bannerId => Platform.isIOS
-      ? 'ca-app-pub-4818503743858431/1614799726'
-      : 'ca-app-pub-4818503743858431/6704813607';
+  static String get _bannerId {
+    if (kDebugMode) {
+      return Platform.isIOS
+          ? 'ca-app-pub-3940256099942544/2934735716'
+          : 'ca-app-pub-3940256099942544/6300978111';
+    }
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/1614799726'
+        : 'ca-app-pub-4818503743858431/6704813607';
+  }
 
-  static String get _appOpenId => Platform.isIOS
-      ? 'ca-app-pub-4818503743858431/3939379036'
-      : 'ca-app-pub-4818503743858431/1075293965';
+  static String get _appOpenId {
+    if (kDebugMode) {
+      return Platform.isIOS
+          ? 'ca-app-pub-3940256099942544/5662855259'
+          : 'ca-app-pub-3940256099942544/9257395921';
+    }
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/3939379036'
+        : 'ca-app-pub-4818503743858431/1075293965';
+  }
 
   // ── Preloaded ads ──
   static RewardedAd? _rewardedAd;
