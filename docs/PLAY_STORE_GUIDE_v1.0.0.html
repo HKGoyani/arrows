@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Play Store Submission Guide — Arrows – Escape Puzzle v1.0.0</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F9FD;
+      --card: #FFFFFF;
+      --blue: #01875F;
+      --red: #F23A5C;
+      --ink: #2B2E4F;
+      --muted: #8C90A6;
+      --border: #E7E8F3;
+      --green: #1AAB67;
+      --orange: #FF8A3D;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 0 16px 60px;
+    }
+    header {
+      text-align: center;
+      padding: 52px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    header .arrow {
+      width: 0; height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid var(--blue);
+      margin: 0 auto 14px;
+    }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; color: var(--ink); }
+    .subtitle { color: var(--muted); font-size: 13px; letter-spacing: 1px; margin-top: 8px; }
+    .updated {
+      display: inline-block; margin-top: 12px; padding: 4px 12px;
+      border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--muted);
+    }
+    .container { max-width: 880px; margin: 0 auto; }
+    nav.toc {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px 28px; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+    }
+    nav.toc h2 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+    nav.toc li { margin-bottom: 6px; break-inside: avoid; }
+    nav.toc a { color: var(--blue); text-decoration: none; font-size: 14px; }
+    nav.toc a:hover { text-decoration: underline; }
+
+    .alert {
+      background: rgba(242,58,92,0.06);
+      border: 1px solid rgba(242,58,92,0.25);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+    }
+    .alert h2 { color: var(--red); font-size: 15px; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .alert h2::before { content: '⚠'; font-size: 18px; }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+      scroll-margin-top: 20px;
+    }
+    h2 {
+      font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    h2::before { content: ''; display: block; width: 3px; height: 16px; background: var(--blue); border-radius: 2px; }
+    h3 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 18px 0 8px; }
+    p { color: #555977; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol.steps { margin-bottom: 12px; padding-left: 0; list-style: none; }
+    ul li {
+      padding: 6px 0 6px 20px; color: #555977; position: relative;
+    }
+    ul li::before { content: '›'; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+    ol.steps { counter-reset: step; }
+    ol.steps li {
+      padding: 6px 0 6px 28px; color: #555977; position: relative; counter-increment: step;
+    }
+    ol.steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 6px;
+      width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    td strong { color: var(--ink); }
+    tr.checklist td:first-child { width: 24px; }
+    code, .code {
+      background: #F1F2F8; border: 1px solid var(--border); border-radius: 6px;
+      padding: 1px 6px; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; color: var(--red);
+    }
+    pre {
+      background: #1F2236; color: #E0E4F0; border-radius: 12px; padding: 18px 20px;
+      overflow-x: auto; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; line-height: 1.6;
+      margin: 12px 0;
+    }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      padding: 2px 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle;
+    }
+    .tag-block { background: rgba(242,58,92,0.12); color: var(--red); border: 1px solid rgba(242,58,92,0.3); }
+    .tag-ok { background: rgba(26,171,103,0.12); color: var(--green); border: 1px solid rgba(26,171,103,0.3); }
+    .tag-warn { background: rgba(255,138,61,0.12); color: var(--orange); border: 1px solid rgba(255,138,61,0.3); }
+    .contact-box {
+      background: rgba(1,135,95,0.05); border: 1px solid rgba(1,135,95,0.18);
+      border-radius: 10px; padding: 16px 20px;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="arrow"></div>
+    <h1>Play Store Submission Guide</h1>
+    <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.0</p>
+    <span class="updated">Last reviewed against codebase: July 13, 2026</span>
+  </header>
+
+  <div class="container">
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#critical">Critical — must fix before submission</a></li>
+        <li><a href="#info">1. App Information</a></li>
+        <li><a href="#devices">2. Device &amp; Platform Support</a></li>
+        <li><a href="#icon">3. App Icon &amp; Store Graphics</a></li>
+        <li><a href="#screenshots">4. Screenshots &amp; Feature Graphic</a></li>
+        <li><a href="#listing">5. Play Store Listing Copy</a></li>
+        <li><a href="#datasafety">6. Data Safety</a></li>
+        <li><a href="#pricing">7. Pricing &amp; Distribution</a></li>
+        <li><a href="#iap">8. In-App Products</a></li>
+        <li><a href="#ads">9. Ads Declaration</a></li>
+        <li><a href="#rating">10. Content Rating (IARC)</a></li>
+        <li><a href="#audience">11. Target Audience &amp; App Content</a></li>
+        <li><a href="#signing">12. Play App Signing</a></li>
+        <li><a href="#review">13. Notes for Reviewers</a></li>
+        <li><a href="#checklist">14. Build &amp; Release Checklist</a></li>
+        <li><a href="#tracks">15. Release Tracks</a></li>
+        <li><a href="#links">16. Reference Links</a></li>
+      </ol>
+    </nav>
+
+    <div class="alert" id="critical">
+      <h2>Critical — must fix before submission</h2>
+      <p>Updated 2026-07-13 — all app-side technical work (ad IDs, Firebase, signing) is done and verified. What's left is entirely Play Console-side setup: creating the app listing, filling out the compliance questionnaires, and producing Play-specific graphic assets.</p>
+      <table>
+        <tr><th>Item</th><th>Status</th><th>Detail</th></tr>
+        <tr>
+          <td><strong>Play Console app entry</strong></td>
+          <td><span class="tag tag-block">PENDING</span></td>
+          <td>App has not yet been created in <a href="https://play.google.com/console" target="_blank">Google Play Console</a></td>
+        </tr>
+        <tr>
+          <td><strong>AdMob App ID &amp; Ad Unit IDs</strong></td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Production Android App ID <code>ca-app-pub-4818503743858431~7394089061</code> set in <code>AndroidManifest.xml</code>; all 4 formats (rewarded, interstitial, banner, app open) use production IDs in <code>lib/ad_service.dart</code></td>
+        </tr>
+        <tr>
+          <td><strong>Firebase / google-services.json</strong></td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td><code>android/app/google-services.json</code> present, project <code>fitflow-759df</code>, google-services Gradle plugin wired</td>
+        </tr>
+        <tr>
+          <td><strong>Release signing</strong></td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Upload keystore generated at <code>~/arrows-upload-keystore.jks</code> (alias <code>upload</code>), wired via gitignored <code>android/key.properties</code>. Signed release AAB built and verified</td>
+        </tr>
+        <tr>
+          <td><strong>Feature Graphic (1024×500)</strong></td>
+          <td><span class="tag tag-block">PENDING</span></td>
+          <td>Play-only requirement, no iOS equivalent — not yet created</td>
+        </tr>
+        <tr>
+          <td><strong>Play Store phone screenshots</strong></td>
+          <td><span class="tag tag-block">PENDING</span></td>
+          <td>Need at least 2 (Play accepts a wider range of aspect ratios than Apple — existing iOS captures can likely be reused)</td>
+        </tr>
+        <tr>
+          <td><strong>Adaptive icon</strong></td>
+          <td><span class="tag tag-warn">WARN</span></td>
+          <td>Only legacy square <code>ic_launcher.png</code> exists per density in <code>android/app/src/main/res/mipmap-*</code> — no adaptive foreground/background layers. App still installs and runs fine (Android renders legacy icons on all API levels), but a 512×512 hi-res icon must still be uploaded separately to the Play Store listing itself, and an adaptive icon is recommended for a polished look on modern launchers</td>
+        </tr>
+        <tr>
+          <td><strong><code>remove_ads</code> Play Billing product</strong></td>
+          <td><span class="tag tag-block">PENDING</span></td>
+          <td>Managed in-app product must be created in Play Console → Monetize → Products, ID must exactly match <code>IapService.removeAdsId</code></td>
+        </tr>
+        <tr>
+          <td><strong>Data Safety form</strong></td>
+          <td><span class="tag tag-block">PENDING</span></td>
+          <td>Not yet filled out — see Section 6</td>
+        </tr>
+        <tr>
+          <td><strong>Content rating (IARC questionnaire)</strong></td>
+          <td><span class="tag tag-block">PENDING</span></td>
+          <td>Not yet completed — see Section 10</td>
+        </tr>
+        <tr>
+          <td><strong>AdMob test-device registration</strong></td>
+          <td><span class="tag tag-warn">WARN</span></td>
+          <td>No <code>testDeviceIds</code>/<code>updateRequestConfiguration</code> wired yet — tapping real ads repeatedly on a physical test device risks an AdMob invalid-traffic strike. Register test devices before doing manual QA on hardware</td>
+        </tr>
+      </table>
+    </div>
+
+    <section id="info">
+      <h2>1. App Information</h2>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>App Name</td><td><strong>Arrows – Escape Puzzle</strong></td></tr>
+        <tr><td>Package name (Application ID)</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>Default language</td><td>English (United States)</td></tr>
+        <tr><td>App or game</td><td>Game</td></tr>
+        <tr><td>Category</td><td>Puzzle</td></tr>
+        <tr><td>Version name</td><td>1.0.0</td></tr>
+        <tr><td>Version code</td><td>2</td></tr>
+        <tr><td>Free or paid</td><td>Free</td></tr>
+        <tr><td>Contains ads</td><td>Yes (see Section 9)</td></tr>
+        <tr><td>Play Console developer account</td><td>Not yet created / app not yet added <span class="tag tag-block">PENDING</span></td></tr>
+      </table>
+    </section>
+
+    <section id="devices">
+      <h2>2. Device &amp; Platform Support</h2>
+      <table>
+        <tr><th>Setting</th><th>Value</th><th>Where it's set</th></tr>
+        <tr>
+          <td>Minimum SDK</td>
+          <td><strong>24</strong> (Android 7.0 Nougat)</td>
+          <td>Flutter-managed default (<code>flutter.minSdkVersion</code>) in <code>android/app/build.gradle.kts</code> — not overridden in this project</td>
+        </tr>
+        <tr>
+          <td>Target SDK</td>
+          <td><strong>36</strong> (Android 16)</td>
+          <td>Flutter-managed default (<code>flutter.targetSdkVersion</code>) — meets Play's current target-API requirement for new/updated apps</td>
+        </tr>
+        <tr>
+          <td>Compile SDK</td>
+          <td><strong>36</strong></td>
+          <td>Flutter-managed default (<code>flutter.compileSdkVersion</code>)</td>
+        </tr>
+        <tr>
+          <td>Orientation</td>
+          <td>Portrait only</td>
+          <td><code>SystemChrome.setPreferredOrientations</code> in <code>lib/main.dart</code></td>
+        </tr>
+        <tr>
+          <td>Device form factors</td>
+          <td>Phone (Tablet layout not specifically optimized — Play will still list it for tablets unless excluded)</td>
+          <td>No tablet-specific UI in this codebase</td>
+        </tr>
+      </table>
+      <p>Because SDK levels come from Flutter's own defaults rather than a hardcoded number in this project, they auto-advance whenever the installed Flutter SDK is upgraded — re-check this table after any Flutter upgrade.</p>
+    </section>
+
+    <section id="icon">
+      <h2>3. App Icon &amp; Store Graphics</h2>
+      <table>
+        <tr><th>Asset</th><th>Requirement</th><th>Status</th></tr>
+        <tr><td>Launcher icon (legacy)</td><td><code>ic_launcher.png</code> per density bucket</td><td><span class="tag tag-ok">PRESENT</span> in <code>mipmap-mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi</code></td></tr>
+        <tr><td>Adaptive icon (foreground + background layers)</td><td><code>mipmap-anydpi-v26/ic_launcher.xml</code> + separate layer drawables</td><td><span class="tag tag-warn">MISSING</span> — optional but recommended; legacy icon still renders correctly on all supported API levels</td></tr>
+        <tr><td>Hi-res store icon</td><td>512×512 PNG (32-bit, with alpha), uploaded directly to Play Console listing — distinct from the in-app launcher icon</td><td><span class="tag tag-block">PENDING</span> — export from the same master art used for <code>assets/icon/app_icon_master.png</code></td></tr>
+      </table>
+      <p>Design: black arrows (one up, two left) with a red diagonal "ESCAPE" banner — same artwork as the iOS icon, exported at Play's required sizes.</p>
+    </section>
+
+    <section id="screenshots">
+      <h2>4. Screenshots &amp; Feature Graphic</h2>
+      <p><span class="tag tag-block">PENDING</span> Not yet captured or uploaded for Play. Requirements differ from App Store Connect:</p>
+      <table>
+        <tr><th>Asset</th><th>Spec</th><th>Notes</th></tr>
+        <tr><td>Phone screenshots</td><td>Min 2, max 8 &middot; JPEG/24-bit PNG (no alpha) &middot; each side between 320px–3840px &middot; max side ≤ 2× min side</td><td>Portrait captures from an emulator/device work directly — Play is far less strict on exact device-class sizing than Apple</td></tr>
+        <tr><td>Feature Graphic</td><td><strong>1024×500</strong>, JPEG/24-bit PNG (no alpha)</td><td>Play-only requirement, no App Store equivalent — shown at the top of the store listing and in some promotional placements. Not yet created</td></tr>
+        <tr><td>Hi-res icon</td><td>512×512 (see Section 3)</td><td>Required alongside screenshots for listing to be publishable</td></tr>
+        <tr><td>Promo video (optional)</td><td>YouTube URL</td><td>Not planned for v1.0.0</td></tr>
+      </table>
+      <h3>Recommended shots (reuse iOS set where framing works)</h3>
+      <ul>
+        <li>Home screen with Play button and streak</li>
+        <li>Mid-game board (Hard or Super Hard tier, visually dense)</li>
+        <li>Win celebration screen</li>
+        <li>Daily Challenge calendar screen</li>
+        <li>Collection screen (badges/records)</li>
+        <li>Dark mode variant of one of the above</li>
+        <li>A shaped-level board (heart, star, or peach) for visual variety</li>
+      </ul>
+      <p>Capture with an Android emulator (<code>flutter run</code> on a Pixel AVD, then Android Studio's screenshot tool) or a physical device.</p>
+    </section>
+
+    <section id="listing">
+      <h2>5. Play Store Listing Copy</h2>
+
+      <div class="alert" style="margin-bottom:20px;">
+        <h2 style="color:var(--orange);">ASO note — no Keywords field on Play</h2>
+        <p>Unlike App Store Connect, Google Play has <strong>no separate keywords field</strong>. Play's search algorithm indexes the app title, short description, and full description text directly — so, unlike the iOS listing, natural keyword density inside the description itself matters here and phrases shouldn't be needlessly avoided just because they appear elsewhere.</p>
+      </div>
+
+      <h3>App name (30 char max)</h3>
+      <p>Arrows – Escape Puzzle <span class="tag tag-ok">23/30</span></p>
+
+      <h3>Short description (80 char max)</h3>
+      <p>Calm daily logic puzzle — slide arrows free, clear the board, no timers.</p>
+
+      <h3>Full description (4000 char max)</h3>
+      <pre>Arrows – Escape Puzzle is a calm, satisfying logic puzzle: tap an arrow,
+watch it slide free if the path is clear, or turn red if it's blocked.
+Clear the whole board to win — no timers, no pressure, just you and
+the puzzle.
+
+HOW TO PLAY
+• Tap any arrow to fire it off the board
+• A clear path means it flies free
+• A blocked path costs you a life — you have 3
+• Clear every arrow to win the level
+
+FEATURES
+• Hundreds of procedurally generated levels that scale in difficulty
+• Four difficulty tiers: Normal, Hard, Super Hard, and Nightmare
+• Daily Challenges with their own streak and trophy calendar
+• Track your longest streak, best win streak, and most wins in a day
+• Unlock Level Legend, Perfect Play, and Unstoppable badges
+• Specially shaped boards (circle, heart, star, and more) at milestone levels
+• Free hints, with extra hints available any time
+• Full dark mode support
+• Available in 10 languages
+
+Arrows – Escape Puzzle is free to play, with optional ads and a
+one-time Remove Ads purchase for an uninterrupted experience.</pre>
+
+      <h3>Tags (up to 5, chosen from Play's predefined list)</h3>
+      <p>Set in Play Console → Grow users → Store presence → Store settings → Manage tags (separate from the Category field). Tags feed Explore results and peer-group benchmarking — unlike Apple's free-text Keywords field, Play only allows picking from its own curated list, so tags below use Play's exact tag names.</p>
+      <table>
+        <tr><th>Tag</th><th>Why it fits</th></tr>
+        <tr><td><code>Puzzle</code></td><td>Primary genre — the obvious, highest-relevance tag</td></tr>
+        <tr><td><code>Logic puzzle</code></td><td>Core mechanic is pure logic (path-clearing), no reflex/time pressure</td></tr>
+        <tr><td><code>Sliding puzzle</code></td><td>Literal mechanic — arrows slide off the board when a path is clear</td></tr>
+        <tr><td><code>Brain teaser</code></td><td>Matches the "calm, satisfying logic puzzle" positioning used in the store description</td></tr>
+        <tr><td><code>Casual</code></td><td>No timers, no pressure, short sessions — fits Play's casual-games audience</td></tr>
+      </table>
+      <p><span class="tag tag-block">PENDING</span> Not yet set in Play Console — apply once the app entry exists (Section 1).</p>
+
+      <h3>URLs</h3>
+      <table>
+        <tr><td>Privacy Policy URL (required)</td><td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a></td></tr>
+        <tr><td>Support / contact URL</td><td><a href="https://xmtechnologies.in/Arrow/support.html" target="_blank">xmtechnologies.in/Arrow/support.html</a></td></tr>
+        <tr><td>Marketing URL (optional)</td><td><a href="https://xmtechnologies.in/Arrow/index.html" target="_blank">xmtechnologies.in/Arrow/index.html</a></td></tr>
+      </table>
+    </section>
+
+    <section id="datasafety">
+      <h2>6. Data Safety</h2>
+      <p>Play's Data Safety form is a structured questionnaire — distinct from the privacy policy webpage — filled out in Play Console → App content → Data safety. Answer based on the actual implementation:</p>
+      <table>
+        <tr><th>Data Type</th><th>Collected?</th><th>Shared?</th><th>Purpose</th></tr>
+        <tr><td>Device or other IDs (Advertising ID)</td><td>Yes</td><td>Yes (with AdMob)</td><td>Advertising or marketing</td></tr>
+        <tr><td>App interactions / usage data</td><td>Yes</td><td>No</td><td>Analytics — via Firebase Analytics: level_start, level_win, level_lose, level_restart, hint_used, daily_challenge_complete, streak_extended, ad_shown, purchase_remove_ads</td></tr>
+        <tr><td>Purchase history</td><td>Yes</td><td>No</td><td>App functionality — product ID only, no payment details (processed by Google Play Billing)</td></tr>
+        <tr><td>Personal info, Financial info, Health/Fitness, Location, Photos/Videos, Contacts, Messages</td><td>No</td><td>—</td><td>App collects none of these</td></tr>
+      </table>
+      <p><strong>Data encrypted in transit:</strong> Yes — all network calls (Firebase, AdMob, Play Billing) use standard OS-provided HTTPS.</p>
+      <p><strong>Data deletion:</strong> No account system exists, so there is no server-side user data to delete. All gameplay progress is stored locally on-device only.</p>
+      <p>Full policy text: <a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a></p>
+    </section>
+
+    <section id="pricing">
+      <h2>7. Pricing &amp; Distribution</h2>
+      <table>
+        <tr><th>Setting</th><th>Value</th></tr>
+        <tr><td>App price</td><td>Free</td></tr>
+        <tr><td>Countries/regions</td><td>All available countries (or restrict as desired)</td></tr>
+        <tr><td>Contains ads</td><td>Yes — must be declared (see Section 9)</td></tr>
+        <tr><td>In-app products</td><td>Yes — <code>remove_ads</code> (see Section 8)</td></tr>
+        <tr><td>Android export/Play for Families</td><td>Not opted in — app is not primarily child-directed</td></tr>
+      </table>
+    </section>
+
+    <section id="iap">
+      <h2>8. In-App Products</h2>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Product name</td><td>Remove Ads</td></tr>
+        <tr><td>Product ID</td><td><code>remove_ads</code></td></tr>
+        <tr><td>Type</td><td>Managed product (one-time, non-consumable)</td></tr>
+        <tr><td>Purchase option ID</td><td><code>remove-ads-buy</code></td></tr>
+        <tr><td>Purchase type</td><td>Buy (not Rent)</td></tr>
+        <tr><td>Price</td><td>$3.99 USD (Google auto-converts to other currencies)</td></tr>
+        <tr><td>Description</td><td>Remove all fullscreen ads between levels. Life refill and Hint ads will still be available.</td></tr>
+      </table>
+      <p>Play's current one-time product model requires at least one <strong>purchase option</strong> nested under the product — this is separate from the Product ID and is what actually carries the price/region/purchase-type config. Its ID follows the same format as subscription base plan IDs: lowercase letters, numbers, and hyphens only (no underscores), max 63 characters, must start with a letter or number. <code>remove-ads-buy</code> is proposed here (hyphenated, since the Product ID <code>remove_ads</code> already uses the underscore form and the two IDs must be visually distinguishable). The <code>in_app_purchase</code> Flutter package only needs the Product ID to query and purchase — the purchase option ID is a Play Console configuration detail and isn't referenced anywhere in <code>lib/iap_service.dart</code>.</p>
+      <h3>Setup steps in Play Console</h3>
+      <ol class="steps">
+        <li>Go to <strong>Monetize → Products → In-app products → Create product</strong></li>
+        <li>Enter Product ID <code>remove_ads</code> (must exactly match <code>IapService.removeAdsId</code> in <code>lib/iap_service.dart</code>)</li>
+        <li>Add the name/description above</li>
+        <li>Under the product, add a purchase option with ID <code>remove-ads-buy</code>, type <strong>Buy</strong>, set price to $3.99 USD equivalent and regional availability (worldwide)</li>
+        <li>Activate the product</li>
+        <li>Purchases can only be tested once the app is uploaded to at least the Internal testing track and the tester account is added as a license tester</li>
+      </ol>
+      <p>This uses the <code>in_app_purchase</code> Flutter package with Google Play Billing on Android — the same package already used for the iOS StoreKit integration, so no separate IAP code path was needed.</p>
+    </section>
+
+    <section id="ads">
+      <h2>9. Ads Declaration</h2>
+      <p>The app shows ads via <strong>Google AdMob</strong> in 4 formats — declare "Yes, my app contains ads" in Play Console → App content → Ads:</p>
+      <table>
+        <tr><th>Format</th><th>Trigger</th></tr>
+        <tr><td>Rewarded</td><td>Hint (after 5 free hints), Add More Lives (lose screen)</td></tr>
+        <tr><td>Interstitial</td><td>Every 3rd level win, level restart, daily challenge complete</td></tr>
+        <tr><td>Banner</td><td>Bottom of Home, Challenge, Collection, Settings tabs (Anchored Adaptive format; collapsible on Home, fixed on gameplay)</td></tr>
+        <tr><td>App Open</td><td>App resume from background / cold start (never during active gameplay, and suppressed on the very first session)</td></tr>
+      </table>
+      <p>All ads can be permanently disabled (except rewarded, which is opt-in) via the <strong>Remove Ads</strong> IAP. Google UMP SDK consent flow (GDPR/US States) runs before any ad request, matching the iOS implementation.</p>
+    </section>
+
+    <section id="rating">
+      <h2>10. Content Rating (IARC)</h2>
+      <p>Play Console → App content → Content ratings launches the IARC questionnaire (a different flow from Apple's, but same underlying answers — the game has no objectionable content of any kind):</p>
+      <table>
+        <tr><th>Category</th><th>Answer</th></tr>
+        <tr><td>Violence</td><td>None</td></tr>
+        <tr><td>Sexuality</td><td>None</td></tr>
+        <tr><td>Language / crude humor</td><td>None</td></tr>
+        <tr><td>Controlled substances</td><td>None</td></tr>
+        <tr><td>Gambling (simulated)</td><td>No</td></tr>
+        <tr><td>User-generated content / chat</td><td>No</td></tr>
+        <tr><td>Shares location</td><td>No</td></tr>
+        <tr><td>Digital purchases</td><td>Yes — Remove Ads, fixed price, non-randomized (not a loot box)</td></tr>
+      </table>
+      <p>Expected result: <strong>Everyone / PEGI 3</strong> equivalent across all rating boards.</p>
+    </section>
+
+    <section id="audience">
+      <h2>11. Target Audience &amp; App Content</h2>
+      <table>
+        <tr><th>Setting</th><th>Value</th><th>Notes</th></tr>
+        <tr><td>Target age group</td><td>13 and over</td><td>Because the app shows ads and is not designed/marketed for children, it should not be marked primarily child-directed; avoids the stricter Play Families Policy requirements</td></tr>
+        <tr><td>Appeal to children</td><td>No</td><td>Cartoon-style but not specifically marketed to kids</td></tr>
+        <tr><td>News app</td><td>No</td><td>—</td></tr>
+        <tr><td>COVID-19 contact tracing / status app</td><td>No</td><td>—</td></tr>
+        <tr><td>Government app</td><td>No</td><td>—</td></tr>
+        <tr><td>Financial features</td><td>No</td><td>—</td></tr>
+        <tr><td>Health app</td><td>No</td><td>—</td></tr>
+        <tr><td>App access</td><td>All functionality available without special access</td><td>No login/account required — reviewers can access the entire app immediately from a fresh install</td></tr>
+      </table>
+    </section>
+
+    <section id="signing">
+      <h2>12. Play App Signing</h2>
+      <p><span class="tag tag-ok">READY TO ENROLL</span> Play App Signing is Google's recommended (and, for new apps, effectively required) signing model: you upload an AAB signed with your <em>upload key</em>, and Google re-signs the distributed APK with a separate <em>app signing key</em> it manages and stores securely.</p>
+      <table>
+        <tr><th>Detail</th><th>Value</th></tr>
+        <tr><td>Upload keystore</td><td><code>~/arrows-upload-keystore.jks</code></td></tr>
+        <tr><td>Key alias</td><td><code>upload</code></td></tr>
+        <tr><td>Algorithm</td><td>RSA 2048</td></tr>
+        <tr><td>Validity</td><td>10,000 days</td></tr>
+        <tr><td>SHA-256 fingerprint</td><td><code>FB:87:13:8B:61:90:2E:6F:4C:3D:33:BD:50:05:71:F1:A3:D3:FF:F6:A0:20:68:84:3E:E5:F7:3D:13:65:83:03</code></td></tr>
+        <tr><td>Distinguished Name</td><td><code>CN=Arrows Escape Puzzle, OU=Shayona, O=Shayona, L=NA, ST=NA, C=IN</code></td></tr>
+      </table>
+      <p>On first AAB upload, Play Console will prompt to opt in to Play App Signing and accept the upload key's certificate — accept it. Keep the keystore and its password (<code>android/key.properties</code>, gitignored) backed up somewhere safe outside this repo; losing the upload key means future updates can no longer be published under this listing without going through Google's account-recovery process.</p>
+    </section>
+
+    <section id="review">
+      <h2>13. Notes for Reviewers</h2>
+      <p>Play Console doesn't have a dedicated "review notes" text field like App Store Connect, but the same information should go in the <strong>App access</strong> section (for anything requiring special instructions) and can be referenced if Google's review team reaches out:</p>
+      <pre>Arrows – Escape Puzzle is a single-player offline puzzle game. No login
+or account is required to play — all functionality is available
+immediately from a fresh install.
+
+- All gameplay progress is stored locally on-device (no server backend).
+- Ads are served via Google AdMob using production ad units, gated by
+  a Google UMP consent flow (GDPR/US States) shown before any ad request.
+- One in-app purchase: "Remove Ads" ($3.99, managed product, product ID
+  remove_ads) disables banner/interstitial/app-open ads. Rewarded ads
+  (opt-in, for hints/extra lives) remain available even after purchase
+  by design — this is disclosed in the purchase description shown to
+  users in Settings.
+- Firebase Analytics is used for anonymous, aggregated usage events only
+  (no PII collected).
+- No account creation, no chat, no user-generated content, no web view
+  with unrestricted browsing.
+
+Test path: tap Play on the Home screen to start Level 1 (tutorial),
+or tap an in-progress level number to continue.</pre>
+    </section>
+
+    <section id="checklist">
+      <h2>14. Build &amp; Release Checklist</h2>
+      <ul>
+        <li><span class="tag tag-ok">DONE</span> Swap Android AdMob App ID → production in <code>AndroidManifest.xml</code></li>
+        <li><span class="tag tag-ok">DONE</span> Swap all 4 Android ad unit IDs → production in <code>lib/ad_service.dart</code></li>
+        <li><span class="tag tag-ok">DONE</span> Add <code>INTERNET</code> and <code>AD_ID</code> permissions to the main (release) manifest</li>
+        <li><span class="tag tag-ok">DONE</span> Wire <code>google-services.json</code> + Google Services Gradle plugin</li>
+        <li><span class="tag tag-ok">DONE</span> Configure release signing (<code>key.properties</code> → <code>signingConfigs.release</code>)</li>
+        <li><span class="tag tag-ok">DONE</span> Confirm <code>pubspec.yaml</code> version is <code>1.0.0+2</code></li>
+        <li><span class="tag tag-ok">DONE</span> Build signed release AAB and verify signature (not debug-signed)</li>
+        <li><span class="tag tag-block">PENDING</span> Create app entry in Play Console</li>
+        <li><span class="tag tag-block">PENDING</span> Create <code>remove_ads</code> managed product in Play Console</li>
+        <li><span class="tag tag-block">PENDING</span> Produce Feature Graphic (1024×500) and 512×512 hi-res icon</li>
+        <li><span class="tag tag-block">PENDING</span> Capture and upload Play Store phone screenshots</li>
+        <li><span class="tag tag-block">PENDING</span> Complete Data Safety form (Section 6)</li>
+        <li><span class="tag tag-block">PENDING</span> Complete IARC content rating questionnaire (Section 10)</li>
+        <li><span class="tag tag-warn">RECOMMENDED</span> Register physical test devices in AdMob before manual QA on hardware, to avoid invalid-traffic risk on production ad units</li>
+        <li>Run <code>flutter build appbundle --release</code> to produce the final AAB</li>
+        <li>Test the release build on a <strong>real device</strong>, sideloaded or via Internal testing track — confirm ads load, GDPR/UMP consent form appears where applicable, and the Remove Ads purchase flow completes end-to-end with a license tester account</li>
+        <li>Upload the AAB to the Internal testing track first, opt in to Play App Signing</li>
+        <li>Promote through Closed → Open testing (optional) → Production once verified</li>
+      </ul>
+    </section>
+
+    <section id="tracks">
+      <h2>15. Release Tracks</h2>
+      <p>Play Console supports a staged rollout — recommended path for this first release:</p>
+      <table>
+        <tr><th>Track</th><th>Purpose</th><th>Review required</th></tr>
+        <tr><td>Internal testing</td><td>Up to 100 testers, near-instant availability — use this to verify the signed AAB, ads, and purchase flow end-to-end before wider release</td><td>No</td></tr>
+        <tr><td>Closed testing</td><td>Larger invite-only group, optional</td><td>Yes (standard review)</td></tr>
+        <tr><td>Open testing</td><td>Public opt-in beta, optional</td><td>Yes (standard review)</td></tr>
+        <tr><td>Production</td><td>Full public release</td><td>Yes (standard review)</td></tr>
+      </table>
+      <p>A new app's first production release also triggers Google's standard app review, which can take longer than subsequent update reviews — plan submission timing accordingly.</p>
+    </section>
+
+    <section id="links">
+      <h2>16. Reference Links</h2>
+      <table>
+        <tr><th>Resource</th><th>Value</th></tr>
+        <tr><td>Privacy Policy</td><td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a></td></tr>
+        <tr><td>Terms &amp; Conditions</td><td><a href="https://xmtechnologies.in/Arrow/terms-and-conditions.html" target="_blank">xmtechnologies.in/Arrow/terms-and-conditions.html</a></td></tr>
+        <tr><td>Support page</td><td><a href="https://xmtechnologies.in/Arrow/support.html" target="_blank">xmtechnologies.in/Arrow/support.html</a></td></tr>
+        <tr><td>Support email</td><td><a href="mailto:akashmangukiya10@gmail.com">akashmangukiya10@gmail.com</a></td></tr>
+        <tr><td>Package name</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>AdMob Android App ID</td><td><code>ca-app-pub-4818503743858431~7394089061</code></td></tr>
+        <tr><td>AdMob rewarded unit (Android)</td><td><code>ca-app-pub-4818503743858431/8458959963</code></td></tr>
+        <tr><td>AdMob interstitial unit (Android)</td><td><code>ca-app-pub-4818503743858431/9963613329</code></td></tr>
+        <tr><td>AdMob banner unit (Android)</td><td><code>ca-app-pub-4818503743858431/6704813607</code></td></tr>
+        <tr><td>AdMob app open unit (Android)</td><td><code>ca-app-pub-4818503743858431/1075293965</code></td></tr>
+        <tr><td>Firebase project</td><td>fitflow-759df</td></tr>
+        <tr><td>Upload keystore</td><td><code>~/arrows-upload-keystore.jks</code> (back this up — loss blocks future updates)</td></tr>
+        <tr><td>Signed release AAB</td><td><code>build/app/outputs/bundle/release/app-release.aab</code></td></tr>
+      </table>
+    </section>
+
+  </div>
+
+  <footer>
+    &copy; 2026 Shayona. Internal submission guide — not for distribution.
+  </footer>
+</body>
+</html>
