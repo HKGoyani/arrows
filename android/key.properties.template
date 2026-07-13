@@ -1,0 +1,12 @@
+# Release signing config — copy this file to `key.properties` (same folder)
+# and fill in your real values. `key.properties` is gitignored, so it never
+# gets committed. Do NOT put real secrets in this .template file.
+#
+# storeFile: absolute path to your upload keystore .jks
+# storePassword / keyPassword: the passwords you chose when running keytool
+# keyAlias: the -alias you passed to keytool (e.g. "upload")
+
+storePassword=YOUR_KEYSTORE_PASSWORD_HERE
+keyPassword=YOUR_KEY_PASSWORD_HERE
+keyAlias=upload
+storeFile=/absolute/path/to/arrows-upload-keystore.jks
