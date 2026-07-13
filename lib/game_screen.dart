@@ -86,6 +86,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _restartHidden = false;
   BannerAd? _bannerAd;
   bool _bannerRequested = false;
+  AdSize? _bannerSize; // reserved as soon as known, before the ad itself loads
 
   // "Add More Lives" reward: 3 hearts fly from the Continue dialog up to the
   // header's HeartsRow, each from its own dialog position straight to its
@@ -186,6 +187,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (!_bannerRequested) {
       _bannerRequested = true;
       final width = MediaQuery.of(context).size.width.truncate();
+      // Reserve the banner's exact space as soon as the size is known (fast,
+      // local — no ad request) so the board's available area settles into
+      // its final size immediately, instead of jumping once the ad itself
+      // finishes loading (which can take several seconds, longer with
+      // retries).
+      AdService.bannerSizeFor(width).then((size) {
+        if (mounted && size != null) setState(() => _bannerSize = size);
+      });
       AdService.createBanner(width: width).then((ad) {
         // The load (with retries) can take several seconds; if this screen is
         // gone by the time it resolves, dispose the ad so it doesn't leak.
@@ -714,12 +723,22 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     height: _bannerAd!.size.height.toDouble(),
                     width: _bannerAd!.size.width.toDouble(),
                     child: AdWidget(ad: _bannerAd!),
+                  )
+                else if (_bannerSize != null)
+                  // Space reserved as soon as the size is known, before the
+                  // ad itself finishes loading, and kept reserved even if the
+                  // load ultimately fails — collapsing it back would just
+                  // trade one layout shift for another.
+                  Container(
+                    color: AppColors.bg,
+                    height: _bannerSize!.height.toDouble(),
+                    width: _bannerSize!.width.toDouble(),
                   ),
                 // Half the home-indicator inset below the banner (this screen
                 // uses SafeArea(bottom: false), so nothing else protects the
                 // bottom edge) — keeps the ad clear of the gesture zone.
                 // Matches the board background since there's no nav bar here.
-                if (_bannerAd != null)
+                if (_bannerAd != null || _bannerSize != null)
                   Container(
                     color: AppColors.bg,
                     height: MediaQuery.of(context).padding.bottom * 0.5,
@@ -795,8 +814,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             if (!_isTutorial)
               Positioned(
               right: 24,
-              bottom: 10 + MediaQuery.of(context).padding.bottom +
-                  (_bannerAd?.size.height.toDouble() ?? 0),
+              // Uses _bannerSize (reserved as soon as it's known) rather than
+              // _bannerAd (only set once the ad actually loads) so the button
+              // sits above the banner's space immediately, not just after the
+              // ad finishes loading. The *0.5 matches the actual safe-area
+              // gap rendered below the banner (see the Container after it).
+              bottom: 10 + (MediaQuery.of(context).padding.bottom * 0.5) +
+                  (_bannerSize?.height.toDouble() ?? 0),
               child: AnimatedBuilder(
                 animation: _heartCtrl,
                 builder: (_, child) => Opacity(

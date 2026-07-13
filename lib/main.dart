@@ -130,6 +130,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   late final AnimationController _navSlideCtrl;
   BannerAd? _bannerAd; // collapsible — shared across all bottom nav tabs
   bool _bannerRequested = false;
+  AdSize? _bannerSize; // reserved as soon as known, before the ad itself loads
 
   @override
   void initState() {
@@ -151,6 +152,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
     if (!_bannerRequested) {
       _bannerRequested = true;
       final width = MediaQuery.of(context).size.width.truncate();
+      // Reserve the banner's exact space as soon as the size is known (fast,
+      // local — no ad request) so the nav bar settles into its final
+      // position immediately, instead of jumping once the ad itself finishes
+      // loading (which can take several seconds, longer with retries).
+      AdService.bannerSizeFor(width).then((size) {
+        if (mounted && size != null) setState(() => _bannerSize = size);
+      });
       AdService.createBanner(width: width, collapsible: true).then((ad) {
         // The load (with retries) can take several seconds; if this shell is
         // gone by the time it resolves, dispose the ad so it doesn't leak.
@@ -241,12 +249,21 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
       ),
           // Anchored collapsible banner sits below the nav bar, at the very
           // bottom edge of the screen — matches Google's anchored-adaptive
-          // banner placement guidance.
+          // banner placement guidance. Space is reserved (empty) as soon as
+          // the size is known, before the ad itself finishes loading, and
+          // kept reserved even if the load ultimately fails — collapsing it
+          // back would just trade one layout shift for another.
           if (_bannerAd != null)
             SizedBox(
               height: _bannerAd!.size.height.toDouble(),
               width: _bannerAd!.size.width.toDouble(),
               child: AdWidget(ad: _bannerAd!),
+            )
+          else if (_bannerSize != null)
+            Container(
+              color: AppColors.navBg,
+              height: _bannerSize!.height.toDouble(),
+              width: _bannerSize!.width.toDouble(),
             ),
           // Safe-area bottom inset only (no extra fixed padding — the inset
           // alone is enough to keep the ad off the home-indicator edge).

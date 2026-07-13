@@ -358,12 +358,12 @@ class AdService {
   /// [width] is the available width in logical pixels (e.g. from
   /// MediaQuery), used to compute the adaptive size — required because this
   /// call is async and must resolve before the BannerAd is constructed.
-  static Future<BannerAd?> createBanner({
-    required int width,
-    bool collapsible = false,
-    int maxAttempts = 4,
-  }) async {
-    if (_adsRemoved) return null;
+  /// Computes the Anchored Adaptive banner size for [width] — a fast, local
+  /// calculation (no ad request), safe to call before the actual ad is ready.
+  /// Callers use this to reserve the banner's exact layout space immediately,
+  /// instead of the surrounding UI jumping when the ad itself finishes
+  /// loading (which can take several seconds, longer still with retries).
+  static Future<AdSize?> bannerSizeFor(int width) {
     // Deliberately NOT getLargeAnchoredAdaptiveBannerAdSize — despite the
     // name, "Large" is Google's newer jumbo format and can return a banner
     // several times taller than a normal one (confirmed: it overflowed off
@@ -372,7 +372,16 @@ class AdService {
     // actually bounded (never > 15% of screen height, never < 50px) — the
     // correct compact anchored adaptive format for a bottom banner strip.
     // ignore: deprecated_member_use
-    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+    return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+  }
+
+  static Future<BannerAd?> createBanner({
+    required int width,
+    bool collapsible = false,
+    int maxAttempts = 4,
+  }) async {
+    if (_adsRemoved) return null;
+    final size = await bannerSizeFor(width);
     if (size == null) return null;
 
     // Retry with exponential backoff: a BannerAd is single-use, so a
