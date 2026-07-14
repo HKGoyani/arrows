@@ -131,7 +131,7 @@
     <div class="arrow"></div>
     <h1>Play Store Submission Guide</h1>
     <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.0</p>
-    <span class="updated">Last reviewed against codebase: July 13, 2026</span>
+    <span class="updated">Last reviewed against codebase: July 14, 2026</span>
   </header>
 
   <div class="container">
@@ -161,18 +161,18 @@
 
     <div class="alert" id="critical">
       <h2>Critical — must fix before submission</h2>
-      <p>Updated 2026-07-13 — all app-side technical work (ad IDs, Firebase, signing) is done and verified. What's left is entirely Play Console-side setup: creating the app listing, filling out the compliance questionnaires, and producing Play-specific graphic assets.</p>
+      <p>Updated 2026-07-14 — Play Console listing setup is complete (app entry, store listing, <code>remove_ads</code> product, Data Safety, content rating, tags). Exact per-item detail to be filled in on the next guide revision. One temporary item: Android ad unit IDs are pinned back to Google's sample test IDs until the listing is fully live — see below.</p>
       <table>
         <tr><th>Item</th><th>Status</th><th>Detail</th></tr>
         <tr>
           <td><strong>Play Console app entry</strong></td>
-          <td><span class="tag tag-block">PENDING</span></td>
-          <td>App has not yet been created in <a href="https://play.google.com/console" target="_blank">Google Play Console</a></td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Created in <a href="https://play.google.com/console" target="_blank">Google Play Console</a></td>
         </tr>
         <tr>
           <td><strong>AdMob App ID &amp; Ad Unit IDs</strong></td>
-          <td><span class="tag tag-ok">RESOLVED</span></td>
-          <td>Production Android App ID <code>ca-app-pub-4818503743858431~7394089061</code> set in <code>AndroidManifest.xml</code>; all 4 formats (rewarded, interstitial, banner, app open) use production IDs in <code>lib/ad_service.dart</code></td>
+          <td><span class="tag tag-warn">TEMPORARY</span></td>
+          <td>Android App ID <code>ca-app-pub-4818503743858431~7394089061</code> is still set in <code>AndroidManifest.xml</code>, but as of 2026-07-14 all 4 Android ad unit IDs (rewarded, interstitial, banner, app open) are temporarily pinned to Google's sample test IDs in <code>lib/ad_service.dart</code> — production Android IDs to be restored later. iOS is unaffected and still uses production IDs</td>
         </tr>
         <tr>
           <td><strong>Firebase / google-services.json</strong></td>
@@ -186,13 +186,13 @@
         </tr>
         <tr>
           <td><strong>Feature Graphic (1024×500)</strong></td>
-          <td><span class="tag tag-block">PENDING</span></td>
-          <td>Play-only requirement, no iOS equivalent — not yet created</td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Play-only requirement, no iOS equivalent — created and uploaded</td>
         </tr>
         <tr>
           <td><strong>Play Store phone screenshots</strong></td>
-          <td><span class="tag tag-block">PENDING</span></td>
-          <td>Need at least 2 (Play accepts a wider range of aspect ratios than Apple — existing iOS captures can likely be reused)</td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Uploaded to Play Console</td>
         </tr>
         <tr>
           <td><strong>Adaptive icon</strong></td>
@@ -201,18 +201,18 @@
         </tr>
         <tr>
           <td><strong><code>remove_ads</code> Play Billing product</strong></td>
-          <td><span class="tag tag-block">PENDING</span></td>
-          <td>Managed in-app product must be created in Play Console → Monetize → Products, ID must exactly match <code>IapService.removeAdsId</code></td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Managed in-app product created in Play Console → Monetize → Products, ID matches <code>IapService.removeAdsId</code></td>
         </tr>
         <tr>
           <td><strong>Data Safety form</strong></td>
-          <td><span class="tag tag-block">PENDING</span></td>
-          <td>Not yet filled out — see Section 6</td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Filled out — see Section 6</td>
         </tr>
         <tr>
           <td><strong>Content rating (IARC questionnaire)</strong></td>
-          <td><span class="tag tag-block">PENDING</span></td>
-          <td>Not yet completed — see Section 10</td>
+          <td><span class="tag tag-ok">RESOLVED</span></td>
+          <td>Completed — see Section 10</td>
         </tr>
         <tr>
           <td><strong>AdMob test-device registration</strong></td>
@@ -235,7 +235,7 @@
         <tr><td>Version code</td><td>2</td></tr>
         <tr><td>Free or paid</td><td>Free</td></tr>
         <tr><td>Contains ads</td><td>Yes (see Section 9)</td></tr>
-        <tr><td>Play Console developer account</td><td>Not yet created / app not yet added <span class="tag tag-block">PENDING</span></td></tr>
+        <tr><td>Play Console developer account</td><td>App created and listing set up <span class="tag tag-ok">RESOLVED</span></td></tr>
       </table>
     </section>
 
@@ -278,18 +278,18 @@
         <tr><th>Asset</th><th>Requirement</th><th>Status</th></tr>
         <tr><td>Launcher icon (legacy)</td><td><code>ic_launcher.png</code> per density bucket</td><td><span class="tag tag-ok">PRESENT</span> in <code>mipmap-mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi</code></td></tr>
         <tr><td>Adaptive icon (foreground + background layers)</td><td><code>mipmap-anydpi-v26/ic_launcher.xml</code> + separate layer drawables</td><td><span class="tag tag-warn">MISSING</span> — optional but recommended; legacy icon still renders correctly on all supported API levels</td></tr>
-        <tr><td>Hi-res store icon</td><td>512×512 PNG (32-bit, with alpha), uploaded directly to Play Console listing — distinct from the in-app launcher icon</td><td><span class="tag tag-block">PENDING</span> — export from the same master art used for <code>assets/icon/app_icon_master.png</code></td></tr>
+        <tr><td>Hi-res store icon</td><td>512×512 PNG (32-bit, with alpha), uploaded directly to Play Console listing — distinct from the in-app launcher icon</td><td><span class="tag tag-ok">RESOLVED</span> — exported from the same master art used for <code>assets/icon/app_icon_master.png</code> and uploaded</td></tr>
       </table>
       <p>Design: black arrows (one up, two left) with a red diagonal "ESCAPE" banner — same artwork as the iOS icon, exported at Play's required sizes.</p>
     </section>
 
     <section id="screenshots">
       <h2>4. Screenshots &amp; Feature Graphic</h2>
-      <p><span class="tag tag-block">PENDING</span> Not yet captured or uploaded for Play. Requirements differ from App Store Connect:</p>
+      <p><span class="tag tag-ok">UPLOADED</span> Captured and uploaded to Play Console. Requirements differ from App Store Connect:</p>
       <table>
         <tr><th>Asset</th><th>Spec</th><th>Notes</th></tr>
         <tr><td>Phone screenshots</td><td>Min 2, max 8 &middot; JPEG/24-bit PNG (no alpha) &middot; each side between 320px–3840px &middot; max side ≤ 2× min side</td><td>Portrait captures from an emulator/device work directly — Play is far less strict on exact device-class sizing than Apple</td></tr>
-        <tr><td>Feature Graphic</td><td><strong>1024×500</strong>, JPEG/24-bit PNG (no alpha)</td><td>Play-only requirement, no App Store equivalent — shown at the top of the store listing and in some promotional placements. Not yet created</td></tr>
+        <tr><td>Feature Graphic</td><td><strong>1024×500</strong>, JPEG/24-bit PNG (no alpha)</td><td>Play-only requirement, no App Store equivalent — shown at the top of the store listing and in some promotional placements. Created and uploaded</td></tr>
         <tr><td>Hi-res icon</td><td>512×512 (see Section 3)</td><td>Required alongside screenshots for listing to be publishable</td></tr>
         <tr><td>Promo video (optional)</td><td>YouTube URL</td><td>Not planned for v1.0.0</td></tr>
       </table>
@@ -356,7 +356,7 @@ one-time Remove Ads purchase for an uninterrupted experience.</pre>
         <tr><td><code>Brain teaser</code></td><td>Matches the "calm, satisfying logic puzzle" positioning used in the store description</td></tr>
         <tr><td><code>Casual</code></td><td>No timers, no pressure, short sessions — fits Play's casual-games audience</td></tr>
       </table>
-      <p><span class="tag tag-block">PENDING</span> Not yet set in Play Console — apply once the app entry exists (Section 1).</p>
+      <p><span class="tag tag-ok">APPLIED</span> Set in Play Console.</p>
 
       <h3>URLs</h3>
       <table>
@@ -505,19 +505,20 @@ or tap an in-progress level number to continue.</pre>
     <section id="checklist">
       <h2>14. Build &amp; Release Checklist</h2>
       <ul>
-        <li><span class="tag tag-ok">DONE</span> Swap Android AdMob App ID → production in <code>AndroidManifest.xml</code></li>
-        <li><span class="tag tag-ok">DONE</span> Swap all 4 Android ad unit IDs → production in <code>lib/ad_service.dart</code></li>
+        <li><span class="tag tag-ok">DONE</span> Set Android AdMob App ID → production in <code>AndroidManifest.xml</code></li>
+        <li><span class="tag tag-warn">TEMPORARY</span> Android ad unit IDs reverted to Google's sample test IDs in <code>lib/ad_service.dart</code> (2026-07-14, pending Play listing going fully live) — swap back to production Android IDs before/at production rollout. iOS untouched, still production</li>
         <li><span class="tag tag-ok">DONE</span> Add <code>INTERNET</code> and <code>AD_ID</code> permissions to the main (release) manifest</li>
         <li><span class="tag tag-ok">DONE</span> Wire <code>google-services.json</code> + Google Services Gradle plugin</li>
         <li><span class="tag tag-ok">DONE</span> Configure release signing (<code>key.properties</code> → <code>signingConfigs.release</code>)</li>
         <li><span class="tag tag-ok">DONE</span> Confirm <code>pubspec.yaml</code> version is <code>1.0.0+2</code></li>
         <li><span class="tag tag-ok">DONE</span> Build signed release AAB and verify signature (not debug-signed)</li>
-        <li><span class="tag tag-block">PENDING</span> Create app entry in Play Console</li>
-        <li><span class="tag tag-block">PENDING</span> Create <code>remove_ads</code> managed product in Play Console</li>
-        <li><span class="tag tag-block">PENDING</span> Produce Feature Graphic (1024×500) and 512×512 hi-res icon</li>
-        <li><span class="tag tag-block">PENDING</span> Capture and upload Play Store phone screenshots</li>
-        <li><span class="tag tag-block">PENDING</span> Complete Data Safety form (Section 6)</li>
-        <li><span class="tag tag-block">PENDING</span> Complete IARC content rating questionnaire (Section 10)</li>
+        <li><span class="tag tag-ok">DONE</span> Create app entry in Play Console</li>
+        <li><span class="tag tag-ok">DONE</span> Create <code>remove_ads</code> managed product in Play Console</li>
+        <li><span class="tag tag-ok">DONE</span> Produce Feature Graphic (1024×500) and 512×512 hi-res icon</li>
+        <li><span class="tag tag-ok">DONE</span> Capture and upload Play Store phone screenshots</li>
+        <li><span class="tag tag-ok">DONE</span> Complete Data Safety form (Section 6)</li>
+        <li><span class="tag tag-ok">DONE</span> Complete IARC content rating questionnaire (Section 10)</li>
+        <li><span class="tag tag-block">PENDING</span> Restore production Android ad unit IDs in <code>lib/ad_service.dart</code> once ready, then rebuild/re-sign the AAB before final production rollout</li>
         <li><span class="tag tag-warn">RECOMMENDED</span> Register physical test devices in AdMob before manual QA on hardware, to avoid invalid-traffic risk on production ad units</li>
         <li>Run <code>flutter build appbundle --release</code> to produce the final AAB</li>
         <li>Test the release build on a <strong>real device</strong>, sideloaded or via Internal testing track — confirm ads load, GDPR/UMP consent form appears where applicable, and the Remove Ads purchase flow completes end-to-end with a license tester account</li>
