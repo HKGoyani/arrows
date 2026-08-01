@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:io';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gma_mediation_unity/gma_mediation_unity.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'analytics_service.dart';
 import 'prefs.dart';
 
 /// Centralized ad management: rewarded, interstitial, banner, app-open.
-/// Uses test ad unit IDs — replace with production IDs before release.
+/// AdMob mediation: Meta Audience Network + Unity Ads (see AdMob console
+/// Mediation groups for waterfall/bidding config — not set in this code).
 class AdService {
   static bool _initialized = false;
   static int _winCount = 0;
@@ -109,6 +111,7 @@ class AdService {
     if (_initialized) return;
     await _requestConsent();
     await _requestTrackingAuthorization();
+    await _forwardConsentToMediationPartners();
     await MobileAds.instance.initialize();
     _initialized = true;
     // Preload all formats in parallel for fastest availability
@@ -164,6 +167,31 @@ class AdService {
       if (!completer.isCompleted) completer.complete();
     });
     return completer.future;
+  }
+
+  /// Forwards the UMP consent outcome to mediation partners whose adapters
+  /// don't automatically read the IAB TCF string Google's SDK already wrote.
+  ///
+  /// Unity Ads requires this explicit call (per Google's mediation guide).
+  /// Meta Audience Network's adapter reads the TCF string automatically once
+  /// Meta is added as an Ad Partner in AdMob console → Privacy & messaging —
+  /// its Flutter wrapper (gma_mediation_meta) exposes no consent API at all,
+  /// confirmed empty in its source, so there is nothing to call here for it.
+  ///
+  /// `consented` reflects whether the UMP flow completed without being
+  /// blocked (obtained/notRequired) — the Flutter UMP API doesn't expose
+  /// granular per-purpose consent, only this coarse status.
+  static Future<void> _forwardConsentToMediationPartners() async {
+    try {
+      final status = await ConsentInformation.instance.getConsentStatus();
+      final consented = status != ConsentStatus.required &&
+          status != ConsentStatus.unknown;
+      final unity = GmaMediationUnity();
+      await unity.setGDPRConsent(consented);
+      await unity.setCCPAConsent(consented);
+    } catch (_) {
+      // Non-critical — never block app startup on a mediation SDK call.
+    }
   }
 
   /// Shows Apple's native App Tracking Transparency system prompt

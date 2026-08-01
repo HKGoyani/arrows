@@ -240,6 +240,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  gma_mediation_meta:
+    dependency: "direct main"
+    description:
+      name: gma_mediation_meta
+      sha256: "3fd41a4e6605553d906ba5983bc1bd90518d9e60d20ff656b4d16a6130fc3476"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.3"
+  gma_mediation_unity:
+    dependency: "direct main"
+    description:
+      name: gma_mediation_unity
+      sha256: "93500de55f884660fd831ddce4b49a4de21ebdee5e3b789de3e2512bfd1ca91a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.9.0"
   google_mobile_ads:
     dependency: "direct main"
     description:
