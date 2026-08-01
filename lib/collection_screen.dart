@@ -1924,9 +1924,10 @@ class _DayCell extends StatelessWidget {
       textColor = AppColors.muted;
     }
 
-    // show the number only when selected, or for an un-played non-future day.
-    // A completed day shows a bare dot unless it's the selected one.
-    final showNumber = (!played && !isFuture) || isSelected;
+    // Show the number for every day, even future ones (just faded via
+    // textColor) — only a completed day hides its number behind a bare dot,
+    // unless it's the selected one.
+    final showNumber = !played || isSelected;
     final size = isSelected ? 38.0 : 34.0;
 
     final circle = Container(
