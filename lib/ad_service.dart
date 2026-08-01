@@ -45,44 +45,51 @@ class AdService {
   // always return a placeholder ad. Zero risk to the real ad units/account —
   // release builds are completely unaffected, still real IDs as before.
   //
-  // TEMPORARY: Android release builds are also pinned to the sample test IDs
-  // right now (Play Console listing not live yet). Swap the Android branch
-  // below back to the real `ca-app-pub-4818503743858431/...` IDs once the
-  // Play Store listing is live — iOS is unaffected and stays on production.
+  // Android release builds are back on production IDs as of 2026-07-14 —
+  // the Play Store listing is live, so real end users must never be served
+  // Google's sample test units (AdMob policy, and it also means $0 revenue).
   static String get _rewardedId {
-    if (kDebugMode || !Platform.isIOS) {
+    if (kDebugMode) {
       return Platform.isIOS
           ? 'ca-app-pub-3940256099942544/1712485313'
           : 'ca-app-pub-3940256099942544/5224354917';
     }
-    return 'ca-app-pub-4818503743858431/1504787383';
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/1504787383'
+        : 'ca-app-pub-4818503743858431/8458959963';
   }
 
   static String get _interstitialId {
-    if (kDebugMode || !Platform.isIOS) {
+    if (kDebugMode) {
       return Platform.isIOS
           ? 'ca-app-pub-3940256099942544/4411468910'
           : 'ca-app-pub-3940256099942544/1033173712';
     }
-    return 'ca-app-pub-4818503743858431/7988636380';
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/7988636380'
+        : 'ca-app-pub-4818503743858431/9963613329';
   }
 
   static String get _bannerId {
-    if (kDebugMode || !Platform.isIOS) {
+    if (kDebugMode) {
       return Platform.isIOS
           ? 'ca-app-pub-3940256099942544/2934735716'
           : 'ca-app-pub-3940256099942544/6300978111';
     }
-    return 'ca-app-pub-4818503743858431/1614799726';
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/1614799726'
+        : 'ca-app-pub-4818503743858431/6704813607';
   }
 
   static String get _appOpenId {
-    if (kDebugMode || !Platform.isIOS) {
+    if (kDebugMode) {
       return Platform.isIOS
           ? 'ca-app-pub-3940256099942544/5662855259'
           : 'ca-app-pub-3940256099942544/9257395921';
     }
-    return 'ca-app-pub-4818503743858431/3939379036';
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/3939379036'
+        : 'ca-app-pub-4818503743858431/1075293965';
   }
 
   // ── Preloaded ads ──
