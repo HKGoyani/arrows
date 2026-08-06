@@ -27,7 +27,7 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-4818503743858431~5166233161</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be used to deliver personalized ads to you.</string>
+	<string>We use this identifier to show ads that match your interests, based on your activity in this and other apps — for example, showing you ads for similar puzzle games if you frequently play them. If you choose not to allow tracking, you'll still see ads, just less tailored to you.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>SKAdNetworkItems</key>
