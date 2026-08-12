@@ -515,7 +515,7 @@ class _GameFlowState extends State<GameFlow> {
             ? (!_isDaily && next == 10)
             : streakExtended;
 
-        // Interstitial has top priority (every 3rd win / each daily complete).
+        // Interstitial has top priority (every 2nd win / each daily complete).
         // Everything else — streak/legend/perfect celebration, then the rate
         // prompt — is sequenced AFTER the ad is dismissed so nothing stacks on
         // top of it. When no ad shows, [afterAd] fires immediately with

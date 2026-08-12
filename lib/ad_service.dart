@@ -391,7 +391,7 @@ class AdService {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // INTERSTITIAL AD — after every 3rd win, restart, daily complete
+  // INTERSTITIAL AD — after every 2nd win, restart, daily complete
   // ═══════════════════════════════════════════════════════════════════
 
   static void _loadInterstitial() {
@@ -408,11 +408,15 @@ class AdService {
 
   /// Wins between interstitials. The counter is only consumed when an ad
   /// actually displays (see [onLevelWin]).
-  static const _winsPerInterstitial = 3;
+  ///
+  /// Raised from every 3rd win to every 2nd on 2026-08-12. Watch D1/D7
+  /// retention against the impression lift — interstitial frequency is the
+  /// fastest lever on revenue and also the fastest way to lose retention.
+  static const _winsPerInterstitial = 2;
 
-  /// Call after a level win. Shows an interstitial every 3rd win, then calls
-  /// [onDone] once the ad is dismissed. If no ad shows (not the 3rd win, ads
-  /// removed, not loaded, or shown too recently) [onDone] fires immediately.
+  /// Call after a level win. Shows an interstitial every 2nd win, then calls
+  /// [onDone] once the ad is dismissed. If no ad shows (not a qualifying win,
+  /// ads removed, not loaded, or shown too recently) [onDone] fires immediately.
   /// [onDone] always runs exactly once — callers sequence the streak/rate
   /// celebration off it so nothing stacks on top of the ad.
   static void onLevelWin({void Function(bool adShown)? onDone}) {
