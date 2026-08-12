@@ -717,7 +717,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             : const SizedBox.shrink(),
       );
     }
-    return Scaffold(
+    return PopScope(
+      // System back / back gesture is disabled during a level so it can't
+      // drop the player out mid-game. Every exit is in-app: the back button
+      // in GameTopBar (and in the tutorial header), or Restart on the lose
+      // overlay.
+      canPop: false,
+      child: Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
         bottom: false,
@@ -734,12 +740,34 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         (1.0 - _heartCtrl.value * 3.0).clamp(0.0, 1.0),
                     child: child,
                   ),
-                  // Tutorial hides the header (back/restart/progress) and shows
-                  // only the hearts, matching the reference onboarding.
+                  // Tutorial hides the restart/progress chrome and shows only
+                  // the hearts, but keeps a back button: system back is
+                  // disabled app-wide, so without this the tutorial would be
+                  // the one screen with no way out.
                   child: _isTutorial
                       ? Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 18, 0, 8),
-                          child: Center(child: HeartsRow(hearts: c.hearts)),
+                          padding: const EdgeInsets.fromLTRB(22, 18, 22, 8),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Center(child: HeartsRow(hearts: c.hearts)),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: CircleButton(
+                                  onTap: widget.onBack,
+                                  // Same left-pointing arrow GameTopBar uses;
+                                  // its .rotated() helper is a private
+                                  // extension in widgets.dart, so the
+                                  // transform is inlined here.
+                                  child: Transform.rotate(
+                                    angle: pi,
+                                    child: Icon(Icons.play_arrow,
+                                        color: AppColors.btnInk, size: 40),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         )
                       : Column(
                           children: [
@@ -953,6 +981,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
           ],
         ),
+      ),
       ),
     );
   }

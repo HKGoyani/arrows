@@ -227,7 +227,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   @override
   Widget build(BuildContext context) {
     final level = Prefs.level;
-    return Scaffold(
+    return PopScope(
+      // System back is disabled on the tab shell too, so it can't quit the
+      // app out from under the player. Tabs are switched via the bottom nav;
+      // there is no back stack to unwind here.
+      canPop: false,
+      child: Scaffold(
       backgroundColor: AppColors.bg,
       body: IndexedStack(
         index: _tab,
@@ -303,6 +308,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
             height: MediaQuery.of(context).padding.bottom * 0.5,
           ),
         ],
+      ),
       ),
     );
   }
@@ -479,7 +485,10 @@ class _GameFlowState extends State<GameFlow> {
       onBack: () async {
         final nav = Navigator.of(context);
         if (_isDaily) await _saveDailyProgress();
-        nav.maybePop();
+        // pop(), not maybePop(): GameScreen wraps itself in
+        // PopScope(canPop: false) to disable the system back gesture, and
+        // maybePop() honours that — it would block this button too.
+        nav.pop();
       },
       onWin: (next) async {
         final streakExtended = !StreakService.playedToday;
@@ -536,8 +545,10 @@ class _GameFlowState extends State<GameFlow> {
             });
           } else {
             // Plain win → return home, then (occasionally) ask for a rating
-            // (whether or not an ad played this win).
-            Navigator.of(context).maybePop();
+            // (whether or not an ad played this win). pop(), not maybePop(),
+            // for the same reason as onBack: GameScreen's PopScope would
+            // otherwise trap the player on the finished level.
+            Navigator.of(context).pop();
             _maybeShowRatePrompt();
           }
         }
