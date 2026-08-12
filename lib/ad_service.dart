@@ -7,6 +7,16 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'analytics_service.dart';
 import 'prefs.dart';
 
+/// Why a rewarded ad could not be shown, so the UI can explain it rather
+/// than silently handing out the reward.
+enum RewardedUnavailable {
+  /// The ad request failed with a network error — in practice, no connection.
+  noInternet,
+
+  /// No ad was available: no fill, load timed out, or it failed to display.
+  notReady,
+}
+
 /// Centralized ad management: rewarded, interstitial, banner, app-open.
 /// AdMob mediation: Meta Audience Network + Unity Ads (see AdMob console
 /// Mediation groups for waterfall/bidding config — not set in this code).
@@ -35,6 +45,10 @@ class AdService {
   static DateTime? _lastInterstitialShownAt;
   static const _appOpenMinGap = Duration(minutes: 1);
   static const _interstitialMinGap = Duration(seconds: 45);
+
+  /// How long a rewarded ad may take to load on demand before we stop making
+  /// the user wait and grant the reward anyway (see [showRewarded]).
+  static const _rewardedLoadTimeout = Duration(seconds: 5);
 
   // ── Ad Unit IDs ── production for both platforms (Arrows – Escape Puzzle).
   // iOS AdMob app ca-app-pub-4818503743858431~5166233161; Android AdMob app
@@ -112,6 +126,19 @@ class AdService {
     await _requestConsent();
     await _requestTrackingAuthorization();
     await _forwardConsentToMediationPartners();
+    // Declare the audience explicitly rather than relying on SDK defaults.
+    // The published privacy policy states the app "is configured to treat all
+    // ad requests as coming from a general audience" — this is what actually
+    // makes that true, and it matches the 13+ target audience declared in
+    // Play Console. Deliberately NOT setting maxAdContentRating: capping it
+    // restricts eligible inventory and eCPM, so that stays a revenue decision
+    // rather than a silent default.
+    await MobileAds.instance.updateRequestConfiguration(
+      RequestConfiguration(
+        tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
+        tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
+      ),
+    );
     await MobileAds.instance.initialize();
     _initialized = true;
     // Preload all formats in parallel for fastest availability
@@ -248,21 +275,96 @@ class AdService {
   /// True if a rewarded ad is ready to show.
   static bool get rewardedReady => _rewardedAd != null || _rewardedBackup != null;
 
-  /// Shows a rewarded ad. Calls [onRewarded] when the user earns the reward.
-  /// Falls back to backup ad if primary isn't ready.
-  static void showRewarded({required void Function() onRewarded}) {
-    // Use primary, fall back to backup
-    final ad = _rewardedAd ?? _rewardedBackup;
-    if (ad == null) {
-      _loadRewarded();
-      _loadRewardedBackup();
-      onRewarded(); // no ad available — give reward anyway (don't block user)
-      return;
+  /// Best-effort connectivity probe, used only to pick the right "can't show
+  /// an ad" message.
+  ///
+  /// Deliberately not driven off AdMob's `LoadAdError.code`: an offline
+  /// request usually stalls until our own timeout rather than reporting
+  /// `ERROR_CODE_NETWORK_ERROR`, so the code was almost never the network one
+  /// and every offline failure read as a plain no-fill. A DNS lookup answers
+  /// the actual question, fails fast when offline, and needs no extra
+  /// dependency (dart:io is already imported).
+  static Future<bool> _hasInternet() async {
+    try {
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 2));
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
     }
-    if (ad == _rewardedAd) {
+  }
+
+  /// Reports why a rewarded ad couldn't be shown, distinguishing "you're
+  /// offline" from "nothing to serve right now".
+  static Future<void> _reportUnavailable(
+      void Function(RewardedUnavailable reason)? onUnavailable) async {
+    if (onUnavailable == null) return;
+    onUnavailable(await _hasInternet()
+        ? RewardedUnavailable.notReady
+        : RewardedUnavailable.noInternet);
+  }
+
+  /// One rewarded load attempt, surfaced as a Future so [showRewarded] can
+  /// wait on it rather than refusing the instant nothing is preloaded.
+  /// Completes with null on failure.
+  static Future<RewardedAd?> _loadRewardedNow() {
+    final completer = Completer<RewardedAd?>();
+    RewardedAd.load(
+      adUnitId: _rewardedId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          if (!completer.isCompleted) completer.complete(ad);
+        },
+        onAdFailedToLoad: (error) {
+          if (!completer.isCompleted) completer.complete(null);
+        },
+      ),
+    );
+    return completer.future;
+  }
+
+  /// Shows a rewarded ad. Calls [onRewarded] only when the user actually
+  /// earns the reward by watching one. Falls back to the backup ad if the
+  /// primary isn't ready, and if neither is, makes one live load attempt
+  /// bounded by [_rewardedLoadTimeout].
+  ///
+  /// If no ad can be shown, [onUnavailable] fires with the reason and the
+  /// reward is NOT granted — the UI is expected to explain why. Earlier
+  /// versions granted it anyway, which meant an offline user (or any no-fill)
+  /// got unlimited free hints and life refills from the highest-value ad
+  /// format in the app.
+  ///
+  /// Callers can pass [onLoading] to show a spinner while the live attempt is
+  /// in flight.
+  static Future<void> showRewarded({
+    required void Function() onRewarded,
+    void Function(bool loading)? onLoading,
+    void Function(RewardedUnavailable reason)? onUnavailable,
+  }) async {
+    // Use primary, fall back to backup
+    // Take from primary, then backup, clearing the slot as we consume it —
+    // a background preload can land while we're awaiting the fresh load
+    // below, so deciding which slot to clear afterwards would be ambiguous.
+    RewardedAd? ad;
+    if (_rewardedAd != null) {
+      ad = _rewardedAd;
       _rewardedAd = null;
-    } else {
+    } else if (_rewardedBackup != null) {
+      ad = _rewardedBackup;
       _rewardedBackup = null;
+    }
+    if (ad == null) {
+      onLoading?.call(true);
+      ad = await _loadRewardedNow()
+          .timeout(_rewardedLoadTimeout, onTimeout: () => null);
+      onLoading?.call(false);
+      if (ad == null) {
+        _loadRewarded();
+        _loadRewardedBackup();
+        await _reportUnavailable(onUnavailable);
+        return;
+      }
     }
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (a) {
@@ -281,7 +383,8 @@ class AdService {
         a.dispose();
         _loadRewarded();
         _loadRewardedBackup();
-        onRewarded(); // ad failed — give reward anyway
+        // Loaded but wouldn't display — no view, so no reward.
+        _reportUnavailable(onUnavailable);
       },
     );
     ad.show(onUserEarnedReward: (_, __) => onRewarded());
@@ -303,6 +406,10 @@ class AdService {
     );
   }
 
+  /// Wins between interstitials. The counter is only consumed when an ad
+  /// actually displays (see [onLevelWin]).
+  static const _winsPerInterstitial = 3;
+
   /// Call after a level win. Shows an interstitial every 3rd win, then calls
   /// [onDone] once the ad is dismissed. If no ad shows (not the 3rd win, ads
   /// removed, not loaded, or shown too recently) [onDone] fires immediately.
@@ -314,9 +421,17 @@ class AdService {
       return;
     }
     _winCount++;
-    if (_winCount >= 3) {
-      _winCount = 0;
-      _showInterstitial(onDone: onDone);
+    if (_winCount >= _winsPerInterstitial) {
+      _showInterstitial(onDone: (shown) {
+        // Only consume the counter when an ad really displayed. Resetting
+        // unconditionally meant a no-fill or a gap-skip silently cost three
+        // levels' worth of interstitial opportunities — the next attempt was
+        // pushed out even though nothing was ever shown. Leaving the counter
+        // at the threshold retries on the next win instead; the 45s
+        // _interstitialGapOk check still prevents back-to-back ads.
+        if (shown) _winCount = 0;
+        onDone?.call(shown);
+      });
     } else {
       onDone?.call(false);
     }
@@ -542,15 +657,23 @@ class AdService {
     }
     _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
+        // Maintain the shared full-screen guard like rewarded/interstitial do.
+        // Without this the guard was dead for app-open: nothing else could
+        // detect that one was on screen. The _appOpenMinGap happened to mask
+        // it, but the gap is a frequency cap, not a stacking guard.
+        _showingFullScreenAd = true;
         _lastAppOpenShownAt = DateTime.now();
         AnalyticsService.adShown('app_open');
       },
       onAdDismissedFullScreenContent: (ad) {
+        _showingFullScreenAd = false;
+        _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
         _appOpenAd = null;
         _loadAppOpen();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
+        _showingFullScreenAd = false;
         ad.dispose();
         _appOpenAd = null;
         _loadAppOpen();

@@ -87,6 +87,33 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   BannerAd? _bannerAd;
   bool _bannerRequested = false;
   AdSize? _bannerSize; // reserved as soon as known, before the ad itself loads
+  Timer? _bannerRetryTimer; // slow retry after the initial burst is exhausted
+
+  /// True while a rewarded ad is being fetched on demand. Drives a blocking
+  /// spinner so the up-to-5s wait reads as "loading" rather than a dead
+  /// button, and so the trigger can't be double-tapped into two ad requests.
+  bool _adLoading = false;
+  void _setAdLoading(bool loading) {
+    if (mounted) setState(() => _adLoading = loading);
+  }
+
+  /// Transient message shown when a rewarded ad can't be served, so the hint
+  /// / refill-lives actions explain themselves instead of silently doing
+  /// nothing (they no longer grant the reward without an ad view).
+  String? _adMessage;
+  Timer? _adMessageTimer;
+
+  void _showAdUnavailable(RewardedUnavailable reason) {
+    if (!mounted) return;
+    AudioService.uiTap();
+    setState(() => _adMessage = reason == RewardedUnavailable.noInternet
+        ? Tr.get('adNoInternet')
+        : Tr.get('adNotReady'));
+    _adMessageTimer?.cancel();
+    _adMessageTimer = Timer(const Duration(milliseconds: 2800), () {
+      if (mounted) setState(() => _adMessage = null);
+    });
+  }
 
   // "Add More Lives" reward: 3 hearts fly from the Continue dialog up to the
   // header's HeartsRow, each from its own dialog position straight to its
@@ -195,16 +222,29 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       AdService.bannerSizeFor(width).then((size) {
         if (mounted && size != null) setState(() => _bannerSize = size);
       });
-      AdService.createBanner(width: width).then((ad) {
-        // The load (with retries) can take several seconds; if this screen is
-        // gone by the time it resolves, dispose the ad so it doesn't leak.
-        if (!mounted) {
-          ad?.dispose();
-          return;
-        }
-        setState(() => _bannerAd = ad);
-      });
+      _requestBanner(width);
     }
+  }
+
+  /// Requests the banner, retrying slowly if the initial burst is exhausted —
+  /// otherwise a transient no-fill leaves the slot empty for the whole level.
+  void _requestBanner(int width) {
+    AdService.createBanner(width: width).then((ad) {
+      // The load (with retries) can take several seconds; if this screen is
+      // gone by the time it resolves, dispose the ad so it doesn't leak.
+      if (!mounted) {
+        ad?.dispose();
+        return;
+      }
+      if (ad == null) {
+        _bannerRetryTimer?.cancel();
+        _bannerRetryTimer = Timer(const Duration(seconds: 60), () {
+          if (mounted) _requestBanner(width);
+        });
+        return;
+      }
+      setState(() => _bannerAd = ad);
+    });
   }
 
   void _resetHintTimer() {
@@ -237,9 +277,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _applyHint(safe.first);
     } else {
       // Show rewarded ad for paid hint
-      AdService.showRewarded(onRewarded: () {
-        if (mounted && safe.isNotEmpty) _applyHint(safe.first);
-      });
+      AdService.showRewarded(
+        onLoading: _setAdLoading,
+        onUnavailable: _showAdUnavailable,
+        onRewarded: () {
+          if (mounted && safe.isNotEmpty) _applyHint(safe.first);
+        },
+      );
     }
   }
 
@@ -273,6 +317,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _disposeFlight(f);
     }
     AdService.setPlaying(false);
+    _bannerRetryTimer?.cancel();
+    _adMessageTimer?.cancel();
     _bannerAd?.dispose();
     super.dispose();
   }
@@ -861,6 +907,50 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             if (c.status == GameStatus.lost && !_flyingHearts) _loseOverlay(),
             if (_flyingHearts && _flyStarts != null && _flyEnds != null)
               ..._buildFlyingHearts(),
+            // Rewarded-unavailable notice. Sits above the lose overlay so it
+            // is visible when "Add More Lives" is the trigger, and clear of
+            // the header so it never covers back/restart/hearts or the Hint
+            // button the player just tapped.
+            if (_adMessage != null)
+              Positioned(
+                left: 24,
+                right: 24,
+                top: 104,
+                child: IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.ink.withValues(alpha: 0.94),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(
+                            color: Color(0x33111430),
+                            blurRadius: 18,
+                            offset: Offset(0, 6)),
+                      ],
+                    ),
+                    child: Text(
+                      _adMessage!,
+                      textAlign: TextAlign.center,
+                      style: poppins(14, FontWeight.w700, Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            // Blocking spinner while a rewarded ad loads on demand. Sits last
+            // so it covers the lose overlay's "watch an ad" button too.
+            if (_adLoading)
+              Positioned.fill(
+                child: AbsorbPointer(
+                  child: ColoredBox(
+                    color: const Color(0x55000000),
+                    child: Center(
+                      child: CircularProgressIndicator(color: AppColors.blue),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -1228,9 +1318,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     style: poppins(15.5, FontWeight.w700, AppColors.ink)),
                 const SizedBox(height: 24),
                 Pressable(
-                  onTap: () => AdService.showRewarded(onRewarded: () {
-                    if (mounted) _startHeartFlight();
-                  }),
+                  onTap: () => AdService.showRewarded(
+                    onLoading: _setAdLoading,
+                    onUnavailable: _showAdUnavailable,
+                    onRewarded: () {
+                      if (mounted) _startHeartFlight();
+                    },
+                  ),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),

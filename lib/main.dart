@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -131,6 +132,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   BannerAd? _bannerAd; // collapsible — shared across all bottom nav tabs
   bool _bannerRequested = false;
   AdSize? _bannerSize; // reserved as soon as known, before the ad itself loads
+  Timer? _bannerRetryTimer; // slow retry after the initial burst is exhausted
 
   @override
   void initState() {
@@ -159,20 +161,36 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
       AdService.bannerSizeFor(width).then((size) {
         if (mounted && size != null) setState(() => _bannerSize = size);
       });
-      AdService.createBanner(width: width, collapsible: true).then((ad) {
-        // The load (with retries) can take several seconds; if this shell is
-        // gone by the time it resolves, dispose the ad so it doesn't leak.
-        if (!mounted) {
-          ad?.dispose();
-          return;
-        }
-        setState(() => _bannerAd = ad);
-      });
+      _requestBanner(width);
     }
+  }
+
+  /// Requests the banner, and keeps trying on a slow cadence if it fails.
+  /// [AdService.createBanner]'s own retry burst gives up after ~14s; without
+  /// this the slot would stay empty for the rest of the session even though
+  /// the shell lives for the whole app.
+  void _requestBanner(int width) {
+    AdService.createBanner(width: width, collapsible: true).then((ad) {
+      // The load (with retries) can take several seconds; if this shell is
+      // gone by the time it resolves, dispose the ad so it doesn't leak.
+      if (!mounted) {
+        ad?.dispose();
+        return;
+      }
+      if (ad == null) {
+        _bannerRetryTimer?.cancel();
+        _bannerRetryTimer = Timer(const Duration(seconds: 60), () {
+          if (mounted) _requestBanner(width);
+        });
+        return;
+      }
+      setState(() => _bannerAd = ad);
+    });
   }
 
   @override
   void dispose() {
+    _bannerRetryTimer?.cancel();
     _bannerAd?.dispose();
     _navSlideCtrl.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -247,6 +265,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
           showCollectionBadge: Prefs.collectionUnseen || LevelLegend.hasUnseen || PerfectPlay.hasUnseen || Unstoppable.hasUnseen,
         ),
       ),
+          // Separation between the nav's tap targets and the ad. AdMob
+          // prohibits placements likely to draw accidental clicks, and
+          // accidental clicks also depress eCPM over time because advertisers
+          // see the poor post-click behaviour. The nav's own 10px bottom
+          // padding alone left the tap row too close to the banner edge.
+          Container(color: AppColors.navBg, height: 6),
           // Anchored collapsible banner sits below the nav bar, at the very
           // bottom edge of the screen — matches Google's anchored-adaptive
           // banner placement guidance. Space is reserved (empty) as soon as

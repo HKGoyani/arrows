@@ -172,6 +172,9 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dec',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'No internet. Connect to use hints or refill lives.',
+      'adNotReady': 'Ad not ready yet. Try again in a moment.',
       // Weekdays
       'mo': 'Mo',
       'tu': 'Tu',
@@ -334,6 +337,9 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dez',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'Kein Internet. Verbinde dich, um Tipps zu nutzen oder Leben aufzufüllen.',
+      'adNotReady': 'Anzeige ist noch nicht bereit. Versuch es gleich noch mal.',
       // Weekdays
       'mo': 'Mo',
       'tu': 'Di',
@@ -495,6 +501,9 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Déc',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'Pas de connexion. Connecte-toi pour utiliser les indices ou recharger tes vies.',
+      'adNotReady': 'La pub n\'est pas encore prête. Réessaie dans un instant.',
       // Weekdays
       'mo': 'Lu',
       'tu': 'Ma',
@@ -656,6 +665,9 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dic',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'Nessuna connessione. Connettiti per usare i suggerimenti o ricaricare le vite.',
+      'adNotReady': 'L\'annuncio non è ancora pronto. Riprova tra un momento.',
       // Weekdays
       'mo': 'Lu',
       'tu': 'Ma',
@@ -813,6 +825,9 @@ class Tr {
       'novShort': '11月',
       'decShort': '12月',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'インターネットに接続されていません。ヒントやライフの回復には接続が必要です。',
+      'adNotReady': '広告の準備がまだできていません。少し経ってからもう一度お試しください。',
       // Weekdays
       'mo': '月',
       'tu': '火',
@@ -970,6 +985,9 @@ class Tr {
       'novShort': '11월',
       'decShort': '12월',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': '인터넷에 연결되어 있지 않습니다. 힌트나 하트 충전에는 연결이 필요합니다.',
+      'adNotReady': '광고가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.',
       // Weekdays
       'mo': '월',
       'tu': '화',
@@ -1131,6 +1149,9 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dez',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'Sem internet. Conecte-se para usar dicas ou recarregar vidas.',
+      'adNotReady': 'O anúncio ainda não está pronto. Tente de novo em instantes.',
       // Weekdays
       'mo': 'Seg',
       'tu': 'Ter',
@@ -1292,6 +1313,9 @@ class Tr {
       'novShort': 'Ноя',
       'decShort': 'Дек',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'Нет интернета. Подключись, чтобы использовать подсказки или восполнить жизни.',
+      'adNotReady': 'Реклама ещё не готова. Попробуй через мгновение.',
       // Weekdays
       'mo': 'Пн',
       'tu': 'Вт',
@@ -1453,6 +1477,9 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dic',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'Sin conexión. Conéctate para usar pistas o recargar vidas.',
+      'adNotReady': 'El anuncio aún no está listo. Inténtalo de nuevo en un momento.',
       // Weekdays
       'mo': 'Lu',
       'tu': 'Ma',
@@ -1613,6 +1640,9 @@ class Tr {
       'novShort': 'Kas',
       'decShort': 'Ara',
 
+      // Rewarded-ad unavailable messages
+      'adNoInternet': 'İnternet yok. İpucu kullanmak veya can yenilemek için bağlan.',
+      'adNotReady': 'Reklam henüz hazır değil. Birazdan tekrar dene.',
       // Weekdays
       'mo': 'Pt',
       'tu': 'Sa',
