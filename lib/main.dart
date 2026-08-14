@@ -201,6 +201,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AudioService.onAppResume();
+      // If the UMP consent flow didn't clear us to request ads at startup
+      // (network failure, or the user hadn't consented yet), retry here so a
+      // single bad launch doesn't leave the session ad-free. No-op otherwise.
+      AdService.retryConsentIfBlocked();
       AdService.showAppOpenIfReady();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||

@@ -25,6 +25,20 @@ class AdService {
   static int _winCount = 0;
   static bool _isPlaying = false;
 
+  /// Whether the UMP flow has cleared us to request ads.
+  ///
+  /// Google requires `canRequestAds()` to be checked before ANY ad request.
+  /// Skipping it is what produced AdMob's "Consent requirement: No CMP"
+  /// policy issue (2026-08-13): for users in the EEA/UK/Switzerland, ads were
+  /// requested even when consent hadn't been gathered — because the form was
+  /// declined, the info update failed, or no European regulations message was
+  /// published for this app — so the requests carried no TC string.
+  ///
+  /// Fails CLOSED: if the check itself errors we serve nothing rather than
+  /// risk another non-consented request.
+  static bool _canRequestAds = false;
+  static bool get canRequestAds => _canRequestAds;
+
   // Tracks whether ANY full-screen ad (rewarded/interstitial/app-open) is
   // currently up, plus a brief cooldown after one closes. Dismissing a
   // full-screen ad fires AppLifecycleState.resumed (the ad's view controller
@@ -141,12 +155,40 @@ class AdService {
     );
     await MobileAds.instance.initialize();
     _initialized = true;
+    await _refreshCanRequestAds();
+    _preloadAll();
+  }
+
+  /// Re-reads the UMP verdict on whether ads may be requested.
+  static Future<void> _refreshCanRequestAds() async {
+    try {
+      _canRequestAds = await ConsentInformation.instance.canRequestAds();
+    } catch (_) {
+      _canRequestAds = false; // fail closed — never request without consent
+    }
+  }
+
+  static void _preloadAll() {
+    if (!_canRequestAds) return;
     // Preload all formats in parallel for fastest availability
     _loadRewarded();
     _loadInterstitial();
     _loadAppOpen();
     // Preload a second rewarded ad so one is always ready
     _loadRewardedBackup();
+  }
+
+  /// Re-runs the consent flow when ads are currently blocked. Called on app
+  /// resume so a transient network failure during startup — or a user who
+  /// accepts on a later run — recovers without needing an app restart.
+  /// No-op once ads are already permitted, so it costs nothing in the
+  /// overwhelming majority of sessions.
+  static Future<void> retryConsentIfBlocked() async {
+    if (!_initialized || _canRequestAds) return;
+    await _requestConsent();
+    await _forwardConsentToMediationPartners();
+    await _refreshCanRequestAds();
+    _preloadAll();
   }
 
   /// Runs Google's User Messaging Platform consent flow. Shows a consent
@@ -251,6 +293,7 @@ class AdService {
   // ═══════════════════════════════════════════════════════════════════
 
   static void _loadRewarded() {
+    if (!_canRequestAds) return;
     RewardedAd.load(
       adUnitId: _rewardedId,
       request: const AdRequest(),
@@ -262,6 +305,7 @@ class AdService {
   }
 
   static void _loadRewardedBackup() {
+    if (!_canRequestAds) return;
     RewardedAd.load(
       adUnitId: _rewardedId,
       request: const AdRequest(),
@@ -308,6 +352,7 @@ class AdService {
   /// wait on it rather than refusing the instant nothing is preloaded.
   /// Completes with null on failure.
   static Future<RewardedAd?> _loadRewardedNow() {
+    if (!_canRequestAds) return Future.value(null);
     final completer = Completer<RewardedAd?>();
     RewardedAd.load(
       adUnitId: _rewardedId,
@@ -395,7 +440,7 @@ class AdService {
   // ═══════════════════════════════════════════════════════════════════
 
   static void _loadInterstitial() {
-    if (_adsRemoved) return;
+    if (_adsRemoved || !_canRequestAds) return;
     InterstitialAd.load(
       adUnitId: _interstitialId,
       request: const AdRequest(),
@@ -566,7 +611,7 @@ class AdService {
     bool collapsible = false,
     int maxAttempts = 4,
   }) async {
-    if (_adsRemoved) return null;
+    if (_adsRemoved || !_canRequestAds) return null;
     final size = await bannerSizeFor(width);
     if (size == null) return null;
 
@@ -618,7 +663,7 @@ class AdService {
   static bool _coldStartShown = false;
 
   static void _loadAppOpen() {
-    if (_adsRemoved) return;
+    if (_adsRemoved || !_canRequestAds) return;
     AppOpenAd.load(
       adUnitId: _appOpenId,
       request: const AdRequest(),
