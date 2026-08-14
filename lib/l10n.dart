@@ -172,6 +172,7 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dec',
 
+      'privacyOptions': 'Privacy options',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'No internet. Connect to use hints or refill lives.',
       'adNotReady': 'Ad not ready yet. Try again in a moment.',
@@ -337,6 +338,7 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dez',
 
+      'privacyOptions': 'Datenschutzoptionen',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Kein Internet. Verbinde dich, um Tipps zu nutzen oder Leben aufzufüllen.',
       'adNotReady': 'Anzeige ist noch nicht bereit. Versuch es gleich noch mal.',
@@ -501,6 +503,7 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Déc',
 
+      'privacyOptions': 'Options de confidentialité',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Pas de connexion. Connecte-toi pour utiliser les indices ou recharger tes vies.',
       'adNotReady': 'La pub n\'est pas encore prête. Réessaie dans un instant.',
@@ -665,6 +668,7 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dic',
 
+      'privacyOptions': 'Opzioni sulla privacy',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Nessuna connessione. Connettiti per usare i suggerimenti o ricaricare le vite.',
       'adNotReady': 'L\'annuncio non è ancora pronto. Riprova tra un momento.',
@@ -825,6 +829,7 @@ class Tr {
       'novShort': '11月',
       'decShort': '12月',
 
+      'privacyOptions': 'プライバシー設定',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'インターネットに接続されていません。ヒントやライフの回復には接続が必要です。',
       'adNotReady': '広告の準備がまだできていません。少し経ってからもう一度お試しください。',
@@ -985,6 +990,7 @@ class Tr {
       'novShort': '11월',
       'decShort': '12월',
 
+      'privacyOptions': '개인정보 설정',
       // Rewarded-ad unavailable messages
       'adNoInternet': '인터넷에 연결되어 있지 않습니다. 힌트나 하트 충전에는 연결이 필요합니다.',
       'adNotReady': '광고가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.',
@@ -1149,6 +1155,7 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dez',
 
+      'privacyOptions': 'Opções de privacidade',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Sem internet. Conecte-se para usar dicas ou recarregar vidas.',
       'adNotReady': 'O anúncio ainda não está pronto. Tente de novo em instantes.',
@@ -1313,6 +1320,7 @@ class Tr {
       'novShort': 'Ноя',
       'decShort': 'Дек',
 
+      'privacyOptions': 'Настройки конфиденциальности',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Нет интернета. Подключись, чтобы использовать подсказки или восполнить жизни.',
       'adNotReady': 'Реклама ещё не готова. Попробуй через мгновение.',
@@ -1477,6 +1485,7 @@ class Tr {
       'novShort': 'Nov',
       'decShort': 'Dic',
 
+      'privacyOptions': 'Opciones de privacidad',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Sin conexión. Conéctate para usar pistas o recargar vidas.',
       'adNotReady': 'El anuncio aún no está listo. Inténtalo de nuevo en un momento.',
@@ -1640,6 +1649,7 @@ class Tr {
       'novShort': 'Kas',
       'decShort': 'Ara',
 
+      'privacyOptions': 'Gizlilik seçenekleri',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'İnternet yok. İpucu kullanmak veya can yenilemek için bağlan.',
       'adNotReady': 'Reklam henüz hazır değil. Birazdan tekrar dene.',

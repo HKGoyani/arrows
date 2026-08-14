@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'ad_service.dart';
 import 'audio.dart';
 import 'config.dart';
 import 'iap_service.dart';
@@ -149,6 +150,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Tr.get('support'),
                     onTap: () => _openUrl(_supportUrl),
                   ),
+                  // Only for users UMP says need it — EEA/UK/Switzerland
+                  // users who were shown a consent form. GDPR requires that
+                  // choice stay changeable; everyone else never sees this row.
+                  if (AdService.privacyOptionsRequired)
+                    SettingsTile(
+                      icon: Icons.privacy_tip_outlined,
+                      tint: AppColors.navInk,
+                      title: Tr.get('privacyOptions'),
+                      onTap: () async {
+                        await AdService.showPrivacyOptions();
+                        if (context.mounted) setState(() {});
+                      },
+                    ),
                 ],
               ),
             ),

@@ -39,6 +39,14 @@ class AdService {
   static bool _canRequestAds = false;
   static bool get canRequestAds => _canRequestAds;
 
+  /// Whether UMP says this user must be offered a way to change their consent
+  /// after the initial prompt — true for EEA/UK/Switzerland users who were
+  /// shown a consent form. GDPR requires the choice to be revisitable, so
+  /// Settings shows a "Privacy options" entry only when this is true (it
+  /// stays false everywhere else, keeping Settings clean for most users).
+  static bool _privacyOptionsRequired = false;
+  static bool get privacyOptionsRequired => _privacyOptionsRequired;
+
   // Tracks whether ANY full-screen ad (rewarded/interstitial/app-open) is
   // currently up, plus a brief cooldown after one closes. Dismissing a
   // full-screen ad fires AppLifecycleState.resumed (the ad's view controller
@@ -159,13 +167,64 @@ class AdService {
     _preloadAll();
   }
 
-  /// Re-reads the UMP verdict on whether ads may be requested.
+  /// Re-reads the UMP verdict on whether ads may be requested, and whether a
+  /// privacy-options entry point has to be offered in Settings.
   static Future<void> _refreshCanRequestAds() async {
     try {
       _canRequestAds = await ConsentInformation.instance.canRequestAds();
     } catch (_) {
       _canRequestAds = false; // fail closed — never request without consent
     }
+    try {
+      final status =
+          await ConsentInformation.instance.getPrivacyOptionsRequirementStatus();
+      _privacyOptionsRequired =
+          status == PrivacyOptionsRequirementStatus.required;
+    } catch (_) {
+      _privacyOptionsRequired = false;
+    }
+  }
+
+  /// Shows Google's privacy options form so the user can change the consent
+  /// choice they made at first launch. Only reachable when
+  /// [privacyOptionsRequired] is true.
+  ///
+  /// Consent can move either way here, so the ad state is re-resolved after
+  /// the form closes: withdrawing consent must stop further ad requests, and
+  /// granting it should start them without needing an app restart.
+  static Future<void> showPrivacyOptions() async {
+    final completer = Completer<void>();
+    try {
+      await ConsentForm.showPrivacyOptionsForm((formError) {
+        if (!completer.isCompleted) completer.complete();
+      });
+      await completer.future;
+    } catch (_) {
+      // Form failed to present — leave consent state untouched.
+      return;
+    }
+    await _refreshCanRequestAds();
+    await _forwardConsentToMediationPartners();
+    // Always discard, whichever way the choice went. Anything preloaded was
+    // fetched under the PREVIOUS consent state — showing it now could serve a
+    // personalized ad to someone who just withdrew personalization consent.
+    // Note canRequestAds() alone can't detect that: it reports only that the
+    // consent flow completed, and stays true even after "Do not consent".
+    _discardPreloadedAds();
+    _preloadAll();
+  }
+
+  /// Disposes every preloaded full-screen ad. Banners are owned by the
+  /// widgets that created them and are disposed there.
+  static void _discardPreloadedAds() {
+    _rewardedAd?.dispose();
+    _rewardedAd = null;
+    _rewardedBackup?.dispose();
+    _rewardedBackup = null;
+    _interstitialAd?.dispose();
+    _interstitialAd = null;
+    _appOpenAd?.dispose();
+    _appOpenAd = null;
   }
 
   static void _preloadAll() {
