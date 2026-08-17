@@ -180,8 +180,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         duration: const Duration(milliseconds: 350),
         value: _isTutorial ? 1.0 : 0.0)
       ..addListener(_rebuild);
-    c.addListener(_rebuild);
-    AdService.setPlaying(true);
+    c.addListener(_onControllerChanged);
+    AdService.onLevelStart(isDaily: widget.isDaily);
     AnalyticsService.levelStart(widget.level, daily: widget.isDaily);
     if (widget.isDaily) {
       // Daily boards generate on a background isolate (loadLevelAsync). The
@@ -258,6 +258,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _hintTimer?.cancel();
     _hintTimer = Timer(const Duration(seconds: 10), () {
       if (mounted && c.status == GameStatus.playing) {
+        // Fetch now, while the button is appearing — loading on the tap
+        // itself would put a spinner in front of the player.
+        AdService.onHintOffered();
         setState(() => _showHint = true);
       }
     });
@@ -291,6 +294,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   void _applyHint(Arrow arrow) {
     Prefs.setHintsUsed(Prefs.hintsUsed + 1);
+    // If that was the last free hint, the next one needs an ad — start
+    // fetching now instead of making the player wait on the tap.
+    AdService.onFreeHintUsed();
     setState(() {
       _hintArrow = arrow;
       _hintedIds.add(arrow.id);
@@ -304,7 +310,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void dispose() {
     _hintTimer?.cancel();
     _loadingTimer?.cancel();
-    c.removeListener(_rebuild);
+    c.removeListener(_onControllerChanged);
     _rippleCtrl.dispose();
     _heartCtrl.dispose();
     _clashFlashCtrl.dispose();
@@ -327,6 +333,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   void _rebuild() {
     if (mounted) setState(() {});
+  }
+
+  /// Controller-driven rebuild. Separate from [_rebuild] because that one is
+  /// also wired to animation controllers and fires every frame — hearts only
+  /// need checking when the game state actually changes.
+  void _onControllerChanged() {
+    AdService.onHeartsChanged(c.hearts);
+    if (c.progress >= 0.8) {
+      AdService.onLevelNearlyComplete(isDaily: widget.isDaily);
+    }
+    _rebuild();
   }
 
   Matrix4 _centeredMatrix(double scale) {

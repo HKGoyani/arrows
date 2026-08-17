@@ -220,6 +220,8 @@ class AdService {
     RewardedPlacement.extraLives: null,
   };
   static InterstitialAd? _interstitialWinAd;
+  static bool _interstitialWinLoading = false;
+  static bool _interstitialRestartLoading = false;
   static RewardedInterstitialAd? _rewardedInterstitialAd;
   static InterstitialAd? _interstitialRestartAd;
   static final Map<AppOpenPlacement, AppOpenAd?> _appOpenAds = {
@@ -334,18 +336,57 @@ class AdService {
     });
   }
 
+  /// Preloads only what can actually be shown outside a level.
+  ///
+  /// Every other format — both interstitials, both rewarded slots, the
+  /// rewarded interstitial — is reachable ONLY from the game screen (win,
+  /// restart, daily complete, hint, refill lives). Loading those at app start
+  /// meant a player who browsed Collection and left generated five matched
+  /// requests that could never produce an impression, which is precisely what
+  /// drags AdMob's show rate down. They are fetched in [onLevelStart] instead.
   static void _preloadAll() {
     if (!_canRequestAds) return;
-    // Preload every placement in parallel for fastest availability
-    for (final p in RewardedPlacement.values) {
-      _loadRewarded(p);
-    }
-    _loadInterstitialWin();
-    _loadInterstitialRestart();
-    _loadRewardedInterstitial();
-    // Only cold start is preloaded; the resume ad is fetched when the app is
-    // backgrounded so it is fresh on return (see onAppBackgrounded).
+    // The resume app-open ad is fetched when the app is backgrounded so it is
+    // fresh on return (see onAppBackgrounded), not here.
     _loadAppOpen(AppOpenPlacement.coldStart);
+  }
+
+  /// Call when a level begins. Fetches the formats that only this screen can
+  /// show, so their requests always have a plausible impression ahead of them.
+  ///
+  /// Guarded on the existing cache so re-entering levels doesn't re-request
+  /// an ad that's already waiting.
+  static void onLevelStart({required bool isDaily}) {
+    _isPlaying = true;
+    if (!_canRequestAds) return;
+    // Everything else now loads at the moment it becomes likely to be shown:
+    //   hint            → onHintOffered (button appears, free hints gone)
+    //   extraLives      → onHeartsChanged (down to one heart)
+    //   win / rewarded  → onLevelNearlyComplete (~80% cleared)
+    // Restart is the exception: it can be tapped at any point in the level,
+    // so there is no later signal to wait for.
+    _loadInterstitialRestart();
+  }
+
+  /// Call when the hint button becomes visible and a hint would cost an ad.
+  ///
+  /// Loading on the TAP would guarantee a spinner — the request needs a
+  /// couple of seconds and the player expects the ad immediately. The button
+  /// appearing is the last signal that still leaves runway.
+  static void onHintOffered() {
+    if (Prefs.hasFreeHint) return;
+    _loadRewarded(RewardedPlacement.hint);
+  }
+
+  /// Call as the board nears completion (~80% cleared).
+  ///
+  /// Both of these only ever fire on a WIN, so fetching them at level start
+  /// wasted the request for anyone who quit or lost mid-level. At 80% the win
+  /// is likely and there is still time for the load to land.
+  static void onLevelNearlyComplete({required bool isDaily}) {
+    if (_adsRemoved || !_canRequestAds) return;
+    _loadInterstitialWin();
+    if (isDaily) _loadRewardedInterstitial();
   }
 
   /// Re-runs the consent flow when ads are currently blocked. Called on app
@@ -461,6 +502,24 @@ class AdService {
 
   static void setPlaying(bool playing) => _isPlaying = playing;
 
+  /// Call when the player's hearts change.
+  ///
+  /// The refill-lives ad is fetched at ONE heart, not zero. The lose popup
+  /// appears the instant hearts hit zero, so starting the load there would
+  /// put a spinner in front of the player instead of an ad — trading a sure
+  /// impression for a wait they may not sit through. One heart leaves time
+  /// for the request to land while still skipping it entirely for players
+  /// who never come close to losing.
+  static void onHeartsChanged(int hearts) {
+    if (hearts == 1) _loadRewarded(RewardedPlacement.extraLives);
+  }
+
+  /// Call after a free hint is consumed. If it was the last one, every hint
+  /// from here needs an ad, so fetch it now rather than at the next tap.
+  static void onFreeHintUsed() {
+    if (!Prefs.hasFreeHint) _loadRewarded(RewardedPlacement.hint);
+  }
+
   /// Whether ads are removed (rewarded ads still show — user opts in).
   static bool get _adsRemoved => Prefs.removeAds;
 
@@ -471,14 +530,28 @@ class AdService {
   static String _rewardedIdFor(RewardedPlacement placement) =>
       placement == RewardedPlacement.hint ? _rewardedHintId : _rewardedLivesId;
 
+  /// Placements with a load in flight. [onHeartsChanged] can fire more than
+  /// once at the same heart count, so without this a single trigger could
+  /// stack duplicate requests.
+  static final Set<RewardedPlacement> _rewardedLoading = {};
+
   static void _loadRewarded(RewardedPlacement placement) {
     if (!_canRequestAds) return;
+    if (_rewardedAds[placement] != null) return;
+    if (_rewardedLoading.contains(placement)) return;
+    _rewardedLoading.add(placement);
     RewardedAd.load(
       adUnitId: _rewardedIdFor(placement),
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) => _rewardedAds[placement] = ad,
-        onAdFailedToLoad: (error) => _rewardedAds[placement] = null,
+        onAdLoaded: (ad) {
+          _rewardedLoading.remove(placement);
+          _rewardedAds[placement] = ad;
+        },
+        onAdFailedToLoad: (error) {
+          _rewardedLoading.remove(placement);
+          _rewardedAds[placement] = null;
+        },
       ),
     );
   }
@@ -581,7 +654,9 @@ class AdService {
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         a.dispose();
-        _loadRewarded(placement);
+        // Not refetched: hint reloads when the button next appears
+        // (onHintOffered) and lives when hearts next drop to one
+        // (onHeartsChanged) — both fire well before either is needed again.
       },
       onAdFailedToShowFullScreenContent: (a, error) {
         _showingFullScreenAd = false;
@@ -601,12 +676,18 @@ class AdService {
 
   static void _loadInterstitialWin([int attempt = 0]) {
     if (_adsRemoved || !_canRequestAds) return;
+    if (_interstitialWinAd != null || _interstitialWinLoading) return;
+    _interstitialWinLoading = true;
     InterstitialAd.load(
       adUnitId: _interstitialWinId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) => _interstitialWinAd = ad,
+        onAdLoaded: (ad) {
+          _interstitialWinLoading = false;
+          _interstitialWinAd = ad;
+        },
         onAdFailedToLoad: (error) {
+          _interstitialWinLoading = false;
           _interstitialWinAd = null;
           // Retry with backoff. Without this a single no-fill left the slot
           // empty until the NEXT win triggered a reload — and that win's
@@ -619,12 +700,18 @@ class AdService {
 
   static void _loadInterstitialRestart([int attempt = 0]) {
     if (_adsRemoved || !_canRequestAds) return;
+    if (_interstitialRestartAd != null || _interstitialRestartLoading) return;
+    _interstitialRestartLoading = true;
     InterstitialAd.load(
       adUnitId: _interstitialRestartId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) => _interstitialRestartAd = ad,
+        onAdLoaded: (ad) {
+          _interstitialRestartLoading = false;
+          _interstitialRestartAd = ad;
+        },
         onAdFailedToLoad: (error) {
+          _interstitialRestartLoading = false;
           _interstitialRestartAd = null;
           // Retry with backoff. Without this a single no-fill left the slot
           // empty until the NEXT win triggered a reload — and that win's
@@ -725,17 +812,27 @@ class AdService {
   // REWARDED INTERSTITIAL — daily challenge complete
   // ═══════════════════════════════════════════════════════════════════
 
+  static bool _rewardedInterstitialLoading = false;
+
   static void _loadRewardedInterstitial() {
     // Suppressed for Remove Ads buyers: the IAP promises "Remove all
     // fullscreen ads between levels", and this is one — the opt-out screen
     // doesn't change that.
     if (_adsRemoved || !_canRequestAds) return;
+    if (_rewardedInterstitialAd != null || _rewardedInterstitialLoading) return;
+    _rewardedInterstitialLoading = true;
     RewardedInterstitialAd.load(
       adUnitId: _rewardedInterstitialDailyId,
       request: const AdRequest(),
       rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
-        onAdLoaded: (ad) => _rewardedInterstitialAd = ad,
-        onAdFailedToLoad: (error) => _rewardedInterstitialAd = null,
+        onAdLoaded: (ad) {
+          _rewardedInterstitialLoading = false;
+          _rewardedInterstitialAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          _rewardedInterstitialLoading = false;
+          _rewardedInterstitialAd = null;
+        },
       ),
     );
   }
@@ -781,7 +878,9 @@ class AdService {
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         a.dispose();
-        _loadRewardedInterstitial();
+        // Not refetched: the next daily challenge is a day away, so this
+        // would sit unused exactly like the old cold-start reload did.
+        // onLevelNearlyComplete fetches it when a daily is near its win.
         finish();
       },
       onAdFailedToShowFullScreenContent: (a, error) {
@@ -820,14 +919,17 @@ class AdService {
         _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
         _interstitialWinAd = null;
-        _loadInterstitialWin();
+        // Not refetched here. Nothing can show for 45s, and the next win is
+        // two levels away — onLevelNearlyComplete (~80% cleared) fetches it
+        // when a win is actually approaching. A blind reload here is a
+        // request with no signal behind it, wasted outright if the player
+        // quits after the ad.
         onDone?.call(true);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         _showingFullScreenAd = false;
         ad.dispose();
         _interstitialWinAd = null;
-        _loadInterstitialWin();
         onDone?.call(false);
       },
     );
@@ -1106,18 +1208,16 @@ class AdService {
         _lastFullScreenAdClosedAt = DateTime.now();
         a.dispose();
         _appOpenLoadedAt[placement] = null;
-        // Resume ads are refetched on the next backgrounding, not now.
-        if (placement == AppOpenPlacement.coldStart) {
-          _loadAppOpen(placement);
-        }
+        // Neither placement is refetched here. Cold start fires once per
+        // process — _coldStartShown is already true, so a reload could never
+        // be shown and would be a pure wasted request. Resume is refetched on
+        // the next backgrounding (see onAppBackgrounded).
       },
       onAdFailedToShowFullScreenContent: (a, error) {
         _showingFullScreenAd = false;
         a.dispose();
         _appOpenLoadedAt[placement] = null;
-        if (placement == AppOpenPlacement.coldStart) {
-          _loadAppOpen(placement);
-        }
+        // Not refetched, for the same reason as the dismiss path above.
       },
     );
     _markPresenting();
