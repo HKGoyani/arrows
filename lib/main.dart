@@ -34,7 +34,22 @@ Future<void> main() async {
   await Prefs.init();
   await AnalyticsService.init();
   await AudioService.init();
-  await AdService.init();
+  // Ad startup is bounded as ONE budget covering both SDK init and the
+  // cold-start ad fetch — capping only the ad wait was useless, because
+  // MobileAds.initialize() alone measured anywhere from 2.5s to 14.7s and
+  // ran BEFORE that cap applied, producing a 23s splash.
+  //
+  // Deliberately not awaited directly: initialization continues in the
+  // background past the deadline, so a slow network delays the ad but never
+  // the game. If the budget runs out the cold-start ad is skipped for this
+  // launch and the resume placement picks it up instead.
+  final adStartup = AdService.init()
+      .then((_) => AdService.awaitColdStartAppOpen(
+          timeout: const Duration(seconds: 5)));
+  await Future.any([
+    adStartup,
+    Future<void>.delayed(const Duration(seconds: 5)),
+  ]);
   await IapService.init();
   runApp(ArrowsApp());
 }
@@ -170,7 +185,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   /// this the slot would stay empty for the rest of the session even though
   /// the shell lives for the whole app.
   void _requestBanner(int width) {
-    AdService.createBanner(width: width, collapsible: true).then((ad) {
+    AdService.createBanner(width: width, placement: BannerPlacement.home)
+        .then((ad) {
       // The load (with retries) can take several seconds; if this shell is
       // gone by the time it resolves, dispose the ad so it doesn't leak.
       if (!mounted) {
@@ -210,6 +226,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
       AudioService.onAppPause();
+      // Fetch the resume app-open ad now, while backgrounded, so it's fresh
+      // when the player returns. Self-guards against the duplicate calls
+      // these three states produce for a single backgrounding.
+      AdService.onAppBackgrounded();
     }
   }
 
@@ -558,11 +578,119 @@ class _GameFlowState extends State<GameFlow> {
         }
 
         if (_isDaily) {
-          AdService.onDailyComplete(onDone: afterAd);
+          _dailyCompleteAd(afterAd);
         } else {
           AdService.onLevelWin(onDone: afterAd);
         }
       },
+    );
+  }
+
+  /// Daily challenge completion ad.
+  ///
+  /// Prefers the rewarded interstitial: the player is offered a free hint for
+  /// watching, which earns more than the plain interstitial it replaces and
+  /// gives them something back. Google requires US to present the intro and
+  /// skip option — the SDK provides neither — so that's the dialog below.
+  ///
+  /// Falls back to the plain interstitial when no rewarded interstitial is
+  /// cached, so the slot is never wasted. [afterAd] runs exactly once either
+  /// way, since the celebration sequencing hangs off it.
+  void _dailyCompleteAd(void Function(bool adShown) afterAd) {
+    if (!AdService.rewardedInterstitialReady) {
+      AdService.onDailyComplete(onDone: afterAd);
+      return;
+    }
+    showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _RewardedIntroDialog(
+        onWatch: () => Navigator.of(ctx).pop(true),
+        onSkip: () => Navigator.of(ctx).pop(false),
+      ),
+    ).then((watch) {
+      if (!mounted) return;
+      if (watch != true) {
+        // Declined — no ad, no reward. Don't substitute an interstitial here:
+        // they just said no to an ad.
+        afterAd(false);
+        return;
+      }
+      AdService.showRewardedInterstitial(
+        onRewarded: () {
+          // Give back one of the 5 free hints.
+          Prefs.setHintsUsed((Prefs.hintsUsed - 1).clamp(0, Prefs.freeHints));
+        },
+        onDone: () {
+          if (mounted) afterAd(true);
+        },
+      );
+    });
+  }
+}
+
+/// Intro screen required before a rewarded interstitial: states the reward
+/// and offers a way out. Google mandates this and the SDK doesn't supply it.
+class _RewardedIntroDialog extends StatelessWidget {
+  final VoidCallback onWatch;
+  final VoidCallback onSkip;
+  const _RewardedIntroDialog({required this.onWatch, required this.onSkip});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: AppColors.bg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(26, 28, 26, 22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lightbulb_rounded, size: 46, color: AppColors.blue),
+            const SizedBox(height: 14),
+            Text(Tr.get('riTitle'),
+                textAlign: TextAlign.center,
+                style: poppins(21, FontWeight.w900, AppColors.ink)),
+            const SizedBox(height: 10),
+            Text(Tr.get('riBody'),
+                textAlign: TextAlign.center,
+                style: poppins(14.5, FontWeight.w700, AppColors.muted)),
+            const SizedBox(height: 22),
+            Pressable(
+              onTap: onWatch,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                decoration: BoxDecoration(
+                  color: AppColors.blue,
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.videocam_rounded,
+                        size: 22, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(Tr.get('riWatch'),
+                        style: poppins(16.5, FontWeight.w900, Colors.white)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Pressable(
+              onTap: onSkip,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                alignment: Alignment.center,
+                child: Text(Tr.get('riSkip'),
+                    style: poppins(15, FontWeight.w800, AppColors.muted)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

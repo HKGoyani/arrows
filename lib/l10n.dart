@@ -173,6 +173,11 @@ class Tr {
       'decShort': 'Dec',
 
       'privacyOptions': 'Privacy options',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': 'Free hint?',
+      'riBody': 'Watch a short ad and get a free hint for your next level.',
+      'riWatch': 'Watch ad',
+      'riSkip': 'No thanks',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'No internet. Connect to use hints or refill lives.',
       'adNotReady': 'Ad not ready yet. Try again in a moment.',
@@ -339,6 +344,11 @@ class Tr {
       'decShort': 'Dez',
 
       'privacyOptions': 'Datenschutzoptionen',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': 'Gratis-Hinweis?',
+      'riBody': 'Sieh dir eine kurze Anzeige an und erhalte einen Gratis-Hinweis für dein nächstes Level.',
+      'riWatch': 'Anzeige ansehen',
+      'riSkip': 'Nein danke',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Kein Internet. Verbinde dich, um Tipps zu nutzen oder Leben aufzufüllen.',
       'adNotReady': 'Anzeige ist noch nicht bereit. Versuch es gleich noch mal.',
@@ -504,6 +514,11 @@ class Tr {
       'decShort': 'Déc',
 
       'privacyOptions': 'Options de confidentialité',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': 'Indice gratuit ?',
+      'riBody': 'Regarde une courte publicité et reçois un indice gratuit pour ton prochain niveau.',
+      'riWatch': 'Voir la pub',
+      'riSkip': 'Non merci',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Pas de connexion. Connecte-toi pour utiliser les indices ou recharger tes vies.',
       'adNotReady': 'La pub n\'est pas encore prête. Réessaie dans un instant.',
@@ -669,6 +684,11 @@ class Tr {
       'decShort': 'Dic',
 
       'privacyOptions': 'Opzioni sulla privacy',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': 'Suggerimento gratis?',
+      'riBody': 'Guarda un breve annuncio e ricevi un suggerimento gratuito per il prossimo livello.',
+      'riWatch': 'Guarda l\'annuncio',
+      'riSkip': 'No, grazie',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Nessuna connessione. Connettiti per usare i suggerimenti o ricaricare le vite.',
       'adNotReady': 'L\'annuncio non è ancora pronto. Riprova tra un momento.',
@@ -830,6 +850,11 @@ class Tr {
       'decShort': '12月',
 
       'privacyOptions': 'プライバシー設定',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': 'ヒントを無料でゲット？',
+      'riBody': '短い広告を見ると、次のレベルで使える無料ヒントがもらえます。',
+      'riWatch': '広告を見る',
+      'riSkip': 'いいえ',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'インターネットに接続されていません。ヒントやライフの回復には接続が必要です。',
       'adNotReady': '広告の準備がまだできていません。少し経ってからもう一度お試しください。',
@@ -991,6 +1016,11 @@ class Tr {
       'decShort': '12월',
 
       'privacyOptions': '개인정보 설정',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': '무료 힌트를 받을까요?',
+      'riBody': '짧은 광고를 보면 다음 레벨에서 쓸 수 있는 무료 힌트를 드려요.',
+      'riWatch': '광고 보기',
+      'riSkip': '괜찮아요',
       // Rewarded-ad unavailable messages
       'adNoInternet': '인터넷에 연결되어 있지 않습니다. 힌트나 하트 충전에는 연결이 필요합니다.',
       'adNotReady': '광고가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.',
@@ -1156,6 +1186,11 @@ class Tr {
       'decShort': 'Dez',
 
       'privacyOptions': 'Opções de privacidade',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': 'Dica grátis?',
+      'riBody': 'Assista a um anúncio curto e ganhe uma dica grátis para o próximo nível.',
+      'riWatch': 'Assistir anúncio',
+      'riSkip': 'Não, obrigado',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Sem internet. Conecte-se para usar dicas ou recarregar vidas.',
       'adNotReady': 'O anúncio ainda não está pronto. Tente de novo em instantes.',
@@ -1321,6 +1356,11 @@ class Tr {
       'decShort': 'Дек',
 
       'privacyOptions': 'Настройки конфиденциальности',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': 'Бесплатная подсказка?',
+      'riBody': 'Посмотри короткую рекламу и получи бесплатную подсказку для следующего уровня.',
+      'riWatch': 'Смотреть рекламу',
+      'riSkip': 'Нет, спасибо',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Нет интернета. Подключись, чтобы использовать подсказки или восполнить жизни.',
       'adNotReady': 'Реклама ещё не готова. Попробуй через мгновение.',
@@ -1486,6 +1526,11 @@ class Tr {
       'decShort': 'Dic',
 
       'privacyOptions': 'Opciones de privacidad',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': '¿Pista gratis?',
+      'riBody': 'Mira un anuncio corto y consigue una pista gratis para el próximo nivel.',
+      'riWatch': 'Ver anuncio',
+      'riSkip': 'No, gracias',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'Sin conexión. Conéctate para usar pistas o recargar vidas.',
       'adNotReady': 'El anuncio aún no está listo. Inténtalo de nuevo en un momento.',
@@ -1650,6 +1695,11 @@ class Tr {
       'decShort': 'Ara',
 
       'privacyOptions': 'Gizlilik seçenekleri',
+      // Rewarded interstitial intro (daily challenge complete)
+      'riTitle': 'Ücretsiz ipucu?',
+      'riBody': 'Kısa bir reklam izle ve sonraki bölüm için ücretsiz ipucu kazan.',
+      'riWatch': 'Reklamı izle',
+      'riSkip': 'Hayır, teşekkürler',
       // Rewarded-ad unavailable messages
       'adNoInternet': 'İnternet yok. İpucu kullanmak veya can yenilemek için bağlan.',
       'adNotReady': 'Reklam henüz hazır değil. Birazdan tekrar dene.',

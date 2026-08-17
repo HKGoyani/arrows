@@ -229,7 +229,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   /// Requests the banner, retrying slowly if the initial burst is exhausted —
   /// otherwise a transient no-fill leaves the slot empty for the whole level.
   void _requestBanner(int width) {
-    AdService.createBanner(width: width).then((ad) {
+    AdService.createBanner(width: width, placement: BannerPlacement.gameplay)
+        .then((ad) {
       // The load (with retries) can take several seconds; if this screen is
       // gone by the time it resolves, dispose the ad so it doesn't leak.
       if (!mounted) {
@@ -278,6 +279,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     } else {
       // Show rewarded ad for paid hint
       AdService.showRewarded(
+        placement: RewardedPlacement.hint,
         onLoading: _setAdLoading,
         onUnavailable: _showAdUnavailable,
         onRewarded: () {
@@ -1348,6 +1350,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 const SizedBox(height: 24),
                 Pressable(
                   onTap: () => AdService.showRewarded(
+                    placement: RewardedPlacement.extraLives,
                     onLoading: _setAdLoading,
                     onUnavailable: _showAdUnavailable,
                     onRewarded: () {

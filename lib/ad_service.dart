@@ -17,6 +17,38 @@ enum RewardedUnavailable {
   notReady,
 }
 
+/// Which banner slot an ad is for. Determines both the ad unit and whether
+/// the collapsible format is requested — the two always go together, so
+/// callers pick a placement rather than setting them independently.
+enum BannerPlacement {
+  /// Under the bottom nav, shared across Home/Challenge/Collection/Settings.
+  /// Collapsible.
+  home,
+
+  /// Gameplay screen. Never collapsible — it must not expand over the board.
+  gameplay,
+}
+
+/// Which app-open slot an ad is for. Cold start and resume are separate
+/// placements: they have very different user context (fresh launch vs
+/// returning mid-session) and separate ad units.
+enum AppOpenPlacement {
+  /// First show after the app process starts.
+  coldStart,
+
+  /// Every subsequent foreground.
+  resume,
+}
+
+/// Which rewarded slot an ad is for.
+enum RewardedPlacement {
+  /// "Watch for a hint", after the 5 free hints are used.
+  hint,
+
+  /// "Refill lives" on the lose overlay.
+  extraLives,
+}
+
 /// Centralized ad management: rewarded, interstitial, banner, app-open.
 /// AdMob mediation: Meta Audience Network + Unity Ads (see AdMob console
 /// Mediation groups for waterfall/bidding config — not set in this code).
@@ -86,55 +118,114 @@ class AdService {
   // Android release builds are back on production IDs as of 2026-07-14 —
   // the Play Store listing is live, so real end users must never be served
   // Google's sample test units (AdMob policy, and it also means $0 revenue).
-  static String get _rewardedId {
-    if (kDebugMode) {
-      return Platform.isIOS
-          ? 'ca-app-pub-3940256099942544/1712485313'
-          : 'ca-app-pub-3940256099942544/5224354917';
-    }
+  // Each PLACEMENT has its own ad unit (2026-08-14) rather than one unit per
+  // format, so per-placement performance is visible in AdMob reporting.
+  // Google's sample test IDs are per-FORMAT, so placements of the same format
+  // share a test ID in debug — only the production IDs differ.
+
+  /// Rewarded, "watch for a hint" (game screen).
+  static String get _rewardedHintId {
+    if (kDebugMode) return _testRewardedId;
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/5160499311'
+        : 'ca-app-pub-4818503743858431/9945922137';
+  }
+
+  /// Rewarded, "refill lives" (lose overlay).
+  static String get _rewardedLivesId {
+    if (kDebugMode) return _testRewardedId;
     return Platform.isIOS
         ? 'ca-app-pub-4818503743858431/1504787383'
         : 'ca-app-pub-4818503743858431/8458959963';
   }
 
-  static String get _interstitialId {
-    if (kDebugMode) {
-      return Platform.isIOS
-          ? 'ca-app-pub-3940256099942544/4411468910'
-          : 'ca-app-pub-3940256099942544/1033173712';
-    }
+  /// Interstitial after a level win, and after a daily challenge completes.
+  static String get _interstitialWinId {
+    if (kDebugMode) return _testInterstitialId;
     return Platform.isIOS
         ? 'ca-app-pub-4818503743858431/7988636380'
         : 'ca-app-pub-4818503743858431/9963613329';
   }
 
-  static String get _bannerId {
-    if (kDebugMode) {
-      return Platform.isIOS
-          ? 'ca-app-pub-3940256099942544/2934735716'
-          : 'ca-app-pub-3940256099942544/6300978111';
-    }
+  /// Interstitial on level restart.
+  static String get _interstitialRestartId {
+    if (kDebugMode) return _testInterstitialId;
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/4805225764'
+        : 'ca-app-pub-4818503743858431/5268310525';
+  }
+
+  /// Banner under the bottom nav (Home, Challenge, Collection, Settings).
+  static String get _bannerHomeId {
+    if (kDebugMode) return _testBannerId;
     return Platform.isIOS
         ? 'ca-app-pub-4818503743858431/1614799726'
         : 'ca-app-pub-4818503743858431/6704813607';
   }
 
-  static String get _appOpenId {
+  /// Banner on the gameplay screen.
+  static String get _bannerGameplayId {
+    if (kDebugMode) return _testBannerId;
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/8988013355'
+        : 'ca-app-pub-4818503743858431/5571512520';
+  }
+
+  /// Rewarded interstitial shown after a daily challenge completes.
+  static String get _rewardedInterstitialDailyId {
+    if (kDebugMode) {
+      return Platform.isIOS
+          ? 'ca-app-pub-3940256099942544/6978759866'
+          : 'ca-app-pub-3940256099942544/5354046379';
+    }
+    return Platform.isIOS
+        ? 'ca-app-pub-4818503743858431/5567643094'
+        : 'ca-app-pub-4818503743858431/6216073458';
+  }
+
+  static String _appOpenIdFor(AppOpenPlacement placement) {
     if (kDebugMode) {
       return Platform.isIOS
           ? 'ca-app-pub-3940256099942544/5662855259'
           : 'ca-app-pub-3940256099942544/9257395921';
     }
+    if (placement == AppOpenPlacement.coldStart) {
+      return Platform.isIOS
+          ? 'ca-app-pub-4818503743858431/3939379036'
+          : 'ca-app-pub-4818503743858431/1075293965';
+    }
     return Platform.isIOS
-        ? 'ca-app-pub-4818503743858431/3939379036'
-        : 'ca-app-pub-4818503743858431/1075293965';
+        ? 'ca-app-pub-4818503743858431/2035592190'
+        : 'ca-app-pub-4818503743858431/1951831717';
   }
 
-  // ── Preloaded ads ──
-  static RewardedAd? _rewardedAd;
-  static RewardedAd? _rewardedBackup;
-  static InterstitialAd? _interstitialAd;
-  static AppOpenAd? _appOpenAd;
+  static String get _testRewardedId => Platform.isIOS
+      ? 'ca-app-pub-3940256099942544/1712485313'
+      : 'ca-app-pub-3940256099942544/5224354917';
+  static String get _testInterstitialId => Platform.isIOS
+      ? 'ca-app-pub-3940256099942544/4411468910'
+      : 'ca-app-pub-3940256099942544/1033173712';
+  static String get _testBannerId => Platform.isIOS
+      ? 'ca-app-pub-3940256099942544/2934735716'
+      : 'ca-app-pub-3940256099942544/6300978111';
+
+  // ── Preloaded ads ── one cache per placement.
+  //
+  // Rewarded previously kept a primary + backup on a single unit. With two
+  // units that would mean four concurrent loads, so each placement now holds
+  // one; showRewarded()'s on-demand load (bounded by _rewardedLoadTimeout)
+  // is the fallback when a cache is empty.
+  static final Map<RewardedPlacement, RewardedAd?> _rewardedAds = {
+    RewardedPlacement.hint: null,
+    RewardedPlacement.extraLives: null,
+  };
+  static InterstitialAd? _interstitialWinAd;
+  static RewardedInterstitialAd? _rewardedInterstitialAd;
+  static InterstitialAd? _interstitialRestartAd;
+  static final Map<AppOpenPlacement, AppOpenAd?> _appOpenAds = {
+    AppOpenPlacement.coldStart: null,
+    AppOpenPlacement.resume: null,
+  };
 
   /// Call once at app startup. Runs Google's GDPR/UMP consent flow FIRST and
   /// waits for it to fully finish, THEN requests Apple's ATT permission, then
@@ -217,25 +308,35 @@ class AdService {
   /// Disposes every preloaded full-screen ad. Banners are owned by the
   /// widgets that created them and are disposed there.
   static void _discardPreloadedAds() {
-    _rewardedAd?.dispose();
-    _rewardedAd = null;
-    _rewardedBackup?.dispose();
-    _rewardedBackup = null;
-    _interstitialAd?.dispose();
-    _interstitialAd = null;
-    _appOpenAd?.dispose();
-    _appOpenAd = null;
-    _appOpenLoadedAt = null;
+    for (final p in RewardedPlacement.values) {
+      _rewardedAds[p]?.dispose();
+      _rewardedAds[p] = null;
+    }
+    _interstitialWinAd?.dispose();
+    _interstitialWinAd = null;
+    _interstitialRestartAd?.dispose();
+    _interstitialRestartAd = null;
+    _rewardedInterstitialAd?.dispose();
+    _rewardedInterstitialAd = null;
+    for (final p in AppOpenPlacement.values) {
+      _appOpenAds[p]?.dispose();
+      _appOpenAds[p] = null;
+      _appOpenLoadedAt[p] = null;
+    }
   }
 
   static void _preloadAll() {
     if (!_canRequestAds) return;
-    // Preload all formats in parallel for fastest availability
-    _loadRewarded();
-    _loadInterstitial();
-    _loadAppOpen();
-    // Preload a second rewarded ad so one is always ready
-    _loadRewardedBackup();
+    // Preload every placement in parallel for fastest availability
+    for (final p in RewardedPlacement.values) {
+      _loadRewarded(p);
+    }
+    _loadInterstitialWin();
+    _loadInterstitialRestart();
+    _loadRewardedInterstitial();
+    // Only cold start is preloaded; the resume ad is fetched when the app is
+    // backgrounded so it is fresh on return (see onAppBackgrounded).
+    _loadAppOpen(AppOpenPlacement.coldStart);
   }
 
   /// Re-runs the consent flow when ads are currently blocked. Called on app
@@ -343,6 +444,12 @@ class AdService {
   }
 
   /// Set true when entering GameScreen, false when leaving.
+  /// Set true from the moment show() is CALLED, not when the ad appears.
+  /// The OS reports the app inactive during the presentation transition, so a
+  /// flag set only in onAdShowedFullScreenContent leaves a window where
+  /// lifecycle handlers mistake our own ad for a real backgrounding.
+  static void _markPresenting() => _showingFullScreenAd = true;
+
   static void setPlaying(bool playing) => _isPlaying = playing;
 
   /// Whether ads are removed (rewarded ads still show — user opts in).
@@ -352,32 +459,24 @@ class AdService {
   // REWARDED AD (hints + extra life) — always available, even with Remove Ads
   // ═══════════════════════════════════════════════════════════════════
 
-  static void _loadRewarded() {
+  static String _rewardedIdFor(RewardedPlacement placement) =>
+      placement == RewardedPlacement.hint ? _rewardedHintId : _rewardedLivesId;
+
+  static void _loadRewarded(RewardedPlacement placement) {
     if (!_canRequestAds) return;
     RewardedAd.load(
-      adUnitId: _rewardedId,
+      adUnitId: _rewardedIdFor(placement),
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) => _rewardedAd = ad,
-        onAdFailedToLoad: (error) => _rewardedAd = null,
+        onAdLoaded: (ad) => _rewardedAds[placement] = ad,
+        onAdFailedToLoad: (error) => _rewardedAds[placement] = null,
       ),
     );
   }
 
-  static void _loadRewardedBackup() {
-    if (!_canRequestAds) return;
-    RewardedAd.load(
-      adUnitId: _rewardedId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) => _rewardedBackup = ad,
-        onAdFailedToLoad: (error) => _rewardedBackup = null,
-      ),
-    );
-  }
-
-  /// True if a rewarded ad is ready to show.
-  static bool get rewardedReady => _rewardedAd != null || _rewardedBackup != null;
+  /// True if a rewarded ad is cached for [placement].
+  static bool rewardedReady(RewardedPlacement placement) =>
+      _rewardedAds[placement] != null;
 
   /// Best-effort connectivity probe, used only to pick the right "can't show
   /// an ad" message.
@@ -411,11 +510,11 @@ class AdService {
   /// One rewarded load attempt, surfaced as a Future so [showRewarded] can
   /// wait on it rather than refusing the instant nothing is preloaded.
   /// Completes with null on failure.
-  static Future<RewardedAd?> _loadRewardedNow() {
+  static Future<RewardedAd?> _loadRewardedNow(RewardedPlacement placement) {
     if (!_canRequestAds) return Future.value(null);
     final completer = Completer<RewardedAd?>();
     RewardedAd.load(
-      adUnitId: _rewardedId,
+      adUnitId: _rewardedIdFor(placement),
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
@@ -443,30 +542,23 @@ class AdService {
   /// Callers can pass [onLoading] to show a spinner while the live attempt is
   /// in flight.
   static Future<void> showRewarded({
+    required RewardedPlacement placement,
     required void Function() onRewarded,
     void Function(bool loading)? onLoading,
     void Function(RewardedUnavailable reason)? onUnavailable,
   }) async {
-    // Use primary, fall back to backup
-    // Take from primary, then backup, clearing the slot as we consume it —
-    // a background preload can land while we're awaiting the fresh load
-    // below, so deciding which slot to clear afterwards would be ambiguous.
-    RewardedAd? ad;
-    if (_rewardedAd != null) {
-      ad = _rewardedAd;
-      _rewardedAd = null;
-    } else if (_rewardedBackup != null) {
-      ad = _rewardedBackup;
-      _rewardedBackup = null;
-    }
+    // Consume this placement's cache up front — a background preload can land
+    // while we're awaiting the live load below, so clearing the slot
+    // afterwards would be ambiguous.
+    RewardedAd? ad = _rewardedAds[placement];
+    _rewardedAds[placement] = null;
     if (ad == null) {
       onLoading?.call(true);
-      ad = await _loadRewardedNow()
+      ad = await _loadRewardedNow(placement)
           .timeout(_rewardedLoadTimeout, onTimeout: () => null);
       onLoading?.call(false);
       if (ad == null) {
-        _loadRewarded();
-        _loadRewardedBackup();
+        _loadRewarded(placement);
         await _reportUnavailable(onUnavailable);
         return;
       }
@@ -474,24 +566,23 @@ class AdService {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (a) {
         _showingFullScreenAd = true;
-        AnalyticsService.adShown('rewarded');
+        AnalyticsService.adShown('rewarded_${placement.name}');
       },
       onAdDismissedFullScreenContent: (a) {
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         a.dispose();
-        _loadRewarded();
-        _loadRewardedBackup();
+        _loadRewarded(placement);
       },
       onAdFailedToShowFullScreenContent: (a, error) {
         _showingFullScreenAd = false;
         a.dispose();
-        _loadRewarded();
-        _loadRewardedBackup();
+        _loadRewarded(placement);
         // Loaded but wouldn't display — no view, so no reward.
         _reportUnavailable(onUnavailable);
       },
     );
+    _markPresenting();
     ad.show(onUserEarnedReward: (_, __) => onRewarded());
   }
 
@@ -499,14 +590,26 @@ class AdService {
   // INTERSTITIAL AD — after every 2nd win, restart, daily complete
   // ═══════════════════════════════════════════════════════════════════
 
-  static void _loadInterstitial() {
+  static void _loadInterstitialWin() {
     if (_adsRemoved || !_canRequestAds) return;
     InterstitialAd.load(
-      adUnitId: _interstitialId,
+      adUnitId: _interstitialWinId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) => _interstitialAd = ad,
-        onAdFailedToLoad: (error) => _interstitialAd = null,
+        onAdLoaded: (ad) => _interstitialWinAd = ad,
+        onAdFailedToLoad: (error) => _interstitialWinAd = null,
+      ),
+    );
+  }
+
+  static void _loadInterstitialRestart() {
+    if (_adsRemoved || !_canRequestAds) return;
+    InterstitialAd.load(
+      adUnitId: _interstitialRestartId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) => _interstitialRestartAd = ad,
+        onAdFailedToLoad: (error) => _interstitialRestartAd = null,
       ),
     );
   }
@@ -556,34 +659,35 @@ class AdService {
   /// immediately — interstitials must not stack back-to-back on rapid
   /// repeated restarts.
   static void onRestart({VoidCallback? onDone}) {
-    if (_adsRemoved || _interstitialAd == null || !_interstitialGapOk) {
-      _loadInterstitial();
+    if (_adsRemoved || _interstitialRestartAd == null || !_interstitialGapOk) {
+      _loadInterstitialRestart();
       onDone?.call();
       return;
     }
-    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+    _interstitialRestartAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _showingFullScreenAd = true;
         _lastInterstitialShownAt = DateTime.now();
-        AnalyticsService.adShown('interstitial');
+        AnalyticsService.adShown('interstitial_restart');
       },
       onAdDismissedFullScreenContent: (ad) {
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
-        _interstitialAd = null;
-        _loadInterstitial();
+        _interstitialRestartAd = null;
+        _loadInterstitialRestart();
         onDone?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         _showingFullScreenAd = false;
         ad.dispose();
-        _interstitialAd = null;
-        _loadInterstitial();
+        _interstitialRestartAd = null;
+        _loadInterstitialRestart();
         onDone?.call();
       },
     );
-    _interstitialAd!.show();
+    _markPresenting();
+    _interstitialRestartAd!.show();
   }
 
   /// Call after daily challenge completion. Calls [onDone] after the ad is
@@ -596,13 +700,87 @@ class AdService {
     _showInterstitial(onDone: onDone);
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // REWARDED INTERSTITIAL — daily challenge complete
+  // ═══════════════════════════════════════════════════════════════════
+
+  static void _loadRewardedInterstitial() {
+    // Suppressed for Remove Ads buyers: the IAP promises "Remove all
+    // fullscreen ads between levels", and this is one — the opt-out screen
+    // doesn't change that.
+    if (_adsRemoved || !_canRequestAds) return;
+    RewardedInterstitialAd.load(
+      adUnitId: _rewardedInterstitialDailyId,
+      request: const AdRequest(),
+      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
+        onAdLoaded: (ad) => _rewardedInterstitialAd = ad,
+        onAdFailedToLoad: (error) => _rewardedInterstitialAd = null,
+      ),
+    );
+  }
+
+  /// True when a rewarded interstitial is cached and allowed. The UI checks
+  /// this BEFORE showing the intro screen — offering a reward and then
+  /// failing to deliver it is worse than never offering.
+  static bool get rewardedInterstitialReady =>
+      !_adsRemoved && _canRequestAds && _rewardedInterstitialAd != null;
+
+  /// Shows the rewarded interstitial. Google requires the caller to have
+  /// already presented an intro screen with the reward and a skip option —
+  /// the SDK does not provide one.
+  ///
+  /// [onRewarded] fires only if the user actually earns the reward.
+  /// [onDone] always fires exactly once, so the caller can sequence whatever
+  /// comes next off it.
+  static void showRewardedInterstitial({
+    required void Function() onRewarded,
+    VoidCallback? onDone,
+  }) {
+    final ad = _rewardedInterstitialAd;
+    if (ad == null) {
+      _loadRewardedInterstitial();
+      onDone?.call();
+      return;
+    }
+    _rewardedInterstitialAd = null;
+    var finished = false;
+    void finish() {
+      if (finished) return;
+      finished = true;
+      onDone?.call();
+    }
+
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (a) {
+        _showingFullScreenAd = true;
+        _lastInterstitialShownAt = DateTime.now();
+        AnalyticsService.adShown('rewarded_interstitial_daily');
+      },
+      onAdDismissedFullScreenContent: (a) {
+        _showingFullScreenAd = false;
+        _lastFullScreenAdClosedAt = DateTime.now();
+        a.dispose();
+        _loadRewardedInterstitial();
+        finish();
+      },
+      onAdFailedToShowFullScreenContent: (a, error) {
+        _showingFullScreenAd = false;
+        a.dispose();
+        _loadRewardedInterstitial();
+        finish();
+      },
+    );
+    _markPresenting();
+    ad.show(onUserEarnedReward: (_, __) => onRewarded());
+  }
+
   /// Shows interstitial if loaded, then calls [onDone] when it's dismissed —
   /// with `true` if an ad actually displayed, `false` otherwise. Never blocks:
   /// if not loaded or shown too recently, skips silently, preloads for next
   /// time, and calls `onDone(false)` immediately. [onDone] runs exactly once.
   static void _showInterstitial({void Function(bool adShown)? onDone}) {
-    if (_interstitialAd == null) {
-      _loadInterstitial();
+    if (_interstitialWinAd == null) {
+      _loadInterstitialWin();
       onDone?.call(false); // not loaded — skip, don't block user
       return;
     }
@@ -610,7 +788,7 @@ class AdService {
       onDone?.call(false); // shown too recently — avoid stacking
       return;
     }
-    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+    _interstitialWinAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _showingFullScreenAd = true;
         _lastInterstitialShownAt = DateTime.now();
@@ -620,19 +798,20 @@ class AdService {
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
-        _interstitialAd = null;
-        _loadInterstitial();
+        _interstitialWinAd = null;
+        _loadInterstitialWin();
         onDone?.call(true);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         _showingFullScreenAd = false;
         ad.dispose();
-        _interstitialAd = null;
-        _loadInterstitial();
+        _interstitialWinAd = null;
+        _loadInterstitialWin();
         onDone?.call(false);
       },
     );
-    _interstitialAd!.show();
+    _markPresenting();
+    _interstitialWinAd!.show();
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -668,9 +847,15 @@ class AdService {
 
   static Future<BannerAd?> createBanner({
     required int width,
-    bool collapsible = false,
+    required BannerPlacement placement,
     int maxAttempts = 4,
   }) async {
+    // Collapsible is a property of the placement, not an independent knob:
+    // Home collapses, gameplay must never expand over the board.
+    final collapsible = placement == BannerPlacement.home;
+    final adUnitId = placement == BannerPlacement.home
+        ? _bannerHomeId
+        : _bannerGameplayId;
     if (_adsRemoved || !_canRequestAds) return null;
     final size = await bannerSizeFor(width);
     if (size == null) return null;
@@ -685,7 +870,7 @@ class AdService {
         await Future.delayed(Duration(seconds: 2 << (attempt - 1)));
         if (_adsRemoved) return null; // user bought Remove Ads mid-wait
       }
-      final ad = await _loadOneBanner(size, collapsible);
+      final ad = await _loadOneBanner(size, collapsible, adUnitId, placement);
       if (ad != null) return ad;
     }
     return null;
@@ -693,17 +878,18 @@ class AdService {
 
   /// One BannerAd load attempt. Completes with the ad on success, or null on
   /// failure (disposing the dead ad object).
-  static Future<BannerAd?> _loadOneBanner(AdSize size, bool collapsible) {
+  static Future<BannerAd?> _loadOneBanner(AdSize size, bool collapsible,
+      String adUnitId, BannerPlacement placement) {
     final completer = Completer<BannerAd?>();
     final ad = BannerAd(
-      adUnitId: _bannerId,
+      adUnitId: adUnitId,
       size: size,
       request: collapsible
           ? const AdRequest(extras: {'collapsible': 'bottom'})
           : const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          AnalyticsService.adShown('banner');
+          AnalyticsService.adShown('banner_${placement.name}');
           if (!completer.isCompleted) completer.complete(ad as BannerAd);
         },
         onAdFailedToLoad: (ad, error) {
@@ -717,113 +903,177 @@ class AdService {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // APP OPEN AD — on resume / cold start (not during gameplay)
+  // APP OPEN AD — cold start + resume (never during gameplay)
   // ═══════════════════════════════════════════════════════════════════
 
   static bool _coldStartShown = false;
 
-  /// When the cached app-open ad was fetched.
+  /// Settles as soon as the cold-start app-open ad either loads or fails.
+  /// [awaitColdStartAppOpen] waits on this so the splash can stay up until
+  /// the ad is ready.
+  static final Completer<void> _coldStartAdSettled = Completer<void>();
+
+  static void _settleColdStartAd() {
+    if (!_coldStartAdSettled.isCompleted) _coldStartAdSettled.complete();
+  }
+
+  /// Holds the caller (the splash screen) until the cold-start app-open ad is
+  /// ready, up to [timeout].
+  ///
+  /// Without this the ad reliably lost a race it could never win: Home needs
+  /// only SDK init (~3.9s measured) while the ad needs SDK init AND a ~3.2s
+  /// fetch, so it landed ~3.4s after Home was already interactive — covering
+  /// a screen the player was touching instead of the launch transition.
+  ///
+  /// Returns immediately when there will be no ad to wait for: Remove Ads
+  /// purchasers, consent not granted, or a brand-new user's first launch
+  /// (which deliberately shows no app-open ad at all).
+  static Future<void> awaitColdStartAppOpen({
+    Duration timeout = const Duration(seconds: 5),
+  }) {
+    if (_adsRemoved || !_canRequestAds) return Future.value();
+    if (!Prefs.hasCompletedFirstSession) return Future.value();
+    return _coldStartAdSettled.future
+        .timeout(timeout, onTimeout: () {});
+  }
+
+  /// When each cached app-open ad was fetched.
   ///
   /// Google: "Ad references in the app open beta will time out after four
   /// hours. Ads rendered more than four hours after request time will no
   /// longer be valid and may not earn revenue." The SDK does NOT enforce this
   /// — an expired ad stays non-null and `show()` is still accepted, it just
-  /// fails at display time. So a null check alone can't detect staleness;
-  /// this timestamp is the only way.
-  ///
-  /// Without it the worst case is the most valuable one: an app backgrounded
-  /// overnight resumes with a stale ad, fails to show, and burns the
-  /// returning-user impression entirely.
-  static DateTime? _appOpenLoadedAt;
+  /// fails at display time — so a null check alone cannot detect staleness.
+  static final Map<AppOpenPlacement, DateTime?> _appOpenLoadedAt = {
+    AppOpenPlacement.coldStart: null,
+    AppOpenPlacement.resume: null,
+  };
+
+  /// Placements with a load in flight, so overlapping lifecycle events can't
+  /// fire duplicate requests (`paused`, `inactive` and `hidden` can all fire
+  /// for a single backgrounding).
+  static final Set<AppOpenPlacement> _appOpenLoading = {};
+
   static const _appOpenMaxCacheAge = Duration(hours: 4);
 
-  static bool get _appOpenExpired {
-    final t = _appOpenLoadedAt;
-    return t == null ||
-        DateTime.now().difference(t) >= _appOpenMaxCacheAge;
+  static bool _appOpenExpired(AppOpenPlacement placement) {
+    final t = _appOpenLoadedAt[placement];
+    return t == null || DateTime.now().difference(t) >= _appOpenMaxCacheAge;
   }
 
-  static void _loadAppOpen() {
+  static void _loadAppOpen(AppOpenPlacement placement) {
     if (_adsRemoved || !_canRequestAds) return;
+    if (_appOpenLoading.contains(placement)) return;
+    _appOpenLoading.add(placement);
     AppOpenAd.load(
-      adUnitId: _appOpenId,
+      adUnitId: _appOpenIdFor(placement),
       request: const AdRequest(),
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
-          _appOpenAd = ad;
-          _appOpenLoadedAt = DateTime.now();
-          // Show immediately on cold start once the first load completes —
-          // init() fires this load but nothing else triggers a show at
-          // launch, only app-resume does. EXCEPT on a brand-new user's very
-          // first-ever launch — Google's App Open Ads guidance advises
-          // against an ad being the first thing a new user sees, so that one
-          // launch is skipped; every launch after it shows normally.
-          if (!_coldStartShown) {
+          _appOpenLoading.remove(placement);
+          _appOpenAds[placement] = ad;
+          _appOpenLoadedAt[placement] = DateTime.now();
+          // Cold start shows itself: init() fires this load but nothing else
+          // triggers a show at launch — only resume does. EXCEPT on a brand
+          // new user's very first launch; Google advises against an ad being
+          // the first thing they see, so that one is skipped.
+          if (placement == AppOpenPlacement.coldStart && !_coldStartShown) {
             _coldStartShown = true;
             if (Prefs.hasCompletedFirstSession) {
-              showAppOpenIfReady();
+              showAppOpenIfReady(placement: AppOpenPlacement.coldStart);
             } else {
               Prefs.setHasCompletedFirstSession(true);
             }
           }
         },
         onAdFailedToLoad: (error) {
-          _appOpenAd = null;
-          _appOpenLoadedAt = null;
+          _appOpenLoading.remove(placement);
+          if (placement == AppOpenPlacement.coldStart) _settleColdStartAd();
+          _appOpenAds[placement] = null;
+          _appOpenLoadedAt[placement] = null;
         },
       ),
     );
   }
 
-  /// Call on app resume / cold start. Skipped if user is actively playing,
-  /// or if a rewarded/interstitial ad is currently showing or just closed
-  /// (its dismissal triggers the same resume event this responds to).
-  static void showAppOpenIfReady() {
+  /// Call when the app goes to background.
+  ///
+  /// The resume ad is fetched HERE rather than preloaded at startup, so it is
+  /// seconds old when the player returns instead of potentially hours — which
+  /// also sidesteps the 4h expiry above for the common case, and avoids
+  /// spending a request at launch on an ad that may never be needed.
+  static void onAppBackgrounded() {
+    // `inactive` also fires while one of our own full-screen ads is on
+    // screen; that is not a real backgrounding and must not trigger a fetch.
+    if (_showingFullScreenAd) return;
+    final cached = _appOpenAds[AppOpenPlacement.resume];
+    if (cached != null && !_appOpenExpired(AppOpenPlacement.resume)) {
+      return; // a still-valid ad is already waiting
+    }
+    if (cached != null) {
+      cached.dispose();
+      _appOpenAds[AppOpenPlacement.resume] = null;
+      _appOpenLoadedAt[AppOpenPlacement.resume] = null;
+    }
+    _loadAppOpen(AppOpenPlacement.resume);
+  }
+
+  /// Call on app resume (or, for [AppOpenPlacement.coldStart], once the
+  /// launch ad loads). Skipped if the user is actively playing, or if a
+  /// rewarded/interstitial ad is currently showing or just closed — its
+  /// dismissal fires the same resume event this responds to.
+  static void showAppOpenIfReady({
+    AppOpenPlacement placement = AppOpenPlacement.resume,
+  }) {
     if (_adsRemoved || _isPlaying) return;
     if (_showingFullScreenAd || _inFullScreenAdCooldown) return;
     final lastShown = _lastAppOpenShownAt;
     if (lastShown != null && DateTime.now().difference(lastShown) < _appOpenMinGap) {
-      return; // shown too recently — avoid stacking ads on rapid app-switching
+      return; // shown too recently — avoid stacking on rapid app-switching
     }
-    if (_appOpenAd == null) {
-      _loadAppOpen(); // not ready — reload for next opportunity
+    final ad = _appOpenAds[placement];
+    if (ad == null) {
+      _loadAppOpen(placement); // not ready — fetch for the next opportunity
       return;
     }
-    if (_appOpenExpired) {
-      // Past Google's 4h validity window: showing it would fail and waste the
-      // impression. Drop it and fetch a fresh one for the next resume.
-      _appOpenAd!.dispose();
-      _appOpenAd = null;
-      _appOpenLoadedAt = null;
-      _loadAppOpen();
+    if (_appOpenExpired(placement)) {
+      // Past the 4h validity window: showing it would fail and waste the
+      // impression. Drop it and fetch a fresh one.
+      ad.dispose();
+      _appOpenAds[placement] = null;
+      _appOpenLoadedAt[placement] = null;
+      _loadAppOpen(placement);
       return;
     }
-    _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (ad) {
-        // Maintain the shared full-screen guard like rewarded/interstitial do.
-        // Without this the guard was dead for app-open: nothing else could
-        // detect that one was on screen. The _appOpenMinGap happened to mask
-        // it, but the gap is a frequency cap, not a stacking guard.
+    _appOpenAds[placement] = null;
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (a) {
+        // Maintain the shared full-screen guard like rewarded/interstitial
+        // do; _appOpenMinGap is a frequency cap, not a stacking guard.
         _showingFullScreenAd = true;
         _lastAppOpenShownAt = DateTime.now();
-        AnalyticsService.adShown('app_open');
+        AnalyticsService.adShown('app_open_${placement.name}');
       },
-      onAdDismissedFullScreenContent: (ad) {
+      onAdDismissedFullScreenContent: (a) {
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
-        ad.dispose();
-        _appOpenAd = null;
-        _appOpenLoadedAt = null;
-        _loadAppOpen();
+        a.dispose();
+        _appOpenLoadedAt[placement] = null;
+        // Resume ads are refetched on the next backgrounding, not now.
+        if (placement == AppOpenPlacement.coldStart) {
+          _loadAppOpen(placement);
+        }
       },
-      onAdFailedToShowFullScreenContent: (ad, error) {
+      onAdFailedToShowFullScreenContent: (a, error) {
         _showingFullScreenAd = false;
-        ad.dispose();
-        _appOpenAd = null;
-        _appOpenLoadedAt = null;
-        _loadAppOpen();
+        a.dispose();
+        _appOpenLoadedAt[placement] = null;
+        if (placement == AppOpenPlacement.coldStart) {
+          _loadAppOpen(placement);
+        }
       },
     );
-    _appOpenAd!.show();
+    _markPresenting();
+    ad.show();
   }
 }
