@@ -51,6 +51,10 @@ Future<void> main() async {
     Future<void>.delayed(const Duration(seconds: 5)),
   ]);
   await IapService.init();
+  // Close the launch window before Home renders: any cold-start ad that
+  // finishes loading after this point must not interrupt an interactive
+  // screen — it gets handed to the resume slot instead.
+  AdService.onSplashDismissed();
   runApp(ArrowsApp());
 }
 

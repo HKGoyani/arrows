@@ -325,6 +325,15 @@ class AdService {
     }
   }
 
+  /// Exponential backoff for full-screen preloads: 2s, 4s, 8s, then stop.
+  /// Bounded so a sustained no-fill can't hammer AdMob.
+  static void _retryLoad(int attempt, void Function() retry) {
+    if (attempt >= 3) return;
+    Future.delayed(Duration(seconds: 2 << attempt), () {
+      if (!_adsRemoved && _canRequestAds) retry();
+    });
+  }
+
   static void _preloadAll() {
     if (!_canRequestAds) return;
     // Preload every placement in parallel for fastest availability
@@ -590,26 +599,38 @@ class AdService {
   // INTERSTITIAL AD — after every 2nd win, restart, daily complete
   // ═══════════════════════════════════════════════════════════════════
 
-  static void _loadInterstitialWin() {
+  static void _loadInterstitialWin([int attempt = 0]) {
     if (_adsRemoved || !_canRequestAds) return;
     InterstitialAd.load(
       adUnitId: _interstitialWinId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) => _interstitialWinAd = ad,
-        onAdFailedToLoad: (error) => _interstitialWinAd = null,
+        onAdFailedToLoad: (error) {
+          _interstitialWinAd = null;
+          // Retry with backoff. Without this a single no-fill left the slot
+          // empty until the NEXT win triggered a reload — and that win's
+          // opportunity was already spent, so one miss could cost several.
+          _retryLoad(attempt, () => _loadInterstitialWin(attempt + 1));
+        },
       ),
     );
   }
 
-  static void _loadInterstitialRestart() {
+  static void _loadInterstitialRestart([int attempt = 0]) {
     if (_adsRemoved || !_canRequestAds) return;
     InterstitialAd.load(
       adUnitId: _interstitialRestartId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) => _interstitialRestartAd = ad,
-        onAdFailedToLoad: (error) => _interstitialRestartAd = null,
+        onAdFailedToLoad: (error) {
+          _interstitialRestartAd = null;
+          // Retry with backoff. Without this a single no-fill left the slot
+          // empty until the NEXT win triggered a reload — and that win's
+          // opportunity was already spent, so one miss could cost several.
+          _retryLoad(attempt, () => _loadInterstitialRestart(attempt + 1));
+        },
       ),
     );
   }
@@ -908,6 +929,17 @@ class AdService {
 
   static bool _coldStartShown = false;
 
+  /// True once the splash has been dismissed and Home is interactive.
+  ///
+  /// The startup budget bounds how long the splash waits, but the ad load
+  /// keeps going past it — so without this a slow load would call
+  /// showAppOpenIfReady() while the player is already tapping Home, which is
+  /// exactly the interruption the budget exists to prevent.
+  static bool _splashWindowClosed = false;
+
+  /// Call when the splash is dismissed (see main()).
+  static void onSplashDismissed() => _splashWindowClosed = true;
+
   /// Settles as soon as the cold-start app-open ad either loads or fails.
   /// [awaitColdStartAppOpen] waits on this so the splash can stay up until
   /// the ad is ready.
@@ -979,10 +1011,25 @@ class AdService {
           // the first thing they see, so that one is skipped.
           if (placement == AppOpenPlacement.coldStart && !_coldStartShown) {
             _coldStartShown = true;
-            if (Prefs.hasCompletedFirstSession) {
-              showAppOpenIfReady(placement: AppOpenPlacement.coldStart);
-            } else {
+            if (!Prefs.hasCompletedFirstSession) {
               Prefs.setHasCompletedFirstSession(true);
+            } else if (_splashWindowClosed) {
+              // Loaded too late to cover the launch. Showing it now would
+              // interrupt an interactive Home screen, so hand it to the
+              // resume slot instead of wasting the fill. NOTE: the impression
+              // is still attributed to the cold-start ad unit in AdMob
+              // reporting, since that is where the request came from.
+              final late = _appOpenAds[AppOpenPlacement.coldStart];
+              _appOpenAds[AppOpenPlacement.coldStart] = null;
+              _appOpenLoadedAt[AppOpenPlacement.coldStart] = null;
+              if (_appOpenAds[AppOpenPlacement.resume] == null) {
+                _appOpenAds[AppOpenPlacement.resume] = late;
+                _appOpenLoadedAt[AppOpenPlacement.resume] = DateTime.now();
+              } else {
+                late?.dispose();
+              }
+            } else {
+              showAppOpenIfReady(placement: AppOpenPlacement.coldStart);
             }
           }
         },
