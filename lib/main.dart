@@ -592,113 +592,35 @@ class _GameFlowState extends State<GameFlow> {
 
   /// Daily challenge completion ad.
   ///
-  /// Prefers the rewarded interstitial: the player is offered a free hint for
-  /// watching, which earns more than the plain interstitial it replaces and
-  /// gives them something back. Google requires US to present the intro and
-  /// skip option — the SDK provides neither — so that's the dialog below.
+  /// Shows the rewarded interstitial directly, with no intro screen, so it
+  /// behaves like the interstitial on a normal level win — the player just
+  /// also gets a free hint out of it.
   ///
-  /// Falls back to the plain interstitial when no rewarded interstitial is
-  /// cached, so the slot is never wasted. [afterAd] runs exactly once either
-  /// way, since the celebration sequencing hangs off it.
+  /// NOTE: Google's rewarded-interstitial policy expects an intro screen
+  /// naming the reward and offering a skip before the ad starts. That screen
+  /// was deliberately removed at the product owner's direction (2026-08-14);
+  /// the compliant alternative is a plain interstitial here instead. Restore
+  /// _RewardedIntroDialog and gate this call behind it to go back.
+  ///
+  /// Falls back to the plain interstitial when nothing is cached, so the slot
+  /// is never wasted. [afterAd] runs exactly once either way, since the
+  /// celebration sequencing hangs off it.
   void _dailyCompleteAd(void Function(bool adShown) afterAd) {
     if (!AdService.rewardedInterstitialReady) {
       AdService.onDailyComplete(onDone: afterAd);
       return;
     }
-    showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => _RewardedIntroDialog(
-        onWatch: () => Navigator.of(ctx).pop(true),
-        onSkip: () => Navigator.of(ctx).pop(false),
-      ),
-    ).then((watch) {
-      if (!mounted) return;
-      if (watch != true) {
-        // Declined — no ad, no reward. Don't substitute an interstitial here:
-        // they just said no to an ad.
-        afterAd(false);
-        return;
-      }
-      AdService.showRewardedInterstitial(
-        onRewarded: () {
-          // Give back one of the 5 free hints.
-          Prefs.setHintsUsed((Prefs.hintsUsed - 1).clamp(0, Prefs.freeHints));
-        },
-        onDone: () {
-          if (mounted) afterAd(true);
-        },
-      );
-    });
-  }
-}
-
-/// Intro screen required before a rewarded interstitial: states the reward
-/// and offers a way out. Google mandates this and the SDK doesn't supply it.
-class _RewardedIntroDialog extends StatelessWidget {
-  final VoidCallback onWatch;
-  final VoidCallback onSkip;
-  const _RewardedIntroDialog({required this.onWatch, required this.onSkip});
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: AppColors.bg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(26, 28, 26, 22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.lightbulb_rounded, size: 46, color: AppColors.blue),
-            const SizedBox(height: 14),
-            Text(Tr.get('riTitle'),
-                textAlign: TextAlign.center,
-                style: poppins(21, FontWeight.w900, AppColors.ink)),
-            const SizedBox(height: 10),
-            Text(Tr.get('riBody'),
-                textAlign: TextAlign.center,
-                style: poppins(14.5, FontWeight.w700, AppColors.muted)),
-            const SizedBox(height: 22),
-            Pressable(
-              onTap: onWatch,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                decoration: BoxDecoration(
-                  color: AppColors.blue,
-                  borderRadius: BorderRadius.circular(26),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.videocam_rounded,
-                        size: 22, color: Colors.white),
-                    const SizedBox(width: 8),
-                    Text(Tr.get('riWatch'),
-                        style: poppins(16.5, FontWeight.w900, Colors.white)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Pressable(
-              onTap: onSkip,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                alignment: Alignment.center,
-                child: Text(Tr.get('riSkip'),
-                    style: poppins(15, FontWeight.w800, AppColors.muted)),
-              ),
-            ),
-          ],
-        ),
-      ),
+    AdService.showRewardedInterstitial(
+      onRewarded: () {
+        // Give back one of the 5 free hints.
+        Prefs.setHintsUsed((Prefs.hintsUsed - 1).clamp(0, Prefs.freeHints));
+      },
+      onDone: () {
+        if (mounted) afterAd(true);
+      },
     );
   }
 }
-
 class _LevelLegendCelebration extends StatelessWidget {
   final int milestone;
   const _LevelLegendCelebration({required this.milestone});
