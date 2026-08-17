@@ -225,6 +225,7 @@ class AdService {
     _interstitialAd = null;
     _appOpenAd?.dispose();
     _appOpenAd = null;
+    _appOpenLoadedAt = null;
   }
 
   static void _preloadAll() {
@@ -721,6 +722,27 @@ class AdService {
 
   static bool _coldStartShown = false;
 
+  /// When the cached app-open ad was fetched.
+  ///
+  /// Google: "Ad references in the app open beta will time out after four
+  /// hours. Ads rendered more than four hours after request time will no
+  /// longer be valid and may not earn revenue." The SDK does NOT enforce this
+  /// — an expired ad stays non-null and `show()` is still accepted, it just
+  /// fails at display time. So a null check alone can't detect staleness;
+  /// this timestamp is the only way.
+  ///
+  /// Without it the worst case is the most valuable one: an app backgrounded
+  /// overnight resumes with a stale ad, fails to show, and burns the
+  /// returning-user impression entirely.
+  static DateTime? _appOpenLoadedAt;
+  static const _appOpenMaxCacheAge = Duration(hours: 4);
+
+  static bool get _appOpenExpired {
+    final t = _appOpenLoadedAt;
+    return t == null ||
+        DateTime.now().difference(t) >= _appOpenMaxCacheAge;
+  }
+
   static void _loadAppOpen() {
     if (_adsRemoved || !_canRequestAds) return;
     AppOpenAd.load(
@@ -729,6 +751,7 @@ class AdService {
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
           _appOpenAd = ad;
+          _appOpenLoadedAt = DateTime.now();
           // Show immediately on cold start once the first load completes —
           // init() fires this load but nothing else triggers a show at
           // launch, only app-resume does. EXCEPT on a brand-new user's very
@@ -744,7 +767,10 @@ class AdService {
             }
           }
         },
-        onAdFailedToLoad: (error) => _appOpenAd = null,
+        onAdFailedToLoad: (error) {
+          _appOpenAd = null;
+          _appOpenLoadedAt = null;
+        },
       ),
     );
   }
@@ -763,6 +789,15 @@ class AdService {
       _loadAppOpen(); // not ready — reload for next opportunity
       return;
     }
+    if (_appOpenExpired) {
+      // Past Google's 4h validity window: showing it would fail and waste the
+      // impression. Drop it and fetch a fresh one for the next resume.
+      _appOpenAd!.dispose();
+      _appOpenAd = null;
+      _appOpenLoadedAt = null;
+      _loadAppOpen();
+      return;
+    }
     _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         // Maintain the shared full-screen guard like rewarded/interstitial do.
@@ -778,12 +813,14 @@ class AdService {
         _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
         _appOpenAd = null;
+        _appOpenLoadedAt = null;
         _loadAppOpen();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         _showingFullScreenAd = false;
         ad.dispose();
         _appOpenAd = null;
+        _appOpenLoadedAt = null;
         _loadAppOpen();
       },
     );
