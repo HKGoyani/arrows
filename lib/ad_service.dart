@@ -50,8 +50,8 @@ enum RewardedPlacement {
 }
 
 /// Centralized ad management: rewarded, interstitial, banner, app-open.
-/// AdMob mediation: Meta Audience Network + Unity Ads (see AdMob console
-/// Mediation groups for waterfall/bidding config — not set in this code).
+/// AdMob mediation: Unity Ads (see AdMob console Mediation groups for
+/// waterfall/bidding config — not set in this code).
 class AdService {
   static bool _initialized = false;
   static int _winCount = 0;
@@ -171,18 +171,6 @@ class AdService {
         : 'ca-app-pub-4818503743858431/5571512520';
   }
 
-  /// Rewarded interstitial shown after a daily challenge completes.
-  static String get _rewardedInterstitialDailyId {
-    if (kDebugMode) {
-      return Platform.isIOS
-          ? 'ca-app-pub-3940256099942544/6978759866'
-          : 'ca-app-pub-3940256099942544/5354046379';
-    }
-    return Platform.isIOS
-        ? 'ca-app-pub-4818503743858431/5567643094'
-        : 'ca-app-pub-4818503743858431/6216073458';
-  }
-
   static String _appOpenIdFor(AppOpenPlacement placement) {
     if (kDebugMode) {
       return Platform.isIOS
@@ -222,7 +210,6 @@ class AdService {
   static InterstitialAd? _interstitialWinAd;
   static bool _interstitialWinLoading = false;
   static bool _interstitialRestartLoading = false;
-  static RewardedInterstitialAd? _rewardedInterstitialAd;
   static InterstitialAd? _interstitialRestartAd;
   static final Map<AppOpenPlacement, AppOpenAd?> _appOpenAds = {
     AppOpenPlacement.coldStart: null,
@@ -318,8 +305,6 @@ class AdService {
     _interstitialWinAd = null;
     _interstitialRestartAd?.dispose();
     _interstitialRestartAd = null;
-    _rewardedInterstitialAd?.dispose();
-    _rewardedInterstitialAd = null;
     for (final p in AppOpenPlacement.values) {
       _appOpenAds[p]?.dispose();
       _appOpenAds[p] = null;
@@ -380,13 +365,14 @@ class AdService {
 
   /// Call as the board nears completion (~80% cleared).
   ///
-  /// Both of these only ever fire on a WIN, so fetching them at level start
-  /// wasted the request for anyone who quit or lost mid-level. At 80% the win
-  /// is likely and there is still time for the load to land.
+  /// Only ever fires on a WIN, so fetching it at level start wasted the
+  /// request for anyone who quit or lost mid-level. At 80% the win is likely
+  /// and there is still time for the load to land. Daily challenges use the
+  /// same win interstitial (see [onDailyComplete]), so nothing daily-specific
+  /// is needed here.
   static void onLevelNearlyComplete({required bool isDaily}) {
     if (_adsRemoved || !_canRequestAds) return;
     _loadInterstitialWin();
-    if (isDaily) _loadRewardedInterstitial();
   }
 
   /// Re-runs the consent flow when ads are currently blocked. Called on app
@@ -453,10 +439,6 @@ class AdService {
   /// don't automatically read the IAB TCF string Google's SDK already wrote.
   ///
   /// Unity Ads requires this explicit call (per Google's mediation guide).
-  /// Meta Audience Network's adapter reads the TCF string automatically once
-  /// Meta is added as an Ad Partner in AdMob console → Privacy & messaging —
-  /// its Flutter wrapper (gma_mediation_meta) exposes no consent API at all,
-  /// confirmed empty in its source, so there is nothing to call here for it.
   ///
   /// `consented` reflects whether the UMP flow completed without being
   /// blocked (obtained/notRequired) — the Flutter UMP API doesn't expose
@@ -806,92 +788,6 @@ class AdService {
       return;
     }
     _showInterstitial(onDone: onDone);
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  // REWARDED INTERSTITIAL — daily challenge complete
-  // ═══════════════════════════════════════════════════════════════════
-
-  static bool _rewardedInterstitialLoading = false;
-
-  static void _loadRewardedInterstitial() {
-    // Suppressed for Remove Ads buyers: the IAP promises "Remove all
-    // fullscreen ads between levels", and this is one — the opt-out screen
-    // doesn't change that.
-    if (_adsRemoved || !_canRequestAds) return;
-    if (_rewardedInterstitialAd != null || _rewardedInterstitialLoading) return;
-    _rewardedInterstitialLoading = true;
-    RewardedInterstitialAd.load(
-      adUnitId: _rewardedInterstitialDailyId,
-      request: const AdRequest(),
-      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _rewardedInterstitialLoading = false;
-          _rewardedInterstitialAd = ad;
-        },
-        onAdFailedToLoad: (error) {
-          _rewardedInterstitialLoading = false;
-          _rewardedInterstitialAd = null;
-        },
-      ),
-    );
-  }
-
-  /// True when a rewarded interstitial is cached and allowed. The UI checks
-  /// this BEFORE showing the intro screen — offering a reward and then
-  /// failing to deliver it is worse than never offering.
-  static bool get rewardedInterstitialReady =>
-      !_adsRemoved && _canRequestAds && _rewardedInterstitialAd != null;
-
-  /// Shows the rewarded interstitial. Google requires the caller to have
-  /// already presented an intro screen with the reward and a skip option —
-  /// the SDK does not provide one.
-  ///
-  /// [onRewarded] fires only if the user actually earns the reward.
-  /// [onDone] always fires exactly once, so the caller can sequence whatever
-  /// comes next off it.
-  static void showRewardedInterstitial({
-    required void Function() onRewarded,
-    VoidCallback? onDone,
-  }) {
-    final ad = _rewardedInterstitialAd;
-    if (ad == null) {
-      _loadRewardedInterstitial();
-      onDone?.call();
-      return;
-    }
-    _rewardedInterstitialAd = null;
-    var finished = false;
-    void finish() {
-      if (finished) return;
-      finished = true;
-      onDone?.call();
-    }
-
-    ad.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (a) {
-        _showingFullScreenAd = true;
-        _lastInterstitialShownAt = DateTime.now();
-        AnalyticsService.adShown('rewarded_interstitial_daily');
-      },
-      onAdDismissedFullScreenContent: (a) {
-        _showingFullScreenAd = false;
-        _lastFullScreenAdClosedAt = DateTime.now();
-        a.dispose();
-        // Not refetched: the next daily challenge is a day away, so this
-        // would sit unused exactly like the old cold-start reload did.
-        // onLevelNearlyComplete fetches it when a daily is near its win.
-        finish();
-      },
-      onAdFailedToShowFullScreenContent: (a, error) {
-        _showingFullScreenAd = false;
-        a.dispose();
-        _loadRewardedInterstitial();
-        finish();
-      },
-    );
-    _markPresenting();
-    ad.show(onUserEarnedReward: (_, __) => onRewarded());
   }
 
   /// Shows interstitial if loaded, then calls [onDone] when it's dismissed —

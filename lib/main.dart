@@ -590,35 +590,11 @@ class _GameFlowState extends State<GameFlow> {
     );
   }
 
-  /// Daily challenge completion ad.
-  ///
-  /// Shows the rewarded interstitial directly, with no intro screen, so it
-  /// behaves like the interstitial on a normal level win — the player just
-  /// also gets a free hint out of it.
-  ///
-  /// NOTE: Google's rewarded-interstitial policy expects an intro screen
-  /// naming the reward and offering a skip before the ad starts. That screen
-  /// was deliberately removed at the product owner's direction (2026-08-14);
-  /// the compliant alternative is a plain interstitial here instead. Restore
-  /// _RewardedIntroDialog and gate this call behind it to go back.
-  ///
-  /// Falls back to the plain interstitial when nothing is cached, so the slot
-  /// is never wasted. [afterAd] runs exactly once either way, since the
-  /// celebration sequencing hangs off it.
+  /// Daily challenge completion ad. Same plain interstitial as a normal
+  /// level win — no reward, no intro screen. [afterAd] runs exactly once,
+  /// since the celebration sequencing hangs off it.
   void _dailyCompleteAd(void Function(bool adShown) afterAd) {
-    if (!AdService.rewardedInterstitialReady) {
-      AdService.onDailyComplete(onDone: afterAd);
-      return;
-    }
-    AdService.showRewardedInterstitial(
-      onRewarded: () {
-        // Give back one of the 5 free hints.
-        Prefs.setHintsUsed((Prefs.hintsUsed - 1).clamp(0, Prefs.freeHints));
-      },
-      onDone: () {
-        if (mounted) afterAd(true);
-      },
-    );
+    AdService.onDailyComplete(onDone: afterAd);
   }
 }
 class _LevelLegendCelebration extends StatelessWidget {
