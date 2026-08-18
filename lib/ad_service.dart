@@ -853,15 +853,16 @@ class AdService {
   /// instead of the surrounding UI jumping when the ad itself finishes
   /// loading (which can take several seconds, longer still with retries).
   static Future<AdSize?> bannerSizeFor(int width) {
-    // Deliberately NOT getLargeAnchoredAdaptiveBannerAdSize — despite the
-    // name, "Large" is Google's newer jumbo format and can return a banner
-    // several times taller than a normal one (confirmed: it overflowed off
-    // the bottom of the screen in testing). getCurrentOrientationAnchored...
-    // is deprecated but still fully functional, and is the one that's
-    // actually bounded (never > 15% of screen height, never < 50px) — the
-    // correct compact anchored adaptive format for a bottom banner strip.
-    // ignore: deprecated_member_use
-    return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+    // Large format (2026-08-18, product decision): taller than the compact
+    // anchored adaptive size, which trades board/content space for higher
+    // eCPM and fill. Layout on both Home and gameplay reserves height off
+    // the actual returned AdSize, so this doesn't require any layout change
+    // — but a prior test with this same API found it can return a banner
+    // large enough to visually dominate the gameplay screen. Watch the
+    // gameplay banner on-device after this change; drop back to
+    // getCurrentOrientationAnchoredAdaptiveBannerAdSize (bounded to 15% of
+    // screen height) if it crowds the board too much.
+    return AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
   }
 
   static Future<BannerAd?> createBanner({
