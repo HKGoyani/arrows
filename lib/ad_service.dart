@@ -934,9 +934,32 @@ class AdService {
   /// showAppOpenIfReady() while the player is already tapping Home, which is
   /// exactly the interruption the budget exists to prevent.
   static bool _splashWindowClosed = false;
+  static DateTime? _splashClosedAt;
 
   /// Call when the splash is dismissed (see main()).
-  static void onSplashDismissed() => _splashWindowClosed = true;
+  static void onSplashDismissed() {
+    _splashWindowClosed = true;
+    _splashClosedAt = DateTime.now();
+  }
+
+  /// How long after the splash closes a cold-start ad that finishes loading
+  /// late is still shown directly rather than recycled to the resume slot.
+  ///
+  /// The 5s splash budget covers consent + ATT + SDK init + the ad fetch, in
+  /// that order — SDK init alone has been measured up to 14.7s, so on a
+  /// meaningful share of launches the fetch never even starts before the
+  /// budget runs out. Without this grace window, EVERY one of those launches
+  /// loses its cold-start impression outright: the ad only shows if the
+  /// player later backgrounds and returns, which many sessions never do. A
+  /// few seconds past Home appearing, the player has typically not acted yet,
+  /// so showing it here is a reasonable trade against a rarer, brief
+  /// interruption.
+  static const _coldStartGrace = Duration(seconds: 3);
+
+  static bool get _withinColdStartGrace {
+    final t = _splashClosedAt;
+    return t == null || DateTime.now().difference(t) <= _coldStartGrace;
+  }
 
   /// Settles as soon as the cold-start app-open ad either loads or fails.
   /// [awaitColdStartAppOpen] waits on this so the splash can stay up until
@@ -1003,6 +1026,7 @@ class AdService {
           _appOpenLoading.remove(placement);
           _appOpenAds[placement] = ad;
           _appOpenLoadedAt[placement] = DateTime.now();
+          if (placement == AppOpenPlacement.coldStart) _settleColdStartAd();
           // Cold start shows itself: init() fires this load but nothing else
           // triggers a show at launch — only resume does. EXCEPT on a brand
           // new user's very first launch; Google advises against an ad being
@@ -1011,12 +1035,12 @@ class AdService {
             _coldStartShown = true;
             if (!Prefs.hasCompletedFirstSession) {
               Prefs.setHasCompletedFirstSession(true);
-            } else if (_splashWindowClosed) {
-              // Loaded too late to cover the launch. Showing it now would
-              // interrupt an interactive Home screen, so hand it to the
-              // resume slot instead of wasting the fill. NOTE: the impression
-              // is still attributed to the cold-start ad unit in AdMob
-              // reporting, since that is where the request came from.
+            } else if (_splashWindowClosed && !_withinColdStartGrace) {
+              // Loaded well after the launch — Home has likely already been
+              // used. Hand it to the resume slot instead of interrupting.
+              // NOTE: the impression is still attributed to the cold-start ad
+              // unit in AdMob reporting, since that is where the request
+              // came from.
               final late = _appOpenAds[AppOpenPlacement.coldStart];
               _appOpenAds[AppOpenPlacement.coldStart] = null;
               _appOpenLoadedAt[AppOpenPlacement.coldStart] = null;
