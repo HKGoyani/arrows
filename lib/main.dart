@@ -221,6 +221,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AudioService.onAppResume();
+      // A min-max cycle while a full-screen ad was on screen can lose its
+      // dismiss callback entirely (OS reclaims the ad's Activity) — without
+      // this, the game freezes waiting on a callback that never arrives, and
+      // every full-screen ad after it is silently blocked for the session.
+      AdService.recoverFromStuckFullScreenAd();
       // If the UMP consent flow didn't clear us to request ads at startup
       // (network failure, or the user hadn't consented yet), retry here so a
       // single bad launch doesn't leave the session ad-free. No-op otherwise.

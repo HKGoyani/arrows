@@ -482,6 +482,34 @@ class AdService {
   /// lifecycle handlers mistake our own ad for a real backgrounding.
   static void _markPresenting() => _showingFullScreenAd = true;
 
+  /// Runs whatever the currently-presenting ad's onDismiss/onFailedToShow
+  /// path would have run, for [recoverFromStuckFullScreenAd] to fall back on
+  /// when those callbacks never arrive. Cleared the instant either callback
+  /// actually fires, since recovery is then no longer needed.
+  static void Function()? _stuckRecovery;
+
+  /// Call on app resume. A min-max cycle (home button, then relaunch) WHILE
+  /// a full-screen ad is on screen can let the OS reclaim that ad's Activity
+  /// without ever calling its onAdDismissedFullScreenContent /
+  /// onAdFailedToShowFullScreenContent delegate — seen on this device. Since
+  /// every caller's continuation (win navigation, reward grant, etc.) only
+  /// runs inside those callbacks, and [_showingFullScreenAd] is only cleared
+  /// there too, a lost callback otherwise freezes the game on that screen
+  /// AND permanently blocks every full-screen ad after it for the session.
+  ///
+  /// A genuine dismissal's callback lands around the same platform
+  /// transition as this resume event, so a short grace delay is given before
+  /// concluding it was actually lost.
+  static Future<void> recoverFromStuckFullScreenAd() async {
+    if (!_showingFullScreenAd) return;
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!_showingFullScreenAd) return;
+    final recovery = _stuckRecovery;
+    _stuckRecovery = null;
+    _showingFullScreenAd = false;
+    recovery?.call();
+  }
+
   static void setPlaying(bool playing) => _isPlaying = playing;
 
   /// Call when the player's hearts change.
@@ -627,12 +655,14 @@ class AdService {
         return;
       }
     }
-    ad.fullScreenContentCallback = FullScreenContentCallback(
+    final readyAd = ad;
+    readyAd.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (a) {
         _showingFullScreenAd = true;
         AnalyticsService.adShown('rewarded_${placement.name}');
       },
       onAdDismissedFullScreenContent: (a) {
+        _stuckRecovery = null;
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         a.dispose();
@@ -641,6 +671,7 @@ class AdService {
         // (onHeartsChanged) — both fire well before either is needed again.
       },
       onAdFailedToShowFullScreenContent: (a, error) {
+        _stuckRecovery = null;
         _showingFullScreenAd = false;
         a.dispose();
         _loadRewarded(placement);
@@ -648,8 +679,13 @@ class AdService {
         _reportUnavailable(onUnavailable);
       },
     );
+    _stuckRecovery = () {
+      readyAd.dispose();
+      _loadRewarded(placement);
+      _reportUnavailable(onUnavailable);
+    };
     _markPresenting();
-    ad.show(onUserEarnedReward: (_, __) => onRewarded());
+    readyAd.show(onUserEarnedReward: (_, __) => onRewarded());
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -754,13 +790,15 @@ class AdService {
       onDone?.call();
       return;
     }
-    _interstitialRestartAd!.fullScreenContentCallback = FullScreenContentCallback(
+    final restartAd = _interstitialRestartAd!;
+    restartAd.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _showingFullScreenAd = true;
         _lastInterstitialShownAt = DateTime.now();
         AnalyticsService.adShown('interstitial_restart');
       },
       onAdDismissedFullScreenContent: (ad) {
+        _stuckRecovery = null;
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
@@ -769,6 +807,7 @@ class AdService {
         onDone?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
+        _stuckRecovery = null;
         _showingFullScreenAd = false;
         ad.dispose();
         _interstitialRestartAd = null;
@@ -776,8 +815,14 @@ class AdService {
         onDone?.call();
       },
     );
+    _stuckRecovery = () {
+      restartAd.dispose();
+      _interstitialRestartAd = null;
+      _loadInterstitialRestart();
+      onDone?.call();
+    };
     _markPresenting();
-    _interstitialRestartAd!.show();
+    restartAd.show();
   }
 
   /// Call after daily challenge completion. Calls [onDone] after the ad is
@@ -804,13 +849,15 @@ class AdService {
       onDone?.call(false); // shown too recently — avoid stacking
       return;
     }
-    _interstitialWinAd!.fullScreenContentCallback = FullScreenContentCallback(
+    final winAd = _interstitialWinAd!;
+    winAd.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _showingFullScreenAd = true;
         _lastInterstitialShownAt = DateTime.now();
         AnalyticsService.adShown('interstitial');
       },
       onAdDismissedFullScreenContent: (ad) {
+        _stuckRecovery = null;
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
@@ -823,14 +870,24 @@ class AdService {
         onDone?.call(true);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
+        _stuckRecovery = null;
         _showingFullScreenAd = false;
         ad.dispose();
         _interstitialWinAd = null;
         onDone?.call(false);
       },
     );
+    // A min-max cycle mid-ad can lose the dismiss callback entirely (see
+    // recoverFromStuckFullScreenAd) — without this, the win-flow navigation
+    // that only runs inside onDone would never fire, freezing the game on
+    // the finished level.
+    _stuckRecovery = () {
+      winAd.dispose();
+      _interstitialWinAd = null;
+      onDone?.call(false);
+    };
     _markPresenting();
-    _interstitialWinAd!.show();
+    winAd.show();
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -1125,6 +1182,7 @@ class AdService {
         AnalyticsService.adShown('app_open_${placement.name}');
       },
       onAdDismissedFullScreenContent: (a) {
+        _stuckRecovery = null;
         _showingFullScreenAd = false;
         _lastFullScreenAdClosedAt = DateTime.now();
         a.dispose();
@@ -1135,12 +1193,17 @@ class AdService {
         // the next backgrounding (see onAppBackgrounded).
       },
       onAdFailedToShowFullScreenContent: (a, error) {
+        _stuckRecovery = null;
         _showingFullScreenAd = false;
         a.dispose();
         _appOpenLoadedAt[placement] = null;
         // Not refetched, for the same reason as the dismiss path above.
       },
     );
+    _stuckRecovery = () {
+      ad.dispose();
+      _appOpenLoadedAt[placement] = null;
+    };
     _markPresenting();
     ad.show();
   }
