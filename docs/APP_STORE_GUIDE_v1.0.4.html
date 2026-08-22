@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>App Store Submission Guide — Arrows – Escape Puzzle v1.0.1</title>
+  <title>App Store Submission Guide — Arrows – Escape Puzzle v1.0.4</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -130,8 +130,8 @@
   <header>
     <div class="arrow"></div>
     <h1>App Store Submission Guide</h1>
-    <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.1</p>
-    <span class="updated">Last reviewed against codebase: August 1, 2026</span>
+    <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.4</p>
+    <span class="updated">Last reviewed against codebase: August 18, 2026</span>
   </header>
 
   <div class="container">
@@ -139,7 +139,8 @@
     <nav class="toc">
       <h2>Contents</h2>
       <ol>
-        <li><a href="#critical">What's Changed Since v1.0.0</a></li>
+        <li><a href="#critical">What's Changed Since v1.0.1</a></li>
+        <li><a href="#status">Current Review Status</a></li>
         <li><a href="#info">1. App Information</a></li>
         <li><a href="#devices">2. Device &amp; Platform Support</a></li>
         <li><a href="#icon">3. App Icon</a></li>
@@ -158,65 +159,71 @@
     </nav>
 
     <div class="alert" id="critical">
-      <h2>What's changed since v1.0.0 (Ready for Distribution)</h2>
-      <p>v1.0.0 already completed App Store review and is live/approved. This is an incremental update — build number bumped from 1 to 4, version name 1.0.0 → 1.0.1. Everything below reflects the current codebase as of this build.</p>
+      <h2>What's changed since v1.0.1 (build 4, rejected under 4.3(a))</h2>
+      <p>Build number bumped from 4 to 8, version name 1.0.1 → 1.0.4. This build carries several sessions of ad-monetization and stability fixes on top of v1.0.1 — none of them design/UI changes, since the open App Store issue (Section &ldquo;Current Review Status&rdquo; below) is unrelated to any of this.</p>
       <table>
         <tr><th>Item</th><th>Status</th><th>Detail</th></tr>
         <tr>
-          <td><strong>Ad mediation added</strong></td>
-          <td><span class="tag tag-ok">DONE (code)</span></td>
-          <td>Meta Audience Network + Unity Ads wired in via AdMob mediation (<code>gma_mediation_meta</code>, <code>gma_mediation_unity</code>). <span class="tag tag-block">PENDING</span> AdMob console mediation groups, Meta/Unity dashboard accounts, and AdMob's "Ad partners" TCF list still need external setup before real mediated demand flows — see Section 9</td>
-        </tr>
-        <tr>
-          <td><strong>SKAdNetwork IDs</strong></td>
+          <td><strong>Meta Audience Network mediation removed</strong></td>
           <td><span class="tag tag-ok">DONE</span></td>
-          <td>3 new IDs added to <code>Info.plist</code> for Meta (×2) and Unity (×1), alongside Google's existing one — 4 total</td>
+          <td><code>gma_mediation_meta</code> dropped entirely — it was never configured in AdMob console mediation groups, so it was inert weight. Mediation is now <strong>Unity Ads only</strong>. Privacy policy and SKAdNetwork entries updated to match (see Sections 6 &amp; 9)</td>
         </tr>
         <tr>
-          <td><strong>Privacy policy updated live</strong></td>
+          <td><strong>Daily challenge ad switched to plain interstitial</strong></td>
           <td><span class="tag tag-ok">DONE</span></td>
-          <td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a> now discloses Meta Audience Network and Unity Ads as ad partners (pushed 2026-08-01)</td>
+          <td>Previously a rewarded interstitial shown with no intro/skip screen — a departure from Google's documented format policy. Now shows the same plain interstitial a normal level win uses: fully compliant, no reward, no popup</td>
         </tr>
         <tr>
-          <td><strong>Calendar bug fixed</strong></td>
+          <td><strong>Cold-start App Open ad fix</strong></td>
           <td><span class="tag tag-ok">DONE</span></td>
-          <td>Challenge tab's monthly calendar was only rendering the current day — future days now show correctly (faded), matching intended design</td>
+          <td>The splash's 5s budget was being consumed by consent/ATT/SDK-init before the ad fetch even started (SDK init alone measured up to 14.7s on Android), so the cold-start ad was frequently lost outright. Fixed the missing early-ready signal and added a grace window so a late-loading ad still shows right after Home appears</td>
         </tr>
         <tr>
-          <td><strong>Android release readiness</strong></td>
+          <td><strong>Banners switched to Large Anchored Adaptive format</strong></td>
           <td><span class="tag tag-ok">DONE</span></td>
-          <td>Not this doc's scope, but worth noting: Play Store listing is now live at <a href="https://play.google.com/store/apps/details?id=com.shayona.arrows" target="_blank">play.google.com/store/apps/details?id=com.shayona.arrows</a>, production Android ad IDs restored, signed AAB built (see <code>docs/PLAY_STORE_GUIDE_v1.0.0.html</code>)</td>
+          <td>Both Home and gameplay banners now request Google's taller Large format for better eCPM/fill potential. Layout already reserves space off the actual returned size, so no screenshot changes are expected — being monitored for fill-rate impact</td>
         </tr>
         <tr>
-          <td><strong>App Store Connect — App Privacy details</strong></td>
-          <td><span class="tag tag-block">PENDING</span></td>
-          <td>Must add Meta Audience Network and Unity Ads as additional data-collecting third parties in App Store Connect → App Privacy, to stay consistent with the updated privacy policy — see Section 6</td>
+          <td><strong>Fixed a game-freezing bug</strong></td>
+          <td><span class="tag tag-ok">DONE</span></td>
+          <td>Backgrounding and foregrounding the app (min-max) while a rewarded/interstitial/app-open ad was on screen could let the OS reclaim that ad's native view without ever calling its dismiss delegate — freezing the game on that screen and silently blocking every ad after it for the session. Added a resume-time recovery path</td>
         </tr>
         <tr>
-          <td><strong>"What's New in This Version" text</strong></td>
-          <td><span class="tag tag-block">PENDING</span></td>
-          <td>Required field for every version update, not yet entered in App Store Connect — draft provided in Section 5</td>
+          <td><strong>App Store subtitle updated</strong></td>
+          <td><span class="tag tag-ok">DONE</span></td>
+          <td>Metadata-only change made alongside the 4.3(a) reply (2026-08-18) — see Section 1</td>
+        </tr>
+        <tr>
+          <td><strong>Interstitial ad-loading is now demand-driven</strong></td>
+          <td><span class="tag tag-ok">DONE (prior to v1.0.1, carried forward)</span></td>
+          <td>Each ad format loads at the moment it becomes likely to be needed (e.g. win interstitial at ~80% board cleared, rewarded lives at 1 heart) instead of preloading everything at level start — unchanged this version, listed for completeness</td>
         </tr>
       </table>
+    </div>
+
+    <div class="alert" id="status" style="border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+      <h2 style="color: var(--orange);">Current Review Status — read before submitting</h2>
+      <p><strong>v1.0.1 (build 5)</strong> was rejected twice under <strong>Guideline 4.3(a) — Design: Spam</strong> (2026-08-08 follow-up, after an initial 2026-08-01 rejection). Apple's finding: the app shares a similar binary/metadata/concept with an existing title. A reply was sent on 2026-08-18 arguing the app is independently coded (no shared source/assets, not a template, single account/app) and pairing it with the subtitle change in Section 1 — <strong>no other design changes were made</strong>, per an explicit product decision to hold the current name/icon/visual identity rather than rebrand.</p>
+      <p>If this build is submitted and rejected under 4.3(a) a third time, escalate to a full rebrand (new name outside the current word pool, new icon, new visual identity) rather than appealing again — a repeated 4.3 rejection risks escalating from an app-level review to a developer-account-level review, which would expose every other Shayona title on this account.</p>
     </div>
 
     <section id="info">
       <h2>1. App Information</h2>
       <table>
         <tr><th>Field</th><th>Value</th></tr>
-        <tr><td>App Name</td><td><strong>Arrows – Escape Puzzle</strong></td></tr>
-        <tr><td>Subtitle (30 char max)</td><td>Grid Logic &amp; Mind Puzzles <span class="tag tag-ok">25/30</span> — updated 2026-08-18, App Review 4.3(a) reply</td></tr>
+        <tr><td>App Name</td><td><strong>Arrows – Escape Puzzle</strong> — unchanged, see Current Review Status above</td></tr>
+        <tr><td>Subtitle (30 char max)</td><td>Grid Logic &amp; Mind Puzzles <span class="tag tag-ok">25/30</span> — changed from &ldquo;Daily Brain Teaser &amp; Logic&rdquo; on 2026-08-18, paired with the 4.3(a) reply</td></tr>
         <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
         <tr><td>Primary Language</td><td>English (U.S.)</td></tr>
         <tr><td>Apple ID (App Store Connect)</td><td><strong>6785821757</strong></td></tr>
-        <tr><td>Version</td><td><strong>1.0.1</strong> <span class="tag tag-ok">bumped from 1.0.0</span></td></tr>
-        <tr><td>Build number</td><td><strong>4</strong> <span class="tag tag-ok">bumped from 1</span></td></tr>
+        <tr><td>Version</td><td><strong>1.0.4</strong> <span class="tag tag-ok">bumped from 1.0.1</span></td></tr>
+        <tr><td>Build number</td><td><strong>8</strong> <span class="tag tag-ok">bumped from 4</span></td></tr>
         <tr><td>Bundle Display Name</td><td>Arrows – Escape Puzzle</td></tr>
         <tr><td>Category (Primary)</td><td>Games &rarr; Puzzle</td></tr>
         <tr><td>Category (Secondary)</td><td>Games &rarr; Casual <em>(optional)</em></td></tr>
         <tr><td>Content Rights</td><td>"Does not use third-party content" (confirm)</td></tr>
         <tr><td>Age Rating</td><td>4+ (see Section 10)</td></tr>
-        <tr><td>Previous version status</td><td>v1.0.0 — Ready for Distribution (per App Store Connect, confirmed 2026-08-01)</td></tr>
+        <tr><td>Previous version status</td><td>v1.0.1 (build 5) — Rejected, Guideline 4.3(a), twice (see Current Review Status)</td></tr>
       </table>
     </section>
 
@@ -232,7 +239,7 @@
         <tr>
           <td>Minimum iOS version</td>
           <td><strong>15.0</strong> — unchanged</td>
-          <td><code>IPHONEOS_DEPLOYMENT_TARGET = 15.0</code> in both <code>Podfile</code> and <code>project.pbxproj</code>. Comfortably exceeds Unity Ads bidding's min iOS 13.0 and Meta's min iOS 10.0 requirements — no conflict from the new mediation SDKs</td>
+          <td><code>IPHONEOS_DEPLOYMENT_TARGET = 15.0</code> in both <code>Podfile</code> and <code>project.pbxproj</code></td>
         </tr>
         <tr>
           <td>Orientation</td>
@@ -246,24 +253,22 @@
       <h2>3. App Icon</h2>
       <table>
         <tr><th>Detail</th><th>Value</th></tr>
-        <tr><td>Design</td><td>Black arrows (one up, two left) with a red diagonal "ESCAPE" banner — unchanged</td></tr>
+        <tr><td>Design</td><td>Black arrows (one up, two left) with a red diagonal "ESCAPE" banner — unchanged, see Current Review Status above</td></tr>
         <tr><td>Master asset</td><td><code>assets/icon/app_icon_master.png</code> (1254×1254, RGB, no alpha)</td></tr>
         <tr><td>Marketing icon</td><td><code>Icon-App-1024x1024@1x.png</code> (1024×1024)</td></tr>
         <tr><td>All other sizes</td><td>Generated and present in the <code>.appiconset</code> folder</td></tr>
       </table>
-      <p><span class="tag tag-ok">READY</span> No changes since v1.0.0 — no further action needed.</p>
+      <p><span class="tag tag-ok">READY</span> No changes since v1.0.1 — no further action needed.</p>
     </section>
 
     <section id="screenshots">
       <h2>4. Screenshots</h2>
-      <p><span class="tag tag-ok">ALREADY UPLOADED (v1.0.0)</span> No mandatory re-upload for a minor update — App Store Connect carries screenshots forward unless you choose to replace them.</p>
+      <p><span class="tag tag-ok">UNCHANGED</span> No UI/visual changes this version — existing screenshots from v1.0.0/v1.0.1 remain accurate. No re-upload needed.</p>
       <table>
         <tr><th>Required size</th><th>Used for</th><th>Status</th></tr>
         <tr><td>6.9" (iPhone 16/15 Pro Max class)</td><td>Required — largest current iPhone</td><td>✅ Uploaded (v1.0.0)</td></tr>
         <tr><td>6.5" (iPhone 11/XS Max class)</td><td>Optional if 6.9" provided and scales</td><td>—</td></tr>
       </table>
-      <p><span class="tag tag-warn">OPTIONAL</span> The Challenge tab's calendar visual changed (future days now visible/faded instead of blank) — consider recapturing that one screen if it's featured in your existing screenshot set, otherwise no action needed.</p>
-      <p>Capture with <code>xcrun simctl io &lt;device&gt; screenshot</code> on the 6.9" simulator class, or on a real device, if you do decide to refresh any shots.</p>
     </section>
 
     <section id="listing">
@@ -271,13 +276,13 @@
 
       <div class="alert" style="margin-bottom:20px;">
         <h2 style="color:var(--orange);">"What's New in This Version" — required, not yet set</h2>
-        <p>Every version update needs release notes in App Store Connect (App Store tab → version 1.0.1 → "What's New in This Version"). This did not exist for v1.0.0's initial submission. Draft below — keep it honest and user-facing, not a changelog of internal refactors:</p>
+        <p>Draft below — kept user-facing, not a changelog of internal ad-pipeline work:</p>
       </div>
-      <pre>Small update with behind-the-scenes improvements to ad delivery, plus a
-fix for the Daily Challenge calendar so every day of the month now shows
-correctly. Thanks for playing!</pre>
+      <pre>Behind-the-scenes improvements to ad delivery and app stability,
+including a fix for a rare freeze that could occur when switching
+apps mid-ad. Thanks for playing!</pre>
 
-      <p style="margin-top:16px;">Name, Subtitle, Description, Keywords, and URLs are unchanged from v1.0.0 — reproduced below for reference; no edits needed unless you want to refresh ASO copy.</p>
+      <p style="margin-top:16px;">Description, Promotional Text, and Keywords are unchanged from v1.0.1. Only the <strong>Subtitle</strong> changed this version (see Section 1).</p>
 
       <h3>Promotional Text (170 char, editable without re-review)</h3>
       <p>No timers, no ads to start — just tap, slide, and clear. New daily challenge and streak every day. Hundreds of levels, dark mode, and zero pressure.</p>
@@ -309,22 +314,22 @@ Arrows – Escape Puzzle is free to play, with optional ads and a
 one-time Remove Ads purchase for an uninterrupted experience.</pre>
 
       <h3>Keywords (100 char max, comma-separated, no spaces after commas)</h3>
-      <p><code>maze,relax,mind,offline,streak,levels,casual,think,tap,classic,calm,zen,slide,board,clear,fun</code> <span class="tag tag-ok">93/100</span></p>
+      <p><code>maze,relax,mind,offline,streak,levels,casual,think,tap,classic,calm,zen,slide,board,clear,fun</code> <span class="tag tag-ok">93/100</span> — unchanged</p>
 
       <h3>URLs</h3>
       <table>
         <tr><td>Support URL</td><td><a href="https://xmtechnologies.in/Arrow/support.html" target="_blank">xmtechnologies.in/Arrow/support.html</a></td></tr>
         <tr><td>Marketing URL (optional)</td><td><a href="https://xmtechnologies.in/Arrow/index.html" target="_blank">xmtechnologies.in/Arrow/index.html</a></td></tr>
-        <tr><td>Privacy Policy URL (required)</td><td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a> <span class="tag tag-ok">UPDATED 2026-08-01</span> now discloses Meta + Unity mediation</td></tr>
+        <tr><td>Privacy Policy URL (required)</td><td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a> <span class="tag tag-ok">UPDATED 2026-08-18</span> — Meta Audience Network disclosure removed, now Unity Ads only</td></tr>
       </table>
     </section>
 
     <section id="privacy">
       <h2>6. Privacy &amp; Data Collection</h2>
-      <p><span class="tag tag-block">ACTION NEEDED</span> The mediation partners added this version mean App Store Connect's Privacy questionnaire (App Privacy → Data Types) needs updating to stay consistent with the live privacy policy.</p>
+      <p><span class="tag tag-ok">SIMPLIFIED</span> Meta Audience Network is no longer part of the mediation stack — one fewer third party receiving IDFA/GAID via AdMob mediation. App Store Connect's Privacy questionnaire should be updated to remove Meta as a listed recipient if it was previously added there.</p>
       <table>
         <tr><th>Data Type</th><th>Collected?</th><th>Linked to identity?</th><th>Tracking?</th><th>Notes</th></tr>
-        <tr><td>Identifiers (Device ID / IDFA)</td><td>Yes</td><td>No</td><td>Yes (advertising)</td><td>Via Google AdMob <strong>and its mediation partners, Meta Audience Network + Unity Ads</strong> — only if user grants ATT. This is the part that changed since v1.0.0</td></tr>
+        <tr><td>Identifiers (Device ID / IDFA)</td><td>Yes</td><td>No</td><td>Yes (advertising)</td><td>Via Google AdMob <strong>and its mediation partner, Unity Ads</strong> — only if user grants ATT. Meta Audience Network removed from this list this version</td></tr>
         <tr><td>Usage Data</td><td>Yes</td><td>No</td><td>No</td><td>Via Firebase Analytics — level_start, level_win, level_lose, level_restart, hint_used, daily_challenge_complete, streak_extended, ad_shown, purchase_remove_ads</td></tr>
         <tr><td>Purchases</td><td>Yes</td><td>No</td><td>No</td><td>Product ID only, no payment details — processed by Apple</td></tr>
         <tr><td>Diagnostics</td><td>No</td><td>—</td><td>—</td><td>No Crashlytics integrated</td></tr>
@@ -332,12 +337,12 @@ one-time Remove Ads purchase for an uninterrupted experience.</pre>
       </table>
       <h3>Action items for App Store Connect → App Privacy</h3>
       <ol class="steps">
-        <li>Under "Data Used to Track You", confirm Identifiers (IDFA) lists all three ad networks as recipients — Apple's questionnaire asks about data types and purposes, not a per-SDK list, but your own records should note Meta + Unity alongside AdMob</li>
-        <li>No new data <em>types</em> are collected — only additional third parties receive the same IDFA/GAID data already declared for AdMob. If Apple's UI asks you to name third-party partners explicitly, add Meta Platforms, Inc. and Unity Technologies</li>
-        <li>Re-confirm "Does this app track users?" stays <strong>Yes</strong> — unchanged from v1.0.0</li>
+        <li>If Meta Platforms, Inc. was previously listed as a data-collecting third party (added for v1.0.1), remove it — mediation is Unity Ads only as of this version</li>
+        <li>Confirm Unity Technologies remains listed under Identifiers (IDFA) tracking</li>
+        <li>Re-confirm "Does this app track users?" stays <strong>Yes</strong> — unchanged</li>
       </ol>
-      <p><strong>Consent (GDPR/US States):</strong> <span class="tag tag-ok">UPDATED</span> — the UMP consent flow's outcome is now also forwarded to Unity Ads' adapter directly (real consent status, not hardcoded) via <code>GmaMediationUnity</code> in <code>lib/ad_service.dart</code>. Meta's adapter reads the IAB TCF string automatically once Meta is added as an Ad Partner in AdMob console (external step, still pending — see Section 9).</p>
-      <p>Full policy text: <a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a></p>
+      <p><strong>Consent (GDPR/US States):</strong> unchanged — the UMP consent outcome is forwarded to Unity Ads' adapter via <code>GmaMediationUnity</code> in <code>lib/ad_service.dart</code>. No Meta-specific consent forwarding exists anymore since the SDK was removed.</p>
+      <p>Full policy text: <a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a> (updated 2026-08-18 to remove all Meta Audience Network references — summary box, dedicated section, consent section, and Third-Party Services list)</p>
     </section>
 
     <section id="pricing">
@@ -365,55 +370,55 @@ one-time Remove Ads purchase for an uninterrupted experience.</pre>
 
     <section id="ads">
       <h2>9. Ads Disclosure &amp; Mediation</h2>
-      <p>The app shows ads via <strong>Google AdMob</strong> in 4 formats, now with <strong>ad mediation</strong> added this version:</p>
+      <p>The app shows ads via <strong>Google AdMob</strong> in 4 formats:</p>
       <table>
         <tr><th>Format</th><th>Trigger</th></tr>
-        <tr><td>Rewarded</td><td>Hint (after 5 free hints), Add More Lives (lose screen)</td></tr>
-        <tr><td>Interstitial</td><td>Every 2nd level win, level restart, daily challenge complete</td></tr>
-        <tr><td>Banner</td><td>Bottom of Home, Challenge, Collection, Settings tabs</td></tr>
-        <tr><td>App Open</td><td>App resume from background / cold start (never during active gameplay, skipped on the very first-ever launch)</td></tr>
+        <tr><td>Rewarded</td><td>Hint (after 5 free hints, loaded when the button appears), Add More Lives (loaded at 1 heart remaining)</td></tr>
+        <tr><td>Interstitial</td><td>Every 2nd level win, level restart, daily challenge complete — <strong>daily complete changed this version</strong>: now the same plain interstitial as a level win, not a rewarded interstitial</td></tr>
+        <tr><td>Banner</td><td>Bottom of Home, Challenge, Collection, Settings, and gameplay tabs — <strong>now requesting Google's Large Anchored Adaptive format</strong> (changed this version, was the compact format)</td></tr>
+        <tr><td>App Open</td><td>App resume from background / cold start (never during active gameplay, skipped on the very first-ever launch) — cold-start reliability fix this version, see the &ldquo;What's Changed&rdquo; table above</td></tr>
       </table>
 
-      <h3>New this version — AdMob Mediation</h3>
-      <p><span class="tag tag-ok">DONE (code)</span> <code>gma_mediation_meta</code> and <code>gma_mediation_unity</code> added — Google's official Flutter mediation adapter wrappers for Meta Audience Network and Unity Ads. When AdMob has no ad to serve, these networks can fill the request instead, through the same 4 ad unit IDs already in the app (no separate app-side IDs needed — mediation routing happens entirely in AdMob's console).</p>
+      <h3>Mediation — Meta Audience Network removed this version</h3>
+      <p><span class="tag tag-ok">DONE</span> <code>gma_mediation_meta</code> dependency, its proguard rules, and every code comment referencing it have been removed. It was added in v1.0.1 but never configured in AdMob console mediation groups, so it never actually served an impression — removing it has no user-facing effect, just a smaller app and one less SDK to maintain.</p>
       <table>
         <tr><th>Item</th><th>Status</th></tr>
-        <tr><td>Flutter/native SDK integration</td><td><span class="tag tag-ok">DONE</span> — build-verified on both platforms (Android Gradle + iOS CocoaPods resolved cleanly)</td></tr>
-        <tr><td>iOS SKAdNetwork IDs (Meta ×2, Unity ×1)</td><td><span class="tag tag-ok">DONE</span> — added to <code>Info.plist</code></td></tr>
-        <tr><td>GDPR/CCPA consent forwarding to Unity</td><td><span class="tag tag-ok">DONE</span> — real UMP consent outcome forwarded via <code>GmaMediationUnity.setGDPRConsent()</code>/<code>setCCPAConsent()</code></td></tr>
-        <tr><td>Meta consent forwarding</td><td><span class="tag tag-ok">AUTOMATIC</span> — no app code needed; Meta's adapter reads the IAB TCF string once Meta is added as an Ad Partner in AdMob console (external step below)</td></tr>
-        <tr><td>Unity Ads dashboard account + Game ID</td><td><span class="tag tag-block">PENDING</span> — external, not yet created</td></tr>
-        <tr><td>Meta Audience Network placements</td><td><span class="tag tag-block">PENDING</span> — external, not yet created</td></tr>
-        <tr><td>AdMob console → Mediation groups</td><td><span class="tag tag-block">PENDING</span> — links the above accounts to AdMob's waterfall/bidding</td></tr>
-        <tr><td>AdMob console → Privacy &amp; messaging → Ad partners</td><td><span class="tag tag-block">PENDING</span> — must add Meta + Unity so consent passes through via TCF</td></tr>
+        <tr><td>Mediation partner</td><td><span class="tag tag-ok">Unity Ads only</span> — via <code>gma_mediation_unity</code></td></tr>
+        <tr><td>iOS SKAdNetwork IDs</td><td><span class="tag tag-warn">VERIFY</span> — the 2 Meta SKAdNetwork IDs added in v1.0.1's <code>Info.plist</code> can be removed now that Meta is gone; the Unity and Google IDs should remain</td></tr>
+        <tr><td>GDPR/CCPA consent forwarding to Unity</td><td><span class="tag tag-ok">DONE</span> — via <code>GmaMediationUnity.setGDPRConsent()</code>/<code>setCCPAConsent()</code>, unchanged</td></tr>
+        <tr><td>Per-placement ad units</td><td><span class="tag tag-ok">DONE</span> — 9 placements (banner ×2, rewarded ×2, interstitial ×2, app open ×2, daily rewarded-interstitial retired this version) each on their own AdMob ad unit</td></tr>
+        <tr><td>AdMob console → Privacy &amp; messaging → Ad partners</td><td><span class="tag tag-warn">VERIFY</span> — Meta can be removed from the Ad partners list if it was added there for TCF passthrough in v1.0.1</td></tr>
       </table>
       <p>All ads can be permanently disabled (except rewarded, which is opt-in) via the <strong>Remove Ads</strong> IAP — unchanged.</p>
     </section>
 
     <section id="age">
       <h2>10. Age Rating Questionnaire</h2>
-      <p><span class="tag tag-ok">UNCHANGED</span> No content changes since v1.0.0 — the game still has no objectionable content of any kind. Expected result: <strong>4+</strong>.</p>
+      <p><span class="tag tag-ok">UNCHANGED</span> No content changes — the game still has no objectionable content of any kind. Expected result: <strong>4+</strong>.</p>
     </section>
 
     <section id="encryption">
       <h2>11. Export Compliance (Encryption)</h2>
-      <p><span class="tag tag-ok">UNCHANGED</span> <code>ITSAppUsesNonExemptEncryption = false</code> is still set in <code>ios/Runner/Info.plist</code> — confirmed present. All network calls (Firebase, AdMob + mediation partners, StoreKit) still use standard OS-provided HTTPS only; no custom encryption was added with mediation. No new export-compliance prompt expected on this upload.</p>
+      <p><span class="tag tag-ok">UNCHANGED</span> <code>ITSAppUsesNonExemptEncryption = false</code> is still set in <code>ios/Runner/Info.plist</code>. All network calls (Firebase, AdMob + Unity mediation, StoreKit) still use standard OS-provided HTTPS only. No new export-compliance prompt expected on this upload.</p>
     </section>
 
     <section id="review">
       <h2>12. App Review Notes</h2>
-      <p>Paste this into the "Notes" field on submission (updated from v1.0.0 to mention what changed):</p>
+      <p>Paste this into the "Notes" field on submission:</p>
       <pre>Arrows – Escape Puzzle is a single-player offline puzzle game. No login
 or account is required to play.
 
-This is a minor update (1.0.0 → 1.0.1) that:
-- Adds AdMob mediation (Meta Audience Network, Unity Ads) as additional
-  ad sources alongside Google AdMob — same ad formats and placements as
-  before, no new ad behavior visible to reviewers.
-- Fixes a display bug on the Daily Challenge calendar screen (future
-  days in the month were not rendering).
+This build (1.0.1 → 1.0.4) contains ad-delivery and stability fixes
+only — no design, UI, or content changes:
+- Removed an unused ad mediation SDK (Meta Audience Network) that was
+  never actually active; mediation is now Unity Ads only.
+- Fixed a rare freeze that could occur when switching apps while a
+  full-screen ad was on screen.
+- Improved reliability of the ad shown on app launch.
+- Simplified the ad shown after completing a Daily Challenge to match
+  the same format used after a normal level win.
 
-Unchanged from the previous approved version:
+Unchanged from the previous submission:
 - All gameplay progress is stored locally on-device (no server backend).
 - One in-app purchase: "Remove Ads" ($3.99, non-consumable, product ID
   remove_ads) disables banner/interstitial/app-open ads. Rewarded ads
@@ -425,25 +430,25 @@ Unchanged from the previous approved version:
   with unrestricted browsing.
 
 Test path: tap Play on the Home screen to start Level 1 (tutorial),
-or tap an in-progress level number to continue. To see the calendar
-fix, open the Challenge tab.</pre>
+or tap an in-progress level number to continue.</pre>
     </section>
 
     <section id="checklist">
       <h2>13. Build &amp; Archive Checklist</h2>
       <p>Run through this immediately before archiving in Xcode:</p>
       <ul>
-        <li><span class="tag tag-ok">DONE</span> Confirm <code>pubspec.yaml</code> version is <code>1.0.1+4</code></li>
-        <li><span class="tag tag-ok">DONE</span> Production iOS ad unit IDs unchanged and confirmed in <code>lib/ad_service.dart</code> (rewarded <code>.../1504787383</code>, interstitial <code>.../7988636380</code>, banner <code>.../1614799726</code>, app open <code>.../3939379036</code>)</li>
-        <li><span class="tag tag-ok">DONE</span> <code>pod install</code> resolved cleanly with the new mediation pods (<code>FBAudienceNetwork</code>, <code>GoogleMobileAdsMediationFacebook</code>, <code>UnityAds</code>, <code>GoogleMobileAdsMediationUnity</code>) — 32 total pods installed</li>
-        <li><span class="tag tag-ok">DONE</span> 4 SKAdNetwork IDs present in <code>Info.plist</code> (Google, Meta ×2, Unity ×1)</li>
-        <li><span class="tag tag-ok">DONE</span> Privacy policy live-updated to disclose Meta + Unity</li>
-        <li><span class="tag tag-block">PENDING</span> Update App Privacy questionnaire in App Store Connect (Section 6)</li>
+        <li><span class="tag tag-ok">DONE</span> Confirm <code>pubspec.yaml</code> version is <code>1.0.4+8</code></li>
+        <li><span class="tag tag-ok">DONE</span> Production iOS ad unit IDs confirmed in <code>lib/ad_service.dart</code> — 9 placements, each its own ad unit</li>
+        <li><span class="tag tag-block">PENDING</span> <code>pod install</code> to drop the Meta pods (<code>FBAudienceNetwork</code>, <code>GoogleMobileAdsMediationFacebook</code>) — already run once this session for local testing, confirm before archiving</li>
+        <li><span class="tag tag-warn">VERIFY</span> Remove the 2 Meta SKAdNetwork IDs from <code>Info.plist</code> if not already done (Section 9)</li>
+        <li><span class="tag tag-ok">DONE</span> Privacy policy live-updated to remove Meta references (2026-08-18)</li>
+        <li><span class="tag tag-ok">DONE</span> App Store subtitle updated to "Grid Logic &amp; Mind Puzzles" alongside the 4.3(a) reply</li>
+        <li><span class="tag tag-block">PENDING</span> Update App Privacy questionnaire in App Store Connect to drop Meta (Section 6)</li>
         <li><span class="tag tag-block">PENDING</span> Add "What's New in This Version" release notes (Section 5)</li>
         <li>Run <code>flutter build ipa</code> (or archive via Xcode with <code>ios/Runner.xcworkspace</code>)</li>
-        <li>Test the production build on a <strong>real device</strong> — confirm ATT + GDPR consent prompts still appear correctly, ads still load (mediation is inert until AdMob console groups exist, so AdMob-direct fill should behave exactly as v1.0.0), and the IAP purchase flow still works with a Sandbox tester account</li>
+        <li>Test the production build on a <strong>real device</strong> — confirm ATT + GDPR consent prompts still appear correctly, ads still load through Unity mediation, min-max mid-ad no longer freezes the game, and the IAP purchase flow still works with a Sandbox tester account</li>
         <li>Upload via Xcode Organizer or Transporter</li>
-        <li>Submit for review with the notes from Section 12</li>
+        <li>Submit for review with the notes from Section 12 — and only after the 4.3(a) reply outcome is known (Current Review Status above)</li>
       </ul>
     </section>
 
@@ -459,9 +464,10 @@ fix, open the Challenge tab.</pre>
         <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
         <tr><td>AdMob iOS App ID</td><td><code>ca-app-pub-4818503743858431~5166233161</code></td></tr>
         <tr><td>Firebase project</td><td>fitflow-759df</td></tr>
-        <tr><td>Android listing (context, not this doc's platform)</td><td><a href="https://play.google.com/store/apps/details?id=com.shayona.arrows" target="_blank">play.google.com/store/apps/details?id=com.shayona.arrows</a></td></tr>
+        <tr><td>Android listing (context, not this doc's platform)</td><td><a href="https://play.google.com/store/apps/details?id=com.shayona.arrows" target="_blank">play.google.com/store/apps/details?id=com.shayona.arrows</a> — <strong>1.0.4+8 LIVE</strong> on Play production</td></tr>
         <tr><td>Android submission guide</td><td><code>docs/PLAY_STORE_GUIDE_v1.0.0.html</code></td></tr>
         <tr><td>Google Ads asset guide</td><td><code>docs/GOOGLE_ADS_ASSET_GUIDE_v1.0.0.pdf</code></td></tr>
+        <tr><td>Previous iOS guide</td><td><code>docs/APP_STORE_GUIDE_v1.0.1.html</code></td></tr>
       </table>
     </section>
 
