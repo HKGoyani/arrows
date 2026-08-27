@@ -38,6 +38,7 @@ class Tr {
       'hint': 'Hint',
       'tapToMove': 'Tap to move',
       'outOfLives': 'Out of lives',
+      'skipLevel': 'Skip this level',
       'addMoreLives': 'Add More Lives',
       'restart': 'Restart',
       'restartMessage': 'Move all arrows back to the beginning and start again with full lives',
@@ -206,6 +207,7 @@ class Tr {
       'hint': 'Hinweis',
       'tapToMove': 'Tippe zum Bewegen',
       'outOfLives': 'Keine Leben mehr',
+      'skipLevel': 'Level überspringen',
       'addMoreLives': 'Mehr Leben',
       'restart': 'Neustart',
       'restartMessage': 'Alle Pfeile zurücksetzen und mit vollen Leben neu starten',
@@ -377,6 +379,7 @@ class Tr {
       'hint': 'Indice',
       'tapToMove': 'Appuie pour déplacer',
       'outOfLives': 'Plus de vies',
+      'skipLevel': 'Passer ce niveau',
       'addMoreLives': 'Plus de vies',
       'restart': 'Recommencer',
 
@@ -547,6 +550,7 @@ class Tr {
       'hint': 'Suggerimento',
       'tapToMove': 'Tocca per muovere',
       'outOfLives': 'Vite esaurite',
+      'skipLevel': 'Salta questo livello',
       'addMoreLives': 'Aggiungi vite',
       'restart': 'Ricomincia',
 
@@ -717,6 +721,7 @@ class Tr {
       'hint': 'ヒント',
       'tapToMove': 'タップして動かそう',
       'outOfLives': 'ライフがなくなった',
+      'skipLevel': 'このレベルをスキップ',
       'addMoreLives': 'ライフを追加',
       'restart': 'リスタート',
 
@@ -883,6 +888,7 @@ class Tr {
       'hint': '힌트',
       'tapToMove': '탭하여 이동',
       'outOfLives': '생명 소진',
+      'skipLevel': '이 레벨 건너뛰기',
       'addMoreLives': '생명 추가',
       'restart': '다시 시작',
 
@@ -1049,6 +1055,7 @@ class Tr {
       'hint': 'Dica',
       'tapToMove': 'Toque para mover',
       'outOfLives': 'Sem vidas',
+      'skipLevel': 'Pular este nível',
       'addMoreLives': 'Mais vidas',
       'restart': 'Recomeçar',
 
@@ -1219,6 +1226,7 @@ class Tr {
       'hint': 'Подсказка',
       'tapToMove': 'Нажми, чтобы двигать',
       'outOfLives': 'Жизни закончились',
+      'skipLevel': 'Пропустить уровень',
       'addMoreLives': 'Добавить жизни',
       'restart': 'Начать заново',
 
@@ -1389,6 +1397,7 @@ class Tr {
       'hint': 'Pista',
       'tapToMove': 'Toca para mover',
       'outOfLives': 'Sin vidas',
+      'skipLevel': 'Saltar este nivel',
       'addMoreLives': 'Más vidas',
       'restart': 'Reiniciar',
 
@@ -1559,6 +1568,7 @@ class Tr {
       'hint': 'İpucu',
       'tapToMove': 'Hareket ettirmek için dokun',
       'outOfLives': 'Can kalmadı',
+      'skipLevel': 'Bu seviyeyi atla',
       'addMoreLives': 'Can ekle',
       'restart': 'Yeniden başla',
 

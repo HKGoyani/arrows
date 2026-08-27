@@ -102,6 +102,11 @@ class _SplashApp extends StatelessWidget {
 
 final appKey = GlobalKey<_ArrowsAppState>();
 
+/// Lets [MainShell] know when another route is covering it, so it can release
+/// its banner instead of leaving one refreshing behind an opaque full-screen
+/// route (gameplay, daily challenge, celebrations, record detail screens).
+final routeObserver = RouteObserver<PageRoute<dynamic>>();
+
 class ArrowsApp extends StatefulWidget {
   ArrowsApp() : super(key: appKey);
   @override
@@ -117,6 +122,7 @@ class _ArrowsAppState extends State<ArrowsApp> {
       title: 'Arrows – Escape Puzzle',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(scaffoldBackgroundColor: AppColors.bg, useMaterial3: true),
+      navigatorObservers: [routeObserver],
       home: MainShell(),
     );
   }
@@ -135,7 +141,8 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+class _MainShellState extends State<MainShell>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin, RouteAware {
   int _tab = 0;
   int? _challengeYear;
   int? _challengeMonth;
@@ -152,6 +159,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
   bool _bannerRequested = false;
   AdSize? _bannerSize; // reserved as soon as known, before the ad itself loads
   Timer? _bannerRetryTimer; // slow retry after the initial burst is exhausted
+  int _bannerWidth = 0; // remembered so the banner can be re-acquired on return
+  int _bannerRetries = 0;
+
+  /// See [_requestBanner] — the retry loop is bounded, not endless.
+  static const _maxBannerRetries = 2;
 
   @override
   void initState() {
@@ -170,36 +182,87 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
     // Anchored adaptive banner needs the screen width, which isn't reliably
     // available until dependencies (MediaQuery) are attached — not in
     // initState.
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) routeObserver.subscribe(this, route);
     if (!_bannerRequested) {
       _bannerRequested = true;
-      final width = MediaQuery.of(context).size.width.truncate();
+      _bannerWidth = MediaQuery.of(context).size.width.truncate();
       // Reserve the banner's exact space as soon as the size is known (fast,
       // local — no ad request) so the nav bar settles into its final
       // position immediately, instead of jumping once the ad itself finishes
       // loading (which can take several seconds, longer with retries).
-      AdService.bannerSizeFor(width).then((size) {
+      AdService.bannerSizeFor(_bannerWidth).then((size) {
         if (mounted && size != null) setState(() => _bannerSize = size);
       });
-      _requestBanner(width);
+      _requestBanner(_bannerWidth);
+      // Warm the session's FIRST gameplay banner while the player is still
+      // on Home — Play is the app's primary action, so this request has a
+      // near-certain impression ahead of it, and the first level opens with
+      // its banner already attached. Later levels re-warm at ~80% cleared.
+      AdService.preloadGameplayBanner(_bannerWidth);
     }
   }
 
+  // ── Banner visibility ──
+  //
+  // The shell is never unmounted: gameplay, daily challenges and the detail
+  // screens are all PUSHED on top of it, so its State (and its banner) stayed
+  // alive underneath an opaque route. The banner kept auto-refreshing there
+  // for the whole time the player was on the board — requests for a slot
+  // nobody could see, and any impression they did record was unviewable,
+  // which is what AdMob's "request only when the slot is visible" note is
+  // about. The reserved SizedBox stays put either way, so releasing the ad
+  // costs no layout shift.
+
+  @override
+  void didPushNext() => _releaseBanner();
+
+  @override
+  void didPopNext() {
+    if (_bannerAd == null && _bannerWidth > 0) {
+      _bannerRetries = 0;
+      _requestBanner(_bannerWidth);
+    }
+  }
+
+  void _releaseBanner() {
+    _bannerRetryTimer?.cancel();
+    _bannerRetryTimer = null;
+    if (_bannerAd == null) return;
+    final ad = _bannerAd;
+    setState(() => _bannerAd = null);
+    // Disposed after the frame that removes its AdWidget from the tree —
+    // tearing down the platform view while it is still mounted throws.
+    WidgetsBinding.instance.addPostFrameCallback((_) => ad?.dispose());
+  }
+
   /// Requests the banner, and keeps trying on a slow cadence if it fails.
-  /// [AdService.createBanner]'s own retry burst gives up after ~14s; without
-  /// this the slot would stay empty for the rest of the session even though
-  /// the shell lives for the whole app.
+  /// [AdService.createBanner]'s own retry burst gives up after ~14s.
+  ///
+  /// BOUNDED at [_maxBannerRetries]: this used to reschedule itself every 60s
+  /// forever, so a player in a low-fill region emitted a 4-attempt burst every
+  /// ~74 seconds for the entire session and never received an impression.
   void _requestBanner(int width) {
-    AdService.createBanner(width: width, placement: BannerPlacement.home)
-        .then((ad) {
+    AdService.createBanner(
+      width: width,
+      placement: BannerPlacement.home,
+      // Abort the in-flight retry burst if a route covers the shell mid-wait
+      // — those stragglers were requests with no visible slot to land in.
+      keepTrying: () =>
+          mounted && (ModalRoute.of(context)?.isCurrent ?? false),
+    ).then((ad) {
       // The load (with retries) can take several seconds; if this shell is
-      // gone by the time it resolves, dispose the ad so it doesn't leak.
-      if (!mounted) {
+      // gone — or a route has since covered it — by the time it resolves,
+      // dispose the ad so it doesn't leak or refresh out of sight.
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) {
         ad?.dispose();
         return;
       }
       if (ad == null) {
+        if (_bannerRetries >= _maxBannerRetries) return;
+        _bannerRetries++;
         _bannerRetryTimer?.cancel();
-        _bannerRetryTimer = Timer(const Duration(seconds: 60), () {
+        _bannerRetryTimer = Timer(Duration(seconds: 60 * _bannerRetries), () {
           if (mounted) _requestBanner(width);
         });
         return;
@@ -210,6 +273,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _bannerRetryTimer?.cancel();
     _bannerAd?.dispose();
     _navSlideCtrl.dispose();
@@ -265,7 +329,14 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
       // app out from under the player. Tabs are switched via the bottom nav;
       // there is no back stack to unwind here.
       canPop: false,
-      child: Scaffold(
+      // First tap anywhere ends the cold-start ad's launch window — a
+      // late-loading ad must ride the launch transition, never interrupt a
+      // player who has already started doing something. Translucent, so
+      // every event still reaches its real target.
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) => AdService.onUserInteracted(),
+        child: Scaffold(
       backgroundColor: AppColors.bg,
       body: IndexedStack(
         index: _tab,
@@ -341,6 +412,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Sing
             height: MediaQuery.of(context).padding.bottom * 0.5,
           ),
         ],
+      ),
       ),
       ),
     );
@@ -515,6 +587,21 @@ class _GameFlowState extends State<GameFlow> {
       isDaily: _isDaily,
       onLoaded: _isDaily ? _restoreDaily : null,
       onDidRestart: _isDaily ? _clearDailyState : null,
+      // Rewarded skip from the lose overlay — main progression only (a
+      // skipped daily would grant the calendar trophy unearned). Advances the
+      // level WITHOUT the win path: no LevelLegend/Perfect awards for a level
+      // that wasn't beaten, and no win interstitial — the player just watched
+      // a rewarded ad, stacking a second full-screen ad on top of it is how
+      // "Modified ad behavior" policy flags happen.
+      onSkip: _isDaily
+          ? null
+          : () {
+              StreakService.registerPlayToday();
+              final next = _level + 1;
+              Prefs.setLevel(next);
+              AnalyticsService.levelSkip(_level);
+              Navigator.of(context).pop();
+            },
       onBack: () async {
         final nav = Navigator.of(context);
         if (_isDaily) await _saveDailyProgress();

@@ -34,6 +34,9 @@ class GameScreen extends StatefulWidget {
   final bool isDaily;
   final void Function(GameController c)? onLoaded;
   final VoidCallback? onDidRestart;
+  // Rewarded "skip this level" on the lose overlay (main progression only —
+  // null hides the button). The caller advances the level and leaves.
+  final VoidCallback? onSkip;
   const GameScreen({
     super.key,
     required this.controller,
@@ -43,6 +46,7 @@ class GameScreen extends StatefulWidget {
     this.isDaily = false,
     this.onLoaded,
     this.onDidRestart,
+    this.onSkip,
   });
 
   @override
@@ -88,6 +92,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _bannerRequested = false;
   AdSize? _bannerSize; // reserved as soon as known, before the ad itself loads
   Timer? _bannerRetryTimer; // slow retry after the initial burst is exhausted
+  int _bannerWidthPx = 0; // remembered for the next-level banner preload
 
   /// True while a rewarded ad is being fetched on demand. Drives a blocking
   /// spinner so the up-to-5s wait reads as "loading" rather than a dead
@@ -213,24 +218,49 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     // initState.
     if (!_bannerRequested) {
       _bannerRequested = true;
-      final width = MediaQuery.of(context).size.width.truncate();
+      _bannerWidthPx = MediaQuery.of(context).size.width.truncate();
       // Reserve the banner's exact space as soon as the size is known (fast,
       // local — no ad request) so the board's available area settles into
       // its final size immediately, instead of jumping once the ad itself
       // finishes loading (which can take several seconds, longer with
       // retries).
-      AdService.bannerSizeFor(width).then((size) {
+      AdService.bannerSizeFor(_bannerWidthPx,
+              placement: BannerPlacement.gameplay)
+          .then((size) {
         if (mounted && size != null) setState(() => _bannerSize = size);
       });
-      _requestBanner(width);
+      // Warm path first: the previous level (at ~80% cleared) or Home
+      // preloaded this level's banner — attach it instantly instead of
+      // cold-loading for seconds at the start of every level.
+      final cached = AdService.takeGameplayBanner(_bannerWidthPx);
+      if (cached != null) {
+        _bannerAd = cached;
+      } else {
+        _requestBanner(_bannerWidthPx);
+      }
     }
   }
 
   /// Requests the banner, retrying slowly if the initial burst is exhausted —
   /// otherwise a transient no-fill leaves the slot empty for the whole level.
+  ///
+  /// BOUNDED. This used to reschedule itself forever, so a player in a
+  /// low-fill region emitted [AdService.createBanner]'s 4-attempt burst every
+  /// ~74 seconds for the entire level and never received an impression. The
+  /// users who cannot fill were generating the most requests, which is what
+  /// held banner match rate down at ~12%. After [_maxBannerRetries] rounds
+  /// the slot stays empty (its space is already reserved, so nothing shifts).
+  static const _maxBannerRetries = 2;
+  int _bannerRetries = 0;
+
   void _requestBanner(int width) {
-    AdService.createBanner(width: width, placement: BannerPlacement.gameplay)
-        .then((ad) {
+    AdService.createBanner(
+      width: width,
+      placement: BannerPlacement.gameplay,
+      // Abort the in-flight retry burst if the level ends mid-wait — those
+      // stragglers were requests with no slot left to show in.
+      keepTrying: () => mounted,
+    ).then((ad) {
       // The load (with retries) can take several seconds; if this screen is
       // gone by the time it resolves, dispose the ad so it doesn't leak.
       if (!mounted) {
@@ -238,8 +268,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         return;
       }
       if (ad == null) {
+        if (_bannerRetries >= _maxBannerRetries) return;
+        _bannerRetries++;
         _bannerRetryTimer?.cancel();
-        _bannerRetryTimer = Timer(const Duration(seconds: 60), () {
+        _bannerRetryTimer = Timer(Duration(seconds: 60 * _bannerRetries), () {
           if (mounted) _requestBanner(width);
         });
         return;
@@ -258,8 +290,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _hintTimer?.cancel();
     _hintTimer = Timer(const Duration(seconds: 10), () {
       if (mounted && c.status == GameStatus.playing) {
-        // Fetch now, while the button is appearing — loading on the tap
-        // itself would put a spinner in front of the player.
+        // Fetches only for a player with a history of paid hints — the
+        // button appearing says nothing about intent on its own. See
+        // AdService.onHintOffered.
         AdService.onHintOffered();
         setState(() => _showHint = true);
       }
@@ -342,6 +375,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     AdService.onHeartsChanged(c.hearts);
     if (c.progress >= 0.8) {
       AdService.onLevelNearlyComplete(isDaily: widget.isDaily);
+      // The NEXT level's banner: loaded now, attached instantly there.
+      // Idempotent — the cache/loading guards make repeat calls free.
+      AdService.preloadGameplayBanner(_bannerWidthPx);
     }
     _rebuild();
   }
@@ -1393,6 +1429,42 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
+                // Rewarded skip — the app's highest-eCPM format offered at
+                // the exact moment a player is stuck. Opt-in, main
+                // progression only. Shares the extraLives ad unit (and its
+                // one-heart preload), so the ad is usually already warm.
+                if (widget.onSkip != null && !_isTutorial) ...[
+                  const SizedBox(height: 10),
+                  Pressable(
+                    onTap: () => AdService.showRewarded(
+                      placement: RewardedPlacement.extraLives,
+                      onLoading: _setAdLoading,
+                      onUnavailable: _showAdUnavailable,
+                      onRewarded: () {
+                        if (mounted) widget.onSkip!();
+                      },
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(color: AppColors.blue, width: 1.5),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.videocam_rounded,
+                              size: 20, color: AppColors.blue),
+                          const SizedBox(width: 8),
+                          Text(Tr.get('skipLevel'),
+                              style:
+                                  poppins(17, FontWeight.w900, AppColors.blue)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Pressable(
                   onTap: _restart,
