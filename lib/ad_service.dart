@@ -1123,18 +1123,19 @@ class AdService {
   ///    banner size there is: faster fill, more impressions, bounded height.
   static Future<AdSize?> bannerSizeFor(int width,
       {BannerPlacement placement = BannerPlacement.home}) {
-    if (placement == BannerPlacement.gameplay) {
-      // Deliberate use of a deprecated member: plugin v9 deprecates the
-      // STANDARD anchored-adaptive size lookups to nudge everyone onto the
-      // large format, but the standard size itself is fully supported (this
-      // method invokes the same platform API, minus the "large" flag) — and
-      // the compact height is the point on the gameplay screen. Explicit
-      // portrait, since the app is orientation-locked in main().
-      // ignore: deprecated_member_use
-      return AdSize.getAnchoredAdaptiveBannerAdSize(
-          Orientation.portrait, width);
-    }
-    return AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
+    // Both placements use the standard anchored-adaptive size (2026-08-27):
+    // Home previously used the Large format, but gameplay was reverted to
+    // standard after a week's data showed no eCPM premium ($0.25 either way)
+    // while the large format's thinner inventory pool cost fill speed — so
+    // Home is matched to it for a consistent banner size across the app.
+    //
+    // Deliberate use of a deprecated member: plugin v9 deprecates this
+    // lookup to nudge everyone onto the large format, but the standard size
+    // itself is fully supported (this method invokes the same platform API,
+    // minus the "large" flag). Explicit portrait, since the app is
+    // orientation-locked in main().
+    // ignore: deprecated_member_use
+    return AdSize.getAnchoredAdaptiveBannerAdSize(Orientation.portrait, width);
   }
 
   static Future<BannerAd?> createBanner({
