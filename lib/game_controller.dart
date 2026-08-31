@@ -58,15 +58,41 @@ class GameController extends ChangeNotifier {
   List<Arrow> get liveArrows =>
       arrows.where((a) => a.state != ArrowState.leaving).toList();
 
-  /// Synchronous load — used for small/fast boards (main progression) and
-  /// daily restarts (the board is already cached from the initial async
-  /// load, so this is instant). Only regenerates inline if no cache exists.
+  /// Synchronous load. GENERATES INLINE when no cached board is available,
+  /// which blocks the calling isolate — on the shaped levels (52–99) that is
+  /// hundreds of milliseconds on a fast machine and seconds on an entry-level
+  /// phone, long enough to trip Android's input-dispatch ANR.
+  ///
+  /// Prefer [loadLevelAsync], which generates on a background isolate. This
+  /// remains only as the last-resort fallback for callers that cannot await
+  /// (see [reloadFromCache], which covers the restart path without generating
+  /// at all).
   void loadLevel(int lvl, {bool daily = false}) {
     level = lvl;
     isDaily = daily;
     final cached = daily ? _dailyCache[lvl] : null;
     _applyLevel(
         cached != null ? _cloneLevel(cached) : _gen.genLevel(lvl, daily: daily));
+  }
+
+  /// Pristine copy of the board most recently loaded, plus the level/mode it
+  /// belongs to. Generation is seeded by level number, so restarting a level
+  /// always produces an identical board — regenerating it was pure cost.
+  GeneratedLevel? _pristine;
+  String? _pristineKey;
+
+  static String _key(int lvl, bool daily) => '$lvl:$daily';
+
+  /// Reloads a board straight from the pristine cache, with no generation at
+  /// all. Returns false when nothing is cached for [lvl]/[daily], in which
+  /// case the caller must fall back to a real load.
+  bool reloadFromCache(int lvl, {bool daily = false}) {
+    final p = _pristine;
+    if (p == null || _pristineKey != _key(lvl, daily)) return false;
+    level = lvl;
+    isDaily = daily;
+    _applyLevel(_cloneLevel(p));
+    return true;
   }
 
   /// Cache of generated daily boards, keyed by daily level number. Dailies
@@ -78,6 +104,9 @@ class GameController extends ChangeNotifier {
   /// background isolate so the UI thread stays free to animate a loading
   /// spinner. Daily boards are cached; a cache hit applies instantly.
   Future<void> loadLevelAsync(int lvl, {bool daily = false}) async {
+    // Re-entering the level already held in the pristine cache (e.g. returning
+    // to a level just played) needs no generation and no isolate round trip.
+    if (reloadFromCache(lvl, daily: daily)) return;
     level = lvl;
     isDaily = daily;
     final cached = daily ? _dailyCache[lvl] : null;
@@ -91,6 +120,10 @@ class GameController extends ChangeNotifier {
   }
 
   void _applyLevel(GeneratedLevel g) {
+    // Snapshot before the board is played, so a restart can replay it without
+    // regenerating. Cheap next to generation — list/set copies only.
+    _pristine = _cloneLevel(g);
+    _pristineKey = _key(level, isDaily);
     arrows = g.arrows;
     cols = g.cols;
     rows = g.rows;

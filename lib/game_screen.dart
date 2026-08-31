@@ -74,7 +74,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _showGrid = false;
   Arrow? _peekArrow; // transient: exit path shown while long-pressing an arrow
   bool _showHint = false;
-  bool _loading = false; // daily board generating on a background isolate
+  bool _loading = false; // board generating on a background isolate
+  // Set once the async load completes. Deliberately NOT inferred from
+  // `c.total == 0`: the generator can legitimately return an empty board
+  // (see _trimToFit), and treating that as "still loading" would strand the
+  // player on the loader forever instead of just showing a bad board.
+  bool _boardReady = false;
   Timer? _loadingTimer; // delays the loader so fast loads show no spinner
   Arrow? _hintArrow;
   final Set<int> _hintedIds = {};
@@ -188,26 +193,35 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     c.addListener(_onControllerChanged);
     AdService.onLevelStart(isDaily: widget.isDaily);
     AnalyticsService.levelStart(widget.level, daily: widget.isDaily);
-    if (widget.isDaily) {
-      // Daily boards generate on a background isolate (loadLevelAsync). The
-      // current generator is near-instant, so the loader is only shown as a
-      // safety net if generation runs long (>300ms — e.g. the rare fallback
-      // to the old engine); otherwise the board appears with no spinner flash.
-      _loadingTimer = Timer(const Duration(milliseconds: 300), () {
-        if (mounted) setState(() => _loading = true);
+    // EVERY board generates on a background isolate (loadLevelAsync), daily
+    // and main progression alike. Main progression used to generate inline on
+    // the platform isolate, which blocked it for the whole generation: ~780ms
+    // for the shaped levels (52–99, the dense RC pipeline) even on a fast
+    // desktop, and several seconds on the entry-level phones that make up most
+    // of the install base — past Android's 5s input-dispatch ANR threshold.
+    // That was the app's single largest ANR source (7.17% user-perceived ANR
+    // rate against a 0.47% bad-behaviour threshold), showing up in Play vitals
+    // as dart::DartEntry::InvokeFunction.
+    //
+    // The loader is only revealed if generation runs long (>300ms); a fast
+    // load shows neither a spinner flash nor an empty board.
+    _loadingTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _loading = true);
+    });
+    c.loadLevelAsync(widget.level, daily: widget.isDaily).then((_) {
+      _loadingTimer?.cancel();
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _boardReady = true;
       });
-      c.loadLevelAsync(widget.level, daily: true).then((_) {
-        _loadingTimer?.cancel();
-        if (!mounted) return;
-        setState(() => _loading = false);
+      if (widget.isDaily) {
         widget.onLoaded?.call(c); // restore saved board if any
-        _resetHintTimer();
-      });
-    } else {
-      c.loadLevel(widget.level, daily: false);
-      PerfectPlay.onLevelStart(widget.level);
+      } else {
+        PerfectPlay.onLevelStart(widget.level);
+      }
       _resetHintTimer();
-    }
+    });
   }
 
   @override
@@ -725,7 +739,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _introAnimating = false;
     _headerFadeCtrl.reset();
     _startHeartReveal = false;
-    c.loadLevel(c.level, daily: widget.isDaily);
+    // Replay the pristine board from cache — a restart is the same level, and
+    // generation is seeded by level number, so it would produce an identical
+    // board. Regenerating here blocked the platform isolate for the whole
+    // generation (see initState). The cache is populated by the load that
+    // opened this level, so the fallback should never run in practice.
+    if (!c.reloadFromCache(c.level, daily: widget.isDaily)) {
+      c.loadLevel(c.level, daily: widget.isDaily);
+    }
     if (widget.isDaily) widget.onDidRestart?.call();
     _resetHintTimer();
     // Set zoom to fitScale and reveal immediately — no delay after ad
@@ -744,10 +765,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    // Daily board still generating: show a blank bg until the delayed timer
-    // decides to reveal the loader (only if generation runs long), so a fast
-    // load neither flashes a spinner nor an empty board.
-    if (widget.isDaily && c.total == 0) {
+    // Board still generating on the background isolate: show a blank bg until
+    // the delayed timer decides to reveal the loader (only if generation runs
+    // long), so a fast load neither flashes a spinner nor an empty board.
+    if (!_boardReady) {
       return Scaffold(
         backgroundColor: AppColors.bg,
         body: _loading
@@ -758,7 +779,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     children: [
                       const ArrowLoader(),
                       const SizedBox(height: 28),
-                      Text('Preparing challenge',
+                      Text(widget.isDaily
+                              ? 'Preparing challenge'
+                              : 'Preparing level',
                           textAlign: TextAlign.center,
                           style: poppins(18, FontWeight.w900, AppColors.ink)),
                       const SizedBox(height: 6),
