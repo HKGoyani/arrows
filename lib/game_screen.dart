@@ -174,8 +174,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ..addListener(_rebuild);
     _fingerCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1100))
-      ..addListener(_rebuild)
-      ..repeat();
+      ..addListener(_rebuild);
+    // ONLY the tutorial animates the finger. This used to repeat() on every
+    // level, and its listener is _rebuild — a full setState on this screen.
+    // That meant a whole-screen rebuild and board repaint (BoardPainter's
+    // shouldRepaint is unconditionally true) 60 times a second, for the entire
+    // level, to drive a widget that is never built outside level 1. On
+    // entry-level hardware that saturates the UI thread, which on Android runs
+    // on the main thread — the ANRs captured under
+    // flutter::Shell::OnAnimatorBeginFrame.
+    if (_isTutorial) _fingerCtrl.repeat();
     _zoomIntroCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1000))
       ..addListener(_onZoomIntroTick);
@@ -515,6 +523,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (c.isClear(a)) {
       if (a.state == ArrowState.clashed) a.state = ArrowState.idle;
       _tutorialDone = true; // first successful move ends the prompt
+      // The prompt fades out over 320ms and never returns, so stop driving a
+      // per-frame rebuild for it. Left running, level 1 would keep repainting
+      // the board every frame for the rest of the level.
+      if (_fingerCtrl.isAnimating) {
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) _fingerCtrl.stop();
+        });
+      }
       _showGrid = false;
       if (_hintArrow != null && a.id == _hintArrow!.id) {
         _hintArrow = null;
