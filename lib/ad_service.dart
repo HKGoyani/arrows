@@ -586,9 +586,23 @@ class AdService {
   /// cleanly almost never restart it, and they no longer generate a request
   /// for an ad they were never going to see.
   static void onHeartsChanged(int hearts) {
-    if (hearts == 2) _loadInterstitialRestart();
     if (hearts == 1) _loadRewarded(RewardedPlacement.extraLives);
   }
+
+  /// Call the moment the player taps Restart — before the confirm dialog is
+  /// shown, so the dialog's own display time covers the request.
+  ///
+  /// This replaces loading at two hearts (2026-09-03). Losing a heart barely
+  /// predicts restarting: most players who drop to two hearts keep playing or
+  /// lose, so that trigger fired far more often than a restart ever happened
+  /// — 10,150 requests/day against 2,266 impressions, with match rate falling
+  /// 74% -> 55% as the volume climbed. Tapping Restart is an explicit intent
+  /// signal, and the confirm dialog is exactly the runway a load needs.
+  ///
+  /// Self-guarded: [_loadInterstitialRestart] no-ops while one is cached or
+  /// in flight, so cancelling the dialog and tapping Restart again does not
+  /// fire a second request — the cached ad simply waits for the next restart.
+  static void onRestartOffered() => _loadInterstitialRestart();
 
   /// Call after any hint is consumed. Once the free allowance is spent, every
   /// hint from here needs an ad, so fetch the NEXT one now rather than at the
@@ -992,7 +1006,11 @@ class AdService {
         _lastFullScreenAdClosedAt = DateTime.now();
         ad.dispose();
         _interstitialRestartAd = null;
-        _loadInterstitialRestart();
+        // NOT refetched. This reload existed because restart "can be tapped
+        // at any moment, with no later signal to wait for" — onRestartOffered
+        // is now that signal, so refetching here would be a request with
+        // nothing behind it, exactly what was stripped from the other
+        // formats. The next restart tap fetches it.
         onDone?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
@@ -1000,6 +1018,8 @@ class AdService {
         _showingFullScreenAd = false;
         ad.dispose();
         _interstitialRestartAd = null;
+        // Refetched: nothing was displayed, so the opportunity can recur
+        // immediately (the player is still on the restart they asked for).
         _loadInterstitialRestart();
         onDone?.call();
       },

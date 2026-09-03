@@ -586,6 +586,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _confirmRestart() {
+    // Fetch the restart interstitial on the TAP, so the confirm dialog below
+    // is the loading runway. Loading on the confirm button instead would put
+    // the load and the show in the same instant. Players with <3 arrows fired
+    // skip the dialog and get no runway — deliberately not special-cased:
+    // they have barely started, and the 45s gap usually blocks an ad there.
+    AdService.onRestartOffered();
     // Only show confirmation if player has made progress (3+ arrows fired)
     final arrowsFired = c.total - c.arrows.where((a) => a.state != ArrowState.leaving).length;
     if (arrowsFired < 3) {
