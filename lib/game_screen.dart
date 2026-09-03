@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_service.dart';
 import 'analytics_service.dart';
 import 'audio.dart';
@@ -93,10 +92,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   double _scale = 1;
   bool _winHandled = false;
   bool _restartHidden = false;
-  BannerAd? _bannerAd;
-  bool _bannerRequested = false;
-  AdSize? _bannerSize; // reserved as soon as known, before the ad itself loads
-  int _bannerWidthPx = 0; // screen width used for the one banner request
 
   /// True while a rewarded ad is being fetched on demand. Drives a blocking
   /// spinner so the up-to-5s wait reads as "loading" rather than a dead
@@ -231,67 +226,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Anchored adaptive banner needs the screen width, which isn't reliably
-    // available until dependencies (MediaQuery) are attached — not in
-    // initState.
-    if (!_bannerRequested) {
-      _bannerRequested = true;
-      _bannerWidthPx = MediaQuery.of(context).size.width.truncate();
-      // Reserve the banner's exact space as soon as the size is known (fast,
-      // local — no ad request) so the board's available area settles into
-      // its final size immediately, instead of jumping once the ad itself
-      // finishes loading (which can take several seconds, longer with
-      // retries).
-      AdService.bannerSizeFor(_bannerWidthPx,
-              placement: BannerPlacement.gameplay)
-          .then((size) {
-        if (mounted && size != null) setState(() => _bannerSize = size);
-      });
-      _requestBanner(_bannerWidthPx);
-    }
-  }
-
-  /// Requests the banner, retrying slowly if the initial burst is exhausted —
-  /// otherwise a transient no-fill leaves the slot empty for the whole level.
-  ///
-  /// EXACTLY ONE request per level, no retries, no preload.
-  ///
-  /// This slot previously ran two uncoordinated request loops: this one
-  /// (a 4-attempt burst, then two more bursts at 60s and 120s = up to 12
-  /// requests) and a preload re-fired from _onControllerChanged on every
-  /// board change past 80% cleared, which had no failure backoff and so
-  /// restarted on the next arrow tap for the whole endgame. Together they
-  /// produced 136,437 requests/day against 4,470 impressions — 30.5 requests
-  /// per impression, versus 6.5 on Home — and the match rate fell as the
-  /// volume climbed (7.62% -> 4.76% over five days) because a unit asked far
-  /// more often than it can show exhausts its eligible demand and gets bid
-  /// down. Retrying into that is what deepened it.
-  ///
-  /// One request per level entry is also the only cadence where requests and
-  /// impressions can converge: a level shows at most one banner, so anything
-  /// beyond one request is guaranteed unshowable. If it no-fills, the slot
-  /// stays empty for the level — its space is already reserved, so nothing
-  /// shifts.
-  void _requestBanner(int width) {
-    AdService.createBanner(
-      width: width,
-      placement: BannerPlacement.gameplay,
-      maxAttempts: 1,
-    ).then((ad) {
-      // Resolved after the level was left — dispose rather than leak a native
-      // ad object that can never be shown.
-      if (!mounted) {
-        ad?.dispose();
-        return;
-      }
-      if (ad == null) return; // no fill: leave the reserved space empty
-      setState(() => _bannerAd = ad);
-    });
-  }
-
   void _resetHintTimer() {
     _hintTimer?.cancel();
     _showHint = false;
@@ -371,7 +305,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
     AdService.setPlaying(false);
     _adMessageTimer?.cancel();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -872,31 +805,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                if (_bannerAd != null)
-                  SizedBox(
-                    height: _bannerAd!.size.height.toDouble(),
-                    width: _bannerAd!.size.width.toDouble(),
-                    child: AdWidget(ad: _bannerAd!),
-                  )
-                else if (_bannerSize != null)
-                  // Space reserved as soon as the size is known, before the
-                  // ad itself finishes loading, and kept reserved even if the
-                  // load ultimately fails — collapsing it back would just
-                  // trade one layout shift for another.
-                  Container(
-                    color: AppColors.bg,
-                    height: _bannerSize!.height.toDouble(),
-                    width: _bannerSize!.width.toDouble(),
-                  ),
-                // Half the home-indicator inset below the banner (this screen
-                // uses SafeArea(bottom: false), so nothing else protects the
-                // bottom edge) — keeps the ad clear of the gesture zone.
-                // Matches the board background since there's no nav bar here.
-                if (_bannerAd != null || _bannerSize != null)
-                  Container(
-                    color: AppColors.bg,
-                    height: MediaQuery.of(context).padding.bottom * 0.5,
-                  ),
+                // No banner on the gameplay screen (removed 2026-09-03 — it
+                // took 73% of the account's ad requests for 5% of revenue at
+                // a 4.76% match rate). This screen uses SafeArea(bottom:
+                // false), so the banner's spacer was the only thing keeping
+                // the board clear of the home-indicator / gesture zone; the
+                // full inset replaces it. Matches the board background since
+                // there is no nav bar here.
+                Container(
+                  color: AppColors.bg,
+                  height: MediaQuery.of(context).padding.bottom,
+                ),
               ],
             ),
             if (_showHint && c.status == GameStatus.playing && !_isTutorial)
@@ -968,13 +887,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             if (!_isTutorial)
               Positioned(
               right: 24,
-              // Uses _bannerSize (reserved as soon as it's known) rather than
-              // _bannerAd (only set once the ad actually loads) so the button
-              // sits above the banner's space immediately, not just after the
-              // ad finishes loading. The *0.5 matches the actual safe-area
-              // gap rendered below the banner (see the Container after it).
-              bottom: 10 + (MediaQuery.of(context).padding.bottom * 0.5) +
-                  (_bannerSize?.height.toDouble() ?? 0),
+              // Sits just above the bottom safe-area spacer that closes the
+              // column (see the Container after the board).
+              bottom: 10 + MediaQuery.of(context).padding.bottom,
               child: AnimatedBuilder(
                 animation: _heartCtrl,
                 builder: (_, child) => Opacity(
