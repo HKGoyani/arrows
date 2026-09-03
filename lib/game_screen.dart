@@ -96,8 +96,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   BannerAd? _bannerAd;
   bool _bannerRequested = false;
   AdSize? _bannerSize; // reserved as soon as known, before the ad itself loads
-  Timer? _bannerRetryTimer; // slow retry after the initial burst is exhausted
-  int _bannerWidthPx = 0; // remembered for the next-level banner preload
+  int _bannerWidthPx = 0; // screen width used for the one banner request
 
   /// True while a rewarded ad is being fetched on demand. Drives a blocking
   /// spinner so the up-to-5s wait reads as "loading" rather than a dead
@@ -251,53 +250,44 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           .then((size) {
         if (mounted && size != null) setState(() => _bannerSize = size);
       });
-      // Warm path first: the previous level (at ~80% cleared) or Home
-      // preloaded this level's banner — attach it instantly instead of
-      // cold-loading for seconds at the start of every level.
-      final cached = AdService.takeGameplayBanner(_bannerWidthPx);
-      if (cached != null) {
-        _bannerAd = cached;
-      } else {
-        _requestBanner(_bannerWidthPx);
-      }
+      _requestBanner(_bannerWidthPx);
     }
   }
 
   /// Requests the banner, retrying slowly if the initial burst is exhausted —
   /// otherwise a transient no-fill leaves the slot empty for the whole level.
   ///
-  /// BOUNDED. This used to reschedule itself forever, so a player in a
-  /// low-fill region emitted [AdService.createBanner]'s 4-attempt burst every
-  /// ~74 seconds for the entire level and never received an impression. The
-  /// users who cannot fill were generating the most requests, which is what
-  /// held banner match rate down at ~12%. After [_maxBannerRetries] rounds
-  /// the slot stays empty (its space is already reserved, so nothing shifts).
-  static const _maxBannerRetries = 2;
-  int _bannerRetries = 0;
-
+  /// EXACTLY ONE request per level, no retries, no preload.
+  ///
+  /// This slot previously ran two uncoordinated request loops: this one
+  /// (a 4-attempt burst, then two more bursts at 60s and 120s = up to 12
+  /// requests) and a preload re-fired from _onControllerChanged on every
+  /// board change past 80% cleared, which had no failure backoff and so
+  /// restarted on the next arrow tap for the whole endgame. Together they
+  /// produced 136,437 requests/day against 4,470 impressions — 30.5 requests
+  /// per impression, versus 6.5 on Home — and the match rate fell as the
+  /// volume climbed (7.62% -> 4.76% over five days) because a unit asked far
+  /// more often than it can show exhausts its eligible demand and gets bid
+  /// down. Retrying into that is what deepened it.
+  ///
+  /// One request per level entry is also the only cadence where requests and
+  /// impressions can converge: a level shows at most one banner, so anything
+  /// beyond one request is guaranteed unshowable. If it no-fills, the slot
+  /// stays empty for the level — its space is already reserved, so nothing
+  /// shifts.
   void _requestBanner(int width) {
     AdService.createBanner(
       width: width,
       placement: BannerPlacement.gameplay,
-      // Abort the in-flight retry burst if the level ends mid-wait — those
-      // stragglers were requests with no slot left to show in.
-      keepTrying: () => mounted,
+      maxAttempts: 1,
     ).then((ad) {
-      // The load (with retries) can take several seconds; if this screen is
-      // gone by the time it resolves, dispose the ad so it doesn't leak.
+      // Resolved after the level was left — dispose rather than leak a native
+      // ad object that can never be shown.
       if (!mounted) {
         ad?.dispose();
         return;
       }
-      if (ad == null) {
-        if (_bannerRetries >= _maxBannerRetries) return;
-        _bannerRetries++;
-        _bannerRetryTimer?.cancel();
-        _bannerRetryTimer = Timer(Duration(seconds: 60 * _bannerRetries), () {
-          if (mounted) _requestBanner(width);
-        });
-        return;
-      }
+      if (ad == null) return; // no fill: leave the reserved space empty
       setState(() => _bannerAd = ad);
     });
   }
@@ -380,7 +370,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _disposeFlight(f);
     }
     AdService.setPlaying(false);
-    _bannerRetryTimer?.cancel();
     _adMessageTimer?.cancel();
     _bannerAd?.dispose();
     super.dispose();
@@ -397,9 +386,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     AdService.onHeartsChanged(c.hearts);
     if (c.progress >= 0.8) {
       AdService.onLevelNearlyComplete(isDaily: widget.isDaily);
-      // The NEXT level's banner: loaded now, attached instantly there.
-      // Idempotent — the cache/loading guards make repeat calls free.
-      AdService.preloadGameplayBanner(_bannerWidthPx);
     }
     _rebuild();
   }

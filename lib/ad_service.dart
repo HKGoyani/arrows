@@ -342,9 +342,6 @@ class AdService {
       _appOpenAds[p] = null;
       _appOpenLoadedAt[p] = null;
     }
-    _gameplayBannerCache?.dispose();
-    _gameplayBannerCache = null;
-    _gameplayBannerCachedAt = null;
   }
 
   /// Builds the per-impression paid callback for one placement: forwards
@@ -1171,71 +1168,6 @@ class AdService {
       if (ad != null) return ad;
     }
     return null;
-  }
-
-  // ── Gameplay banner preload ──
-  //
-  // Every level is its own route push, so the gameplay banner used to
-  // cold-load from zero on every level entry — the slot sat empty for the
-  // first seconds of each level (much longer whenever the first attempt
-  // no-filled into the retry burst). Preloading the NEXT level's banner at
-  // ~80% cleared (and one at Home for the session's first level) makes the
-  // attach instant. Request count is unchanged: this is the same one request
-  // per level, just issued earlier.
-  static BannerAd? _gameplayBannerCache;
-  static DateTime? _gameplayBannerCachedAt;
-  static int _gameplayBannerCacheWidth = 0;
-  static bool _gameplayBannerLoading = false;
-
-  /// Loads a gameplay banner into the cache ahead of the next level entry.
-  /// Idempotent: no-ops while one is loading or a fresh one is already
-  /// cached. Bounded at 2 attempts — it's opportunistic; the level-entry
-  /// path still does its own live load if this one missed.
-  static void preloadGameplayBanner(int width) {
-    if (_adsRemoved || !_canRequestAds || width <= 0) return;
-    if (_gameplayBannerLoading) return;
-    if (_gameplayBannerCache != null) {
-      if (_gameplayBannerCacheWidth == width &&
-          !_staleSince(_gameplayBannerCachedAt)) {
-        return; // still good — nothing to do
-      }
-      _gameplayBannerCache!.dispose(); // stale or wrong width — replace
-      _gameplayBannerCache = null;
-    }
-    _gameplayBannerLoading = true;
-    createBanner(
-      width: width,
-      placement: BannerPlacement.gameplay,
-      maxAttempts: 2,
-    ).then((ad) {
-      _gameplayBannerLoading = false;
-      if (ad == null) return;
-      if (_adsRemoved || _gameplayBannerCache != null) {
-        ad.dispose();
-        return;
-      }
-      _gameplayBannerCache = ad;
-      _gameplayBannerCachedAt = DateTime.now();
-      _gameplayBannerCacheWidth = width;
-    });
-  }
-
-  /// Hands over the preloaded gameplay banner, or null when none is usable
-  /// (nothing cached, stale, width mismatch, or ads removed since). The
-  /// caller owns the returned ad's lifecycle.
-  static BannerAd? takeGameplayBanner(int width) {
-    final ad = _gameplayBannerCache;
-    if (ad == null) return null;
-    _gameplayBannerCache = null;
-    final cachedAt = _gameplayBannerCachedAt;
-    _gameplayBannerCachedAt = null;
-    if (_adsRemoved ||
-        _gameplayBannerCacheWidth != width ||
-        _staleSince(cachedAt)) {
-      ad.dispose();
-      return null;
-    }
-    return ad;
   }
 
   /// One BannerAd load attempt. Completes with the ad on success, or null on

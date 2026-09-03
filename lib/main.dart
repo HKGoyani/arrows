@@ -195,11 +195,6 @@ class _MainShellState extends State<MainShell>
         if (mounted && size != null) setState(() => _bannerSize = size);
       });
       _requestBanner(_bannerWidth);
-      // Warm the session's FIRST gameplay banner while the player is still
-      // on Home — Play is the app's primary action, so this request has a
-      // near-certain impression ahead of it, and the first level opens with
-      // its banner already attached. Later levels re-warm at ~80% cleared.
-      AdService.preloadGameplayBanner(_bannerWidth);
     }
   }
 
