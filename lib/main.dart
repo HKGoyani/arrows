@@ -161,9 +161,14 @@ class _MainShellState extends State<MainShell>
   Timer? _bannerRetryTimer; // slow retry after the initial burst is exhausted
   int _bannerWidth = 0; // remembered so the banner can be re-acquired on return
   int _bannerRetries = 0;
+  Timer? _bannerReacquireTimer; // debounces the re-request on returning Home
 
   /// See [_requestBanner] — the retry loop is bounded, not endless.
-  static const _maxBannerRetries = 2;
+  ///
+  /// Cut from 2 to 1 (2026-09-03): the third burst fired 120s after landing
+  /// on Home, by which point a player who has not left is rare and one who
+  /// has is not looking at the slot.
+  static const _maxBannerRetries = 1;
 
   @override
   void initState() {
@@ -210,14 +215,42 @@ class _MainShellState extends State<MainShell>
   // costs no layout shift.
 
   @override
-  void didPushNext() => _releaseBanner();
+  void didPushNext() {
+    _bannerReacquireTimer?.cancel();
+    _bannerReacquireTimer = null;
+    _releaseBanner();
+  }
+
+  /// Re-acquire on return, but only after the player has actually SETTLED on
+  /// Home.
+  ///
+  /// Players bounce Home <-> level constantly — a win pops back to Home and
+  /// the player taps Play to continue — and this fired a fresh request on
+  /// every return. Anyone who came back and immediately tapped Play again
+  /// spent a request whose ad resolved after the shell was already covered,
+  /// where it is disposed unshown — one of the two paths that left Home at
+  /// 9,196 matched against 3,270 impressions (a 35.6% show rate). Waiting
+  /// first means those transient returns cost nothing.
+  ///
+  /// 1s is a balance, not a derived number. The route's own pop animation is
+  /// 300ms, so this leaves ~700ms of real window — enough to catch a fast
+  /// continuer, while 0.5s would leave almost none. Going longer catches more
+  /// bounces but delays the banner for players who DO settle on Home, and a
+  /// load already takes 1-3s on top; on a screen many people leave within a
+  /// few seconds that starts costing impressions rather than saving requests.
+  /// Tune against the show rate once there is data.
+  static const _bannerReacquireDelay = Duration(seconds: 1);
 
   @override
   void didPopNext() {
-    if (_bannerAd == null && _bannerWidth > 0) {
+    if (_bannerAd != null || _bannerWidth <= 0) return;
+    _bannerReacquireTimer?.cancel();
+    _bannerReacquireTimer = Timer(_bannerReacquireDelay, () {
+      // Still here, and still the visible route.
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
       _bannerRetries = 0;
       _requestBanner(_bannerWidth);
-    }
+    });
   }
 
   void _releaseBanner() {
@@ -241,6 +274,13 @@ class _MainShellState extends State<MainShell>
     AdService.createBanner(
       width: width,
       placement: BannerPlacement.home,
+      // Cut from the default 4 (2026-09-03). Attempts 3 and 4 land 4s and 8s
+      // into the burst, by which time the player has often opened a level and
+      // the resolved ad is disposed unshown. At Home's ~43% fill they were
+      // worth roughly 10pp of cumulative fill, so this is a deliberate trade
+      // of a slice of real fill for a much tighter request:impression ratio —
+      // the one change here that can genuinely cost impressions.
+      maxAttempts: 2,
       // Abort the in-flight retry burst if a route covers the shell mid-wait
       // — those stragglers were requests with no visible slot to land in.
       keepTrying: () =>
@@ -270,6 +310,7 @@ class _MainShellState extends State<MainShell>
   void dispose() {
     routeObserver.unsubscribe(this);
     _bannerRetryTimer?.cancel();
+    _bannerReacquireTimer?.cancel();
     _bannerAd?.dispose();
     _navSlideCtrl.dispose();
     WidgetsBinding.instance.removeObserver(this);
