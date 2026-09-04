@@ -37,6 +37,17 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Compile Impeller's GLES pipelines on first use instead of building
+             the whole default set inside ContentContext's constructor.
+             That eager compile runs on the raster thread while the platform
+             thread is blocked in FlutterJNI.nativeSurfaceCreated, so on slow
+             GPUs (PowerVR/MediaTek showed up in the ANR traces with
+             GLSLCompileToUniflex on the raster thread) every surface creation
+             — including the return from a full-screen ad — stalls the main
+             thread. Maps to the engine's impeller-lazy-shader-mode flag. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.ImpellerLazyShaderInitialization"
+            android:value="true" />
         <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-4818503743858431~7394089061"/>
     </application>
     <!-- Required to query activities that can process text, see:
