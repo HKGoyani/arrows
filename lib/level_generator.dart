@@ -844,6 +844,32 @@ class LevelGenerator {
   /// Topological implementation: each arrow is "blocked" by the count of cells
   /// in its exit corridor owned by OTHER arrows. Clearable arrows (0 blockers)
   /// cascade as they leave. O(total corridor length) instead of O(n²).
+  /// True when the arrow's straight exit ray never crosses its own body.
+  ///
+  /// An arrow fires by snaking along its own polyline plus a straight
+  /// extension from the head (see FlyOff), so the head leaves in a straight
+  /// line while the body follows the bends behind it. That is sound only
+  /// while the body stays behind the head. Reversing a wound arrow fires it
+  /// along its old tail segment and can leave its own cells sitting AHEAD of
+  /// the new head; those cells vacate via the winding route, so the head
+  /// would visibly fly through its own tail.
+  ///
+  /// [greedySolvable] cannot catch this: it ignores self-collision by design
+  /// (`o != i`), which is correct for solvability and silent about this.
+  bool selfRayClear(Arrow a) {
+    final own = <int>{};
+    for (final p in a.pts) {
+      own.add(p.y * 4096 + p.x);
+    }
+    var x = a.head.x, y = a.head.y;
+    while (true) {
+      x += a.dir.dx;
+      y += a.dir.dy;
+      if (x < 0 || x > cols || y < 0 || y > rows) return true;
+      if (own.contains(y * 4096 + x)) return false;
+    }
+  }
+
   bool greedySolvable(List<Arrow> arrows) {
     final n = arrows.length;
     if (n == 0) return true;
@@ -962,8 +988,10 @@ class LevelGenerator {
       final p0 = a.pts.first, p1 = a.pts[1];
       for (final d in Direction.values) {
         if (d.dx == p0.x - p1.x && d.dy == p0.y - p1.y) {
-          return Arrow(
+          final rev = Arrow(
               id: a.id, pts: a.pts.reversed.toList(), dir: d, cells: a.cells);
+          // A reversal that fires the arrow through its own body is no repair.
+          return selfRayClear(rev) ? rev : null;
         }
       }
       return null;
@@ -1028,6 +1056,7 @@ class LevelGenerator {
         if (cellsPer[nd]! >= target) continue; // target dir not under-rep
         final rev = Arrow(
             id: a.id, pts: a.pts.reversed.toList(), dir: nd, cells: a.cells);
+        if (!selfRayClear(rev)) continue; // would fire through its own body
         arrows[i] = rev;
         budget--;
         if (greedySolvable(arrows)) {
@@ -1191,6 +1220,8 @@ class LevelGenerator {
         arrows.add(
             Arrow(id: p.id, pts: pts, dir: mapDir(p.headDir), cells: cells));
       }
+      // This path bypasses _trimToFit, so apply the same repair here.
+      _fixSelfFiring(arrows);
       return GeneratedLevel(arrows, cols, rows);
     } catch (_) {
       return null;
@@ -1500,9 +1531,42 @@ class LevelGenerator {
     return result;
   }
 
+  /// Last line of defence for the self-firing invariant (see [selfRayClear]).
+  ///
+  /// The walkers can lay a winding snake whose own body ends up ahead of its
+  /// head, and the reversal passes are guarded but placement is not — so
+  /// rather than chase every construction site, every generated board is
+  /// repaired here on the way out.
+  ///
+  /// The repair trims cells off the TAIL until the exit ray is clear. That is
+  /// safe in both directions that matter: the head never moves, so this
+  /// arrow's own ray is unchanged, and freeing cells can only let other
+  /// arrows clear sooner — solvability is preserved or improved, never
+  /// broken. An arrow trimmed below two cells is dropped entirely, leaving a
+  /// hole, which boards already contain.
+  void _fixSelfFiring(List<Arrow> arrows) {
+    for (var i = arrows.length - 1; i >= 0; i--) {
+      var a = arrows[i];
+      if (selfRayClear(a)) continue;
+      var pts = List<Point<int>>.from(a.pts);
+      while (pts.length >= 2) {
+        pts.removeAt(0);
+        final cells = <String>{for (final p in pts) cellKey(p.x, p.y)};
+        a = Arrow(id: a.id, pts: pts, dir: a.dir, cells: cells);
+        if (selfRayClear(a)) break;
+      }
+      if (pts.length < 2 || !selfRayClear(a)) {
+        arrows.removeAt(i);
+      } else {
+        arrows[i] = a;
+      }
+    }
+  }
+
   /// Shrinks the grid to the bounding box of the placed arrows so there's no
   /// dead space around the puzzle. Shifts all arrow coordinates to start at 0.
   GeneratedLevel _trimToFit(List<Arrow> arrows) {
+    _fixSelfFiring(arrows);
     if (arrows.isEmpty) return GeneratedLevel(arrows, cols, rows);
     var minX = cols, maxX = 0, minY = rows, maxY = 0;
     for (final a in arrows) {

@@ -501,6 +501,32 @@ class GravityPacker {
   /// arrow waiting on a member's cells still finds them gone in time, and
   /// the chain's own head ray only crosses cells placed after the last
   /// member (cleared even earlier) or its own body (never blocks itself).
+  /// True when the arrow's straight exit ray never crosses its own body.
+  ///
+  /// An arrow fires by snaking along its own polyline plus a straight
+  /// extension from the head (see FlyOff), so the head leaves in a straight
+  /// line while the body follows the bends behind it. That holds only while
+  /// the body stays behind the head. Welding and flipping can leave a wound
+  /// arrow with its own cells sitting AHEAD of the head on the exit ray;
+  /// those cells vacate via the long winding route, so the head would visibly
+  /// fly through its own tail.
+  ///
+  /// greedySolvable cannot catch this — it ignores self-collision by design
+  /// (`o != i`), which is right for solvability and silent about this.
+  bool _selfRayClear(List<Point<int>> pts, Direction dir) {
+    final own = <int>{};
+    for (final p in pts) {
+      own.add(p.y * 4096 + p.x);
+    }
+    var x = pts.last.x, y = pts.last.y;
+    while (true) {
+      x += dir.dx;
+      y += dir.dy;
+      if (x < 0 || x > cols || y < 0 || y > rows) return true;
+      if (own.contains(y * 4096 + x)) return false;
+    }
+  }
+
   /// Chains are built strictly in ascending placement order, and both weld
   /// types keep the final head AND direction = the last member's (aligned).
   ///
@@ -551,9 +577,15 @@ class GravityPacker {
           }
         }
         if (next == null) break;
+        // Build the candidate first: a weld that would leave the arrow firing
+        // through its own body is refused, and the chain simply stops here.
+        // Refusing only ever makes arrows shorter, so it cannot deadlock a
+        // board that was solvable by construction.
+        final candidatePts = uTurn ? pts.reversed.toList() : List<Point<int>>.from(pts);
+        candidatePts.addAll(arrows[next].pts);
+        if (!_selfRayClear(candidatePts, arrows[next].dir)) break;
         consumed[next] = true;
-        if (uTurn) pts = pts.reversed.toList();
-        pts.addAll(arrows[next].pts);
+        pts = candidatePts;
         cells.addAll(arrows[next].cells);
         dir = arrows[next].dir;
         lastIdx = next;
@@ -589,6 +621,9 @@ class GravityPacker {
       if (a.pts.length < 2) continue;
       final fd = flipDirOf(a);
       if (fd == null) continue;
+      // A flip fires the arrow along its old tail segment, which can put its
+      // own body ahead of the new head. Skip those outright.
+      if (!_selfRayClear(a.pts.reversed.toList(), fd)) continue;
       (fd.horizontal != a.dir.horizontal ? axisChanging : sameAxis).add(i);
     }
     void shuffle(List<int> xs) {
