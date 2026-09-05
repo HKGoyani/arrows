@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App Store Submission Guide — Arrows – Escape Puzzle v1.0.7</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F9FD;
+      --card: #FFFFFF;
+      --blue: #667CFF;
+      --red: #F23A5C;
+      --ink: #2B2E4F;
+      --muted: #8C90A6;
+      --border: #E7E8F3;
+      --green: #1AAB67;
+      --orange: #FF8A3D;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 0 16px 60px;
+    }
+    header {
+      text-align: center;
+      padding: 52px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    header .arrow {
+      width: 0; height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid var(--blue);
+      margin: 0 auto 14px;
+    }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; color: var(--ink); }
+    .subtitle { color: var(--muted); font-size: 13px; letter-spacing: 1px; margin-top: 8px; }
+    .updated {
+      display: inline-block; margin-top: 12px; padding: 4px 12px;
+      border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--muted);
+    }
+    .container { max-width: 880px; margin: 0 auto; }
+    nav.toc {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px 28px; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+    }
+    nav.toc h2 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+    nav.toc li { margin-bottom: 6px; break-inside: avoid; }
+    nav.toc a { color: var(--blue); text-decoration: none; font-size: 14px; }
+    nav.toc a:hover { text-decoration: underline; }
+
+    .alert {
+      background: rgba(242,58,92,0.06);
+      border: 1px solid rgba(242,58,92,0.25);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+    }
+    .alert h2 { color: var(--red); font-size: 15px; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .alert h2::before { content: '⚠'; font-size: 18px; }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+      scroll-margin-top: 20px;
+    }
+    h2 {
+      font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    h2::before { content: ''; display: block; width: 3px; height: 16px; background: var(--blue); border-radius: 2px; }
+    h3 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 18px 0 8px; }
+    p { color: #555977; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol.steps { margin-bottom: 12px; padding-left: 0; list-style: none; }
+    ul li {
+      padding: 6px 0 6px 20px; color: #555977; position: relative;
+    }
+    ul li::before { content: '›'; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+    ol.steps { counter-reset: step; }
+    ol.steps li {
+      padding: 6px 0 6px 28px; color: #555977; position: relative; counter-increment: step;
+    }
+    ol.steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 6px;
+      width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    td strong { color: var(--ink); }
+    tr.checklist td:first-child { width: 24px; }
+    code, .code {
+      background: #F1F2F8; border: 1px solid var(--border); border-radius: 6px;
+      padding: 1px 6px; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; color: var(--red);
+    }
+    pre {
+      background: #1F2236; color: #E0E4F0; border-radius: 12px; padding: 18px 20px;
+      overflow-x: auto; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; line-height: 1.6;
+      margin: 12px 0;
+    }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      padding: 2px 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle;
+    }
+    .tag-block { background: rgba(242,58,92,0.12); color: var(--red); border: 1px solid rgba(242,58,92,0.3); }
+    .tag-ok { background: rgba(26,171,103,0.12); color: var(--green); border: 1px solid rgba(26,171,103,0.3); }
+    .tag-warn { background: rgba(255,138,61,0.12); color: var(--orange); border: 1px solid rgba(255,138,61,0.3); }
+    .contact-box {
+      background: rgba(102,124,255,0.05); border: 1px solid rgba(102,124,255,0.18);
+      border-radius: 10px; padding: 16px 20px;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="arrow"></div>
+    <h1>App Store Submission Guide</h1>
+    <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.7</p>
+    <span class="updated">Last reviewed against codebase: September 5, 2026 (commit 2d822ec)</span>
+  </header>
+
+  <div class="container">
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#critical">What's Changed Since v1.0.4</a></li>
+        <li><a href="#notios">Android-Only — NOT in this build</a></li>
+        <li><a href="#status">Current Review Status</a></li>
+        <li><a href="#info">1. App Information</a></li>
+        <li><a href="#devices">2. Device &amp; Platform Support</a></li>
+        <li><a href="#icon">3. App Icon</a></li>
+        <li><a href="#screenshots">4. Screenshots</a></li>
+        <li><a href="#listing">5. Listing Copy &amp; What's New</a></li>
+        <li><a href="#privacy">6. Privacy &amp; Data Collection</a></li>
+        <li><a href="#pricing">7. Pricing</a></li>
+        <li><a href="#iap">8. In-App Purchases</a></li>
+        <li><a href="#ads">9. Ads Disclosure &amp; Mediation</a></li>
+        <li><a href="#age">10. Age Rating</a></li>
+        <li><a href="#encryption">11. Export Compliance</a></li>
+        <li><a href="#review">12. App Review Notes</a></li>
+        <li><a href="#checklist">13. Build &amp; Archive Checklist</a></li>
+        <li><a href="#links">14. Reference Links</a></li>
+      </ol>
+    </nav>
+
+    <div class="alert" style="border-color: rgba(242,58,92,0.35);">
+      <h2>Read this first — this build has never been compiled for iOS</h2>
+      <p>Every change below was developed and verified on <strong>Android</strong>. As of this document, no iOS build of 1.0.7 has been produced, and nothing here has run on an iPhone. The App Store is still on <strong>1.0.4 (build 8)</strong>, which means iOS has missed three releases of ad-pipeline, performance, and gameplay-correctness work.</p>
+      <p>Two changes are Dart-level and therefore affect iOS identically once built — the <strong>self-firing arrow fix</strong> (which changes generated board layouts) and the <strong>performance work</strong>. Neither has been seen running on iOS hardware. Treat Section 13's device-test step as mandatory, not a formality.</p>
+    </div>
+
+    <div class="alert" id="critical" style="border-color: rgba(26,171,103,0.3); background: rgba(26,171,103,0.05);">
+      <h2 style="color: var(--green);">What's changed since v1.0.4 (build 8)</h2>
+      <p>Version 1.0.4 &rarr; <strong>1.0.7</strong>, build 8 &rarr; <strong>11</strong>. Seventeen commits spanning three Android releases (1.0.5, 1.0.6, 1.0.7). Grouped by whether a reviewer or player could notice.</p>
+
+      <h3 style="margin-top:20px;">Player-visible</h3>
+      <table>
+        <tr><th>Change</th><th>Status</th><th>Detail</th></tr>
+        <tr>
+          <td><strong>Arrows no longer fire through their own bodies</strong></td>
+          <td><span class="tag tag-ok">FIXED</span></td>
+          <td>An arrow flies by snaking along its own path plus a straight extension from the head, so a wound arrow whose own cells sat ahead of its head would visibly fly <em>through its own tail</em>. Affected <strong>269 arrows across 140 of the first 250 levels, starting at level 38</strong>. Guards added at all three generation sites plus a repair pass on every board. <strong>This changes generated board layouts on affected levels</strong> — a few tail cells become empty. Verified: levels 1–250 and 120 daily boards, zero self-firing, zero unsolvable, zero empty</td>
+        </tr>
+        <tr>
+          <td><strong>Banner removed from the gameplay screen</strong></td>
+          <td><span class="tag tag-ok">DONE</span></td>
+          <td>The gameplay banner took <strong>73% of the account's ad requests for 5% of revenue</strong> at a 4.76% match rate. Removed entirely. The board area is now unobstructed during play — <strong>see Section 4, existing screenshots may show this banner</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Levels load without freezing the UI</strong></td>
+          <td><span class="tag tag-ok">FIXED</span></td>
+          <td>Level generation ran on the UI isolate and was measured at 680–780ms for levels 70–93 on a fast machine — far worse on real devices. Now generated off-isolate, with restarts replayed from a cached pristine board (instant). This was the dominant cause of Android ANRs; on iOS the same work was simply a multi-hundred-millisecond freeze on every level start</td>
+        </tr>
+        <tr>
+          <td><strong>Stopped rebuilding the whole screen every frame</strong></td>
+          <td><span class="tag tag-ok">FIXED</span></td>
+          <td>A tutorial-only finger animation was driving a full-screen rebuild and board repaint at 60fps on <em>every</em> level, not just the tutorial. Now runs only during the tutorial and stops when it ends</td>
+        </tr>
+        <tr>
+          <td><strong>Sound effects pre-loaded; no audio-focus grab</strong></td>
+          <td><span class="tag tag-ok">FIXED</span></td>
+          <td>Every tap previously re-ran the full load/prepare/request-focus chain on the platform thread. Sounds are now pooled and pre-loaded, and the app no longer requests audio focus at all — <strong>tapping an arrow will no longer interrupt the player's music or podcast</strong>, which is the right behaviour for a casual puzzle game</td>
+        </tr>
+      </table>
+
+      <h3 style="margin-top:20px;">Ad pipeline (not player-visible, but changes ad behaviour)</h3>
+      <table>
+        <tr><th>Change</th><th>Status</th><th>Detail</th></tr>
+        <tr>
+          <td><strong>Restart interstitial moved to the Restart tap</strong></td>
+          <td><span class="tag tag-ok">DONE</span></td>
+          <td>Was requested at two hearts remaining, on the assumption a restart was coming. Most players did not restart, so the ad was fetched and discarded — roughly 3,300 matched ads wasted per day. Now requested when Restart is actually offered</td>
+        </tr>
+        <tr>
+          <td><strong>Home banner request churn cut</strong></td>
+          <td><span class="tag tag-ok">DONE</span></td>
+          <td>Returning to Home re-requested the banner immediately and retried aggressively. Now debounced by 1s with a still-on-this-route re-check, and retry caps trimmed. Worst case per Home visit: <strong>12 requests &rarr; 4</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Banner size standardised</strong></td>
+          <td><span class="tag tag-ok">DONE</span></td>
+          <td><span class="tag tag-warn">CORRECTS v1.0.4 GUIDE</span> The v1.0.4 guide stated banners use Google's <em>Large</em> Anchored Adaptive format. That was reverted on 2026-08-27: a week of data showed no eCPM premium ($0.25 either way) while the large format's thinner inventory cost fill speed. Both placements now use the <strong>standard anchored-adaptive</strong> size</td>
+        </tr>
+        <tr>
+          <td><strong>Ad pipeline overhaul</strong></td>
+          <td><span class="tag tag-ok">DONE</span></td>
+          <td>Signal-driven loads, leak fixes, and a rewarded-skip path — shipped in 1.0.5, carried forward</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="alert" id="notios" style="border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+      <h2 style="color: var(--orange);">Android-only changes — deliberately NOT in this build</h2>
+      <p>Two fixes from 1.0.7 are Android manifest entries with no iOS equivalent. Listed so they are not mistaken for cross-platform work, and because <strong>one of them has an unaddressed iOS counterpart</strong>.</p>
+      <table>
+        <tr><th>Change</th><th>iOS status</th></tr>
+        <tr>
+          <td><strong>Impeller lazy shader initialisation</strong> — <code>ImpellerLazyShaderInitialization</code> in <code>AndroidManifest.xml</code>, added because ANR traces showed the platform thread blocked in <code>nativeSurfaceCreated</code> while the raster thread compiled GLES shaders on slow PowerVR GPUs</td>
+          <td><span class="tag tag-ok">N/A</span> — iOS Impeller uses Metal, not GLES, and does not have this eager-compile stall</td>
+        </tr>
+        <tr>
+          <td><strong>Portrait lock</strong> — <code>android:screenOrientation="portrait"</code> on MainActivity, added because <code>SystemChrome.setPreferredOrientations</code> only constrains the Flutter view and has no reach over AdMob's ad activity, which was rendering landscape</td>
+          <td><span class="tag tag-warn">UNADDRESSED</span> — <code>ios/Runner/Info.plist</code> still lists <code>UIInterfaceOrientationLandscapeLeft</code> and <code>LandscapeRight</code> under <code>UISupportedInterfaceOrientations</code>. That is the same gap the Android fix closed: full-screen ad view controllers can adopt an orientation the plist permits even though the Flutter view is locked. <strong>Not reproduced on iOS</strong> — flagged by analogy, not by observation. See Section 13</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="alert" id="status" style="border-color: rgba(26,171,103,0.3); background: rgba(26,171,103,0.05);">
+      <h2 style="color: var(--green);">Current Review Status — the 4.3(a) issue is resolved</h2>
+      <p><strong>v1.0.4 is LIVE on the App Store.</strong> The Guideline 4.3(a) — Design: Spam rejection that blocked v1.0.1 twice was resolved by <strong>appeal, with no changes to the app</strong>. The product decision to hold the name, icon, and visual identity rather than rebrand was upheld.</p>
+      <p>The v1.0.4 guide's contingency advice — that a third 4.3(a) rejection should trigger a full rebrand rather than another appeal — is now moot for that thread, but worth keeping in mind as precedent if a future submission draws the same guideline. <strong>No rebrand was needed and none was done.</strong></p>
+    </div>
+
+    <section id="info">
+      <h2>1. App Information</h2>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>App Name</td><td><strong>Arrows – Escape Puzzle</strong> — unchanged</td></tr>
+        <tr><td>Subtitle (30 char max)</td><td>Grid Logic &amp; Mind Puzzles <span class="tag tag-ok">25/30</span> — unchanged since 2026-08-18</td></tr>
+        <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>Primary Language</td><td>English (U.S.)</td></tr>
+        <tr><td>Apple ID (App Store Connect)</td><td><strong>6785821757</strong></td></tr>
+        <tr><td>Version</td><td><strong>1.0.7</strong> <span class="tag tag-ok">bumped from 1.0.4</span></td></tr>
+        <tr><td>Build number</td><td><strong>11</strong> <span class="tag tag-ok">bumped from 8</span> — from <code>pubspec.yaml</code> <code>version: 1.0.7+11</code></td></tr>
+        <tr><td>Bundle Display Name</td><td>Arrows – Escape Puzzle</td></tr>
+        <tr><td>Category (Primary)</td><td>Games &rarr; Puzzle</td></tr>
+        <tr><td>Category (Secondary)</td><td>Games &rarr; Casual <em>(optional)</em></td></tr>
+        <tr><td>Content Rights</td><td>"Does not use third-party content" (confirm)</td></tr>
+        <tr><td>Age Rating</td><td>4+ (see Section 10)</td></tr>
+        <tr><td>Previous version status</td><td>v1.0.4 (build 8) — <strong>LIVE</strong>, 4.3(a) appeal won</td></tr>
+      </table>
+      <p><span class="tag tag-warn">NOTE</span> Build 11 is shared with the Android release. It is above the last iOS build (8), so it is a valid increment for App Store Connect — but builds 9 and 10 will never appear on iOS. That is expected, not an error.</p>
+    </section>
+
+    <section id="devices">
+      <h2>2. Device &amp; Platform Support</h2>
+      <table>
+        <tr><th>Setting</th><th>Value</th><th>Where it's set</th></tr>
+        <tr>
+          <td>Supported devices</td>
+          <td><strong>iPhone only</strong> — iPad, Mac (Designed for iPad), and Apple Vision Pro excluded</td>
+          <td><code>TARGETED_DEVICE_FAMILY = 1</code> in <code>project.pbxproj</code> <span class="tag tag-ok">VERIFIED</span></td>
+        </tr>
+        <tr>
+          <td>Minimum iOS version</td>
+          <td><strong>15.0</strong> — unchanged</td>
+          <td><code>IPHONEOS_DEPLOYMENT_TARGET = 15.0</code> <span class="tag tag-ok">VERIFIED</span></td>
+        </tr>
+        <tr>
+          <td>Orientation</td>
+          <td>Portrait in-app, but <strong>the plist still permits landscape</strong></td>
+          <td><code>SystemChrome.setPreferredOrientations</code> in <code>lib/main.dart</code> locks the Flutter view; <code>Info.plist</code> <code>UISupportedInterfaceOrientations</code> still lists both landscape values — see the Android-only box above</td>
+        </tr>
+      </table>
+    </section>
+
+    <section id="icon">
+      <h2>3. App Icon</h2>
+      <table>
+        <tr><th>Detail</th><th>Value</th></tr>
+        <tr><td>Design</td><td>Black arrows (one up, two left) with a red diagonal "ESCAPE" banner — unchanged</td></tr>
+        <tr><td>Master asset</td><td><code>assets/icon/app_icon_master.png</code> (1254×1254, RGB, no alpha)</td></tr>
+        <tr><td>Marketing icon</td><td><code>Icon-App-1024x1024@1x.png</code> (1024×1024)</td></tr>
+        <tr><td>All other sizes</td><td>Generated and present in the <code>.appiconset</code> folder</td></tr>
+      </table>
+      <p><span class="tag tag-ok">READY</span> No changes since v1.0.0 — no action needed.</p>
+    </section>
+
+    <section id="screenshots">
+      <h2>4. Screenshots</h2>
+      <div class="alert" style="margin-bottom:20px; border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+        <h2 style="color:var(--orange);">Action needed — the gameplay screen changed</h2>
+        <p>Unlike v1.0.4, this version <strong>does</strong> change what the app looks like. The banner at the bottom of the gameplay screen is gone.</p>
+        <p><strong>Check every uploaded screenshot.</strong> Any that shows a gameplay board with a banner strip beneath it now misrepresents the app and should be retaken. Screenshots of Home, Challenge, Collection, and Settings are unaffected — those still carry the banner.</p>
+        <p>Board layouts also shift slightly on levels 38 and above (self-firing fix). If any screenshot shows a specific high-numbered level, that exact board may no longer generate identically. Screenshots of levels below 38 are unaffected.</p>
+      </div>
+      <table>
+        <tr><th>Required size</th><th>Used for</th><th>Status</th></tr>
+        <tr><td>6.9" (iPhone 16/15 Pro Max class)</td><td>Required — largest current iPhone</td><td><span class="tag tag-warn">RE-CHECK</span> Uploaded v1.0.0 — verify no gameplay banner is visible</td></tr>
+        <tr><td>6.5" (iPhone 11/XS Max class)</td><td>Optional if 6.9" provided and scales</td><td>—</td></tr>
+      </table>
+    </section>
+
+    <section id="listing">
+      <h2>5. Listing Copy &amp; What's New</h2>
+
+      <div class="alert" style="margin-bottom:20px; border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+        <h2 style="color:var(--orange);">"What's New in This Version" — required, not yet set</h2>
+        <p>Draft below. Unlike v1.0.4's release notes, there is genuine player-facing substance here, so it says so plainly rather than hiding behind "behind-the-scenes improvements":</p>
+      </div>
+      <pre>Faster, smoother, and quieter.
+
+• Levels now load instantly instead of pausing before they appear
+• Fixed a bug where an arrow could fly through its own tail
+• Removed the banner ad from the gameplay screen — the board is
+  yours again
+• The game no longer interrupts your music or podcast when you tap
+
+Thanks for playing!</pre>
+
+      <p style="margin-top:16px;">Description, Promotional Text, Keywords, and Subtitle are <strong>unchanged from v1.0.4</strong>. Reproduced below for reference only — nothing here needs editing.</p>
+
+      <h3>Promotional Text (170 char, editable without re-review)</h3>
+      <p>No timers, no ads to start — just tap, slide, and clear. New daily challenge and streak every day. Hundreds of levels, dark mode, and zero pressure.</p>
+
+      <h3>Description</h3>
+      <p><span class="tag tag-ok">UNCHANGED</span> The v1.0.4 description remains accurate — no feature was added or removed that it describes. See <code>docs/APP_STORE_GUIDE_v1.0.4.html</code> Section 5 for the full text.</p>
+
+      <h3>Keywords (100 char max, comma-separated, no spaces after commas)</h3>
+      <p><code>maze,relax,mind,offline,streak,levels,casual,think,tap,classic,calm,zen,slide,board,clear,fun</code> <span class="tag tag-ok">93/100</span> — unchanged</p>
+
+      <h3>URLs</h3>
+      <table>
+        <tr><td>Support URL</td><td><a href="https://xmtechnologies.in/Arrow/support.html" target="_blank">xmtechnologies.in/Arrow/support.html</a></td></tr>
+        <tr><td>Marketing URL (optional)</td><td><a href="https://xmtechnologies.in/Arrow/index.html" target="_blank">xmtechnologies.in/Arrow/index.html</a></td></tr>
+        <tr><td>Privacy Policy URL (required)</td><td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a> — last updated 2026-08-18 (Meta removal); <strong>no update needed this version</strong>, the data-collection picture is unchanged</td></tr>
+      </table>
+    </section>
+
+    <section id="privacy">
+      <h2>6. Privacy &amp; Data Collection</h2>
+      <p><span class="tag tag-ok">UNCHANGED</span> No new SDK, no new data type, no new third party. The table below is identical to v1.0.4.</p>
+      <table>
+        <tr><th>Data Type</th><th>Collected?</th><th>Linked to identity?</th><th>Tracking?</th><th>Notes</th></tr>
+        <tr><td>Identifiers (Device ID / IDFA)</td><td>Yes</td><td>No</td><td>Yes (advertising)</td><td>Via Google AdMob and its mediation partner, Unity Ads — only if the user grants ATT</td></tr>
+        <tr><td>Usage Data</td><td>Yes</td><td>No</td><td>No</td><td>Via Firebase Analytics — level_start, level_win, level_lose, level_restart, hint_used, daily_challenge_complete, streak_extended, ad_shown, ad_impression, purchase_remove_ads</td></tr>
+        <tr><td>Purchases</td><td>Yes</td><td>No</td><td>No</td><td>Product ID only, no payment details — processed by Apple</td></tr>
+        <tr><td>Diagnostics</td><td>No</td><td>—</td><td>—</td><td>No Crashlytics integrated</td></tr>
+        <tr><td>Contact, Health, Financial, Location, Browsing, Photos, Contacts</td><td>No</td><td>—</td><td>—</td><td>App collects none of these</td></tr>
+      </table>
+      <h3>Action items for App Store Connect → App Privacy</h3>
+      <ol class="steps">
+        <li><span class="tag tag-warn">CARRIED FROM v1.0.4</span> If Meta Platforms, Inc. is still listed as a data-collecting third party, remove it — mediation has been Unity Ads only since 1.0.4. This was marked PENDING in the v1.0.4 guide; <strong>confirm whether it was ever done</strong></li>
+        <li>Confirm Unity Technologies remains listed under Identifiers (IDFA) tracking</li>
+        <li>Re-confirm "Does this app track users?" stays <strong>Yes</strong> — unchanged</li>
+      </ol>
+      <p><strong>Consent (GDPR/US States):</strong> unchanged — the UMP consent outcome is forwarded to Unity Ads' adapter via <code>GmaMediationUnity</code> in <code>lib/ad_service.dart</code>.</p>
+    </section>
+
+    <section id="pricing">
+      <h2>7. Pricing</h2>
+      <table>
+        <tr><th>Setting</th><th>Value</th></tr>
+        <tr><td>App price</td><td>Free — unchanged</td></tr>
+        <tr><td>Availability</td><td>All territories</td></tr>
+        <tr><td>Pre-order</td><td>Not used</td></tr>
+      </table>
+    </section>
+
+    <section id="iap">
+      <h2>8. In-App Purchases</h2>
+      <p><span class="tag tag-ok">UNCHANGED</span> No changes since v1.0.0 — already live.</p>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Reference Name</td><td>Remove Ads</td></tr>
+        <tr><td>Product ID</td><td><code>remove_ads</code></td></tr>
+        <tr><td>Type</td><td>Non-Consumable</td></tr>
+        <tr><td>Price</td><td>$3.99 USD</td></tr>
+        <tr><td>Status</td><td>Live, matches <code>IapService.removeAdsId</code></td></tr>
+      </table>
+      <p><span class="tag tag-warn">NOTE</span> Remove Ads is now slightly better value than it was: with the gameplay banner gone, the free experience has one fewer ad surface. The purchase still removes banner, interstitial, and app-open ads; rewarded ads remain opt-in and available by design.</p>
+    </section>
+
+    <section id="ads">
+      <h2>9. Ads Disclosure &amp; Mediation</h2>
+      <p>The app shows ads via <strong>Google AdMob</strong> in 4 formats. <strong>Banner placement changed this version.</strong></p>
+      <table>
+        <tr><th>Format</th><th>Trigger</th></tr>
+        <tr><td>Rewarded</td><td>Hint (after 5 free hints, loaded when the button appears), Add More Lives (loaded at 1 heart remaining)</td></tr>
+        <tr><td>Interstitial</td><td>Every 2nd level win; level restart — <strong>now requested on the Restart tap</strong>, not pre-emptively at two hearts; daily challenge complete (plain interstitial, unchanged since 1.0.4)</td></tr>
+        <tr><td>Banner</td><td><strong>Home, Challenge, Collection, and Settings only</strong> — collapsible, anchored under the bottom nav. <span class="tag tag-block">REMOVED</span> from the gameplay screen this version</td></tr>
+        <tr><td>App Open</td><td>App resume from background / cold start (never during active gameplay, skipped on the very first-ever launch)</td></tr>
+      </table>
+
+      <h3>Mediation</h3>
+      <table>
+        <tr><th>Item</th><th>Status</th></tr>
+        <tr><td>Mediation partner</td><td><span class="tag tag-ok">Unity Ads only</span> — via <code>gma_mediation_unity ^1.9.0</code>; <code>google_mobile_ads ^9.0.0</code></td></tr>
+        <tr><td>Meta pods</td><td><span class="tag tag-ok">GONE</span> — verified absent from <code>ios/Podfile.lock</code></td></tr>
+        <tr><td>iOS SKAdNetwork IDs</td><td><span class="tag tag-block">STILL PENDING</span> — <code>Info.plist</code> holds 4 IDs: <code>cstr6suwn9</code> (Google), <code>4dzt52r2t5</code> (Unity), and <strong><code>v9wttpbfk9</code> + <code>n38lu8286q</code> (Meta)</strong>. The v1.0.4 guide flagged these for removal; <strong>they were never removed</strong>. Harmless but dead — see Section 13</td></tr>
+        <tr><td>GDPR/CCPA consent forwarding to Unity</td><td><span class="tag tag-ok">DONE</span> — via <code>GmaMediationUnity.setGDPRConsent()</code>/<code>setCCPAConsent()</code></td></tr>
+        <tr><td>Per-placement ad units</td><td><span class="tag tag-ok">DONE</span> — 8 in active use. The gameplay banner ad unit (<code>_bannerGameplayId</code>) and its <code>BannerPlacement.gameplay</code> enum value are <strong>deliberately retained in code but never requested</strong>, so re-enabling the placement is a one-line change</td></tr>
+        <tr><td>AdMob console → Ad partners</td><td><span class="tag tag-warn">VERIFY</span> — Meta can be removed if it was added for TCF passthrough in v1.0.1</td></tr>
+      </table>
+      <p>All ads except rewarded (opt-in) can be permanently disabled via the <strong>Remove Ads</strong> IAP — unchanged.</p>
+    </section>
+
+    <section id="age">
+      <h2>10. Age Rating Questionnaire</h2>
+      <p><span class="tag tag-ok">UNCHANGED</span> No content changes — the game still has no objectionable content of any kind. Expected result: <strong>4+</strong>.</p>
+    </section>
+
+    <section id="encryption">
+      <h2>11. Export Compliance (Encryption)</h2>
+      <p><span class="tag tag-ok">VERIFIED</span> <code>ITSAppUsesNonExemptEncryption = false</code> is still set in <code>ios/Runner/Info.plist</code>. All network calls (Firebase, AdMob + Unity mediation, StoreKit) still use standard OS-provided HTTPS only. No new export-compliance prompt expected.</p>
+    </section>
+
+    <section id="review">
+      <h2>12. App Review Notes</h2>
+      <p>Paste this into the "Notes" field on submission:</p>
+      <pre>Arrows - Escape Puzzle is a single-player offline puzzle game. No login
+or account is required to play.
+
+This build (1.0.4 -> 1.0.7) brings iOS up to date with three Android
+releases. Changes are performance, ad-delivery, and one gameplay
+correctness fix:
+- Fixed a bug where an arrow could animate through its own tail when
+  fired. Board generation was corrected; no rules changed.
+- Removed the banner ad from the gameplay screen.
+- Level generation moved off the UI thread, so levels no longer pause
+  before appearing.
+- Sound effects are pre-loaded, and the app no longer requests audio
+  focus, so playing no longer interrupts the user's own audio.
+- The ad shown after tapping Restart is now requested at that moment
+  rather than in advance.
+
+Unchanged from the previous submission:
+- All gameplay progress is stored locally on-device (no server backend).
+- One in-app purchase: "Remove Ads" ($3.99, non-consumable, product ID
+  remove_ads) disables banner/interstitial/app-open ads. Rewarded ads
+  (opt-in, for hints/extra lives) remain available even after purchase
+  by design - disclosed in the purchase description shown in Settings.
+- Ad mediation is Google AdMob with Unity Ads only.
+- Firebase Analytics is used for anonymous, aggregated usage events only
+  (no PII collected).
+- No account creation, no chat, no user-generated content, no web view
+  with unrestricted browsing.
+
+Test path: tap Play on the Home screen to start Level 1 (tutorial),
+or tap an in-progress level number to continue.</pre>
+    </section>
+
+    <section id="checklist">
+      <h2>13. Build &amp; Archive Checklist</h2>
+      <p>This build has never been compiled for iOS, so the early steps are real work, not confirmations.</p>
+      <ul>
+        <li><span class="tag tag-ok">DONE</span> <code>pubspec.yaml</code> version is <code>1.0.7+11</code></li>
+        <li><span class="tag tag-ok">DONE</span> Dart suite passes 20/20; <code>flutter analyze</code> at 5 pre-existing warnings</li>
+        <li><span class="tag tag-block">TODO</span> <code>flutter pub get</code> then <code>cd ios &amp;&amp; pod install</code> — not run since the 1.0.4 archive</li>
+        <li><span class="tag tag-block">TODO</span> Remove the 2 Meta SKAdNetwork IDs (<code>v9wttpbfk9</code>, <code>n38lu8286q</code>) from <code>Info.plist</code> — carried over from the v1.0.4 guide, still not done (Section 9)</li>
+        <li><span class="tag tag-block">DECIDE</span> Whether to drop <code>UIInterfaceOrientationLandscapeLeft</code>/<code>Right</code> from <code>UISupportedInterfaceOrientations</code>, matching the Android portrait lock. <strong>This is a judgement call, not a known bug on iOS</strong> — it was never reproduced on an iPhone, and restricting orientation can affect how full-screen video ad creatives present. Safest path: leave it, and watch for landscape ad reports</li>
+        <li><span class="tag tag-block">TODO</span> Re-check uploaded screenshots for the removed gameplay banner (Section 4)</li>
+        <li><span class="tag tag-block">TODO</span> Add "What's New in This Version" release notes (Section 5)</li>
+        <li><span class="tag tag-block">TODO</span> Confirm the App Privacy questionnaire no longer lists Meta (Section 6)</li>
+        <li><span class="tag tag-block">TODO</span> <code>flutter build ipa</code>, or archive via Xcode with <code>ios/Runner.xcworkspace</code></li>
+        <li><span class="tag tag-block">TODO — MANDATORY</span> Test on a <strong>real iPhone</strong>. This build's Dart changes have only ever run on Android. Specifically verify: levels above 38 generate and are solvable (the self-firing fix changed board generation); the gameplay screen has no banner and the board is not clipped where it used to sit; ATT + GDPR consent prompts still appear; ads load through Unity mediation; tapping arrows does not interrupt background music; and the IAP flow works with a Sandbox tester</li>
+        <li>Upload via Xcode Organizer or Transporter</li>
+        <li>Submit for review with the notes from Section 12</li>
+      </ul>
+    </section>
+
+    <section id="links">
+      <h2>14. Reference Links</h2>
+      <table>
+        <tr><th>Resource</th><th>Value</th></tr>
+        <tr><td>Privacy Policy</td><td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a></td></tr>
+        <tr><td>Terms &amp; Conditions</td><td><a href="https://xmtechnologies.in/Arrow/terms-and-conditions.html" target="_blank">xmtechnologies.in/Arrow/terms-and-conditions.html</a></td></tr>
+        <tr><td>Support page</td><td><a href="https://xmtechnologies.in/Arrow/support.html" target="_blank">xmtechnologies.in/Arrow/support.html</a></td></tr>
+        <tr><td>Support email</td><td><a href="mailto:akashmangukiya10@gmail.com">akashmangukiya10@gmail.com</a></td></tr>
+        <tr><td>App Store listing</td><td><a href="https://apps.apple.com/in/app/arrows-escape-puzzle/id6785821757" target="_blank">apps.apple.com/in/app/arrows-escape-puzzle/id6785821757</a> — <strong>1.0.4 LIVE</strong></td></tr>
+        <tr><td>Apple ID (App Store Connect numeric ID)</td><td>6785821757</td></tr>
+        <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>AdMob iOS App ID</td><td><code>ca-app-pub-4818503743858431~5166233161</code></td></tr>
+        <tr><td>AdMob Android App ID (context)</td><td><code>ca-app-pub-4818503743858431~7394089061</code></td></tr>
+        <tr><td>Firebase project</td><td>fitflow-759df</td></tr>
+        <tr><td>Android listing (context, not this doc's platform)</td><td><a href="https://play.google.com/store/apps/details?id=com.shayona.arrows" target="_blank">play.google.com/store/apps/details?id=com.shayona.arrows</a> — <strong>1.0.6+10 LIVE</strong> since 2026-08-31; 1.0.7+11 built and pending upload</td></tr>
+        <tr><td>Previous iOS guide</td><td><code>docs/APP_STORE_GUIDE_v1.0.4.html</code></td></tr>
+        <tr><td>Android submission guide</td><td><code>docs/PLAY_STORE_GUIDE_v1.0.0.html</code></td></tr>
+        <tr><td>Google Ads asset guide</td><td><code>docs/GOOGLE_ADS_ASSET_GUIDE_v1.0.0.pdf</code></td></tr>
+      </table>
+    </section>
+
+  </div>
+
+  <footer>
+    &copy; 2026 Shayona. Internal submission guide — not for distribution.
+  </footer>
+</body>
+</html>
