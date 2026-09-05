@@ -838,12 +838,6 @@ class LevelGenerator {
     }
   }
 
-  /// Greedy solver — true iff every arrow can be cleared. Removing an arrow
-  /// only frees cells (monotone), so a greedy clear order is a valid test.
-  ///
-  /// Topological implementation: each arrow is "blocked" by the count of cells
-  /// in its exit corridor owned by OTHER arrows. Clearable arrows (0 blockers)
-  /// cascade as they leave. O(total corridor length) instead of O(n²).
   /// True when the arrow's straight exit ray never crosses its own body.
   ///
   /// An arrow fires by snaking along its own polyline plus a straight
@@ -870,6 +864,12 @@ class LevelGenerator {
     }
   }
 
+  /// Greedy solver — true iff every arrow can be cleared. Removing an arrow
+  /// only frees cells (monotone), so a greedy clear order is a valid test.
+  ///
+  /// Topological implementation: each arrow is "blocked" by the count of cells
+  /// in its exit corridor owned by OTHER arrows. Clearable arrows (0 blockers)
+  /// cascade as they leave. O(total corridor length) instead of O(n²).
   bool greedySolvable(List<Arrow> arrows) {
     final n = arrows.length;
     if (n == 0) return true;

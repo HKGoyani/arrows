@@ -484,23 +484,6 @@ class GravityPacker {
     return out;
   }
 
-  /// Welds snakes into longer arrows two ways:
-  ///
-  ///   • head→tail (staircase): the chain's head touches a later arrow's
-  ///     tail — the combined path continues onward, and
-  ///   • tail→tail (U-TURN): the chain's TAIL touches a later arrow's tail —
-  ///     the chain is reversed and appended, producing a path that doubles
-  ///     back on itself (U-turns, nested rectangles, spiral motifs).
-  ///
-  /// Runs GLOBALLY (after all regions are placed and orphans rescued), so
-  /// chains may cross region boundaries and change direction mid-path.
-  ///
-  /// Soundness: a chain clears at its LAST member's reverse-placement slot.
-  /// The last member has the highest placement index of the chain, so the
-  /// chain clears no later than any member would have on its own — every
-  /// arrow waiting on a member's cells still finds them gone in time, and
-  /// the chain's own head ray only crosses cells placed after the last
-  /// member (cleared even earlier) or its own body (never blocks itself).
   /// True when the arrow's straight exit ray never crosses its own body.
   ///
   /// An arrow fires by snaking along its own polyline plus a straight
@@ -527,6 +510,27 @@ class GravityPacker {
     }
   }
 
+  /// Welds snakes into longer arrows two ways:
+  ///
+  ///   • head→tail (staircase): the chain's head touches a later arrow's
+  ///     tail — the combined path continues onward, and
+  ///   • tail→tail (U-TURN): the chain's TAIL touches a later arrow's tail —
+  ///     the chain is reversed and appended, producing a path that doubles
+  ///     back on itself (U-turns, nested rectangles, spiral motifs).
+  ///
+  /// Runs GLOBALLY (after all regions are placed and orphans rescued), so
+  /// chains may cross region boundaries and change direction mid-path.
+  ///
+  /// Soundness: a chain clears at its LAST member's reverse-placement slot.
+  /// The last member has the highest placement index of the chain, so the
+  /// chain clears no later than any member would have on its own — every
+  /// arrow waiting on a member's cells still finds them gone in time, and
+  /// the chain's own head ray only crosses cells placed after the last
+  /// member (cleared even earlier) or its own body (which never BLOCKS it —
+  /// [_selfRayClear] separately refuses welds that would fire an arrow
+  /// straight THROUGH its own body, which is an animation bug, not a
+  /// solvability one).
+  ///
   /// Chains are built strictly in ascending placement order, and both weld
   /// types keep the final head AND direction = the last member's (aligned).
   ///
