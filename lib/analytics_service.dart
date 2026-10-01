@@ -38,6 +38,12 @@ class AnalyticsService {
 
   static void adShown(String type) => logEvent('ad_shown', {'type': type});
 
+  /// A loaded ad thrown away unshown. [reason]: stale (past its validity
+  /// window), superseded (a fresher ad already held the slot), consent (the
+  /// consent choice changed), parked_expired / ads_removed (parked banner).
+  static void adDiscarded(String unit, String reason) =>
+      logEvent('ad_discarded', {'unit': unit, 'reason': reason});
+
   /// GA4's canonical ad-revenue event, fed from AdMob's per-impression paid
   /// callback (see AdService). [valueMicros] is the estimated revenue in
   /// millionths of a currency unit, as the SDK reports it. Logged with

@@ -319,25 +319,38 @@ class AdService {
     // Note canRequestAds() alone can't detect that: it reports only that the
     // consent flow completed, and stays true even after "Do not consent".
     _discardPreloadedAds();
+    consentEpoch++;
     _preloadAll();
   }
+
+  /// Bumped whenever the consent choice may have changed. Widgets holding a
+  /// loaded-but-unshown ad (the parked Home banner) compare against it so they
+  /// never show an ad fetched under the previous consent state.
+  static int consentEpoch = 0;
 
   /// Disposes every preloaded ad this service holds (full-screen formats and
   /// the gameplay banner cache). On-screen banners are owned by the widgets
   /// that created them and are disposed there.
   static void _discardPreloadedAds() {
+    void logIfHeld(Object? ad, String unit) {
+      if (ad != null) _discarded(unit, 'consent');
+    }
     for (final p in RewardedPlacement.values) {
+      logIfHeld(_rewardedAds[p], 'rewarded_${p.name}');
       _rewardedAds[p]?.dispose();
       _rewardedAds[p] = null;
       _rewardedLoadedAt[p] = null;
     }
+    logIfHeld(_interstitialWinAd, 'interstitial_win');
     _interstitialWinAd?.dispose();
     _interstitialWinAd = null;
     _interstitialWinLoadedAt = null;
+    logIfHeld(_interstitialRestartAd, 'interstitial_restart');
     _interstitialRestartAd?.dispose();
     _interstitialRestartAd = null;
     _interstitialRestartLoadedAt = null;
     for (final p in AppOpenPlacement.values) {
+      logIfHeld(_appOpenAds[p], 'app_open_${p.name}');
       _appOpenAds[p]?.dispose();
       _appOpenAds[p] = null;
       _appOpenLoadedAt[p] = null;
@@ -364,12 +377,50 @@ class AdService {
 
   /// Exponential backoff for full-screen preloads: 2s, 4s, 8s, then stop.
   /// Bounded so a sustained no-fill can't hammer AdMob.
-  static void _retryLoad(int attempt, void Function() retry) {
-    if (attempt >= 3) return;
+  ///
+  /// [gen] is the [_levelGen] the request chain STARTED in, carried through
+  /// every retry. A retry is dropped once that attempt is over (win decision,
+  /// restart, new level, screen gone) — these used to fire on Home or into the
+  /// next level, fetching ads for an opportunity that had already passed.
+  /// Captured at the start, not at the failure: a request in flight across a
+  /// restart fails a moment later, and must not inherit the NEW attempt.
+  static void _retryLoad(int attempt, int gen, void Function() retry) {
+    if (attempt >= _maxLoadRetries) return;
     Future.delayed(Duration(seconds: 2 << attempt), () {
+      if (gen != _levelGen || !_isPlaying) return;
       if (!_adsRemoved && _canRequestAds) retry();
     });
   }
+
+  static const _maxLoadRetries = 3;
+
+  /// Identifies the current level ATTEMPT. Bumped whenever one starts or
+  /// ends, so a pending retry can tell its attempt is over (see [_retryLoad]).
+  ///
+  /// The game screen stays mounted underneath the streak/award celebration
+  /// after a win, so "screen disposed" is too late a signal — the attempt is
+  /// ended explicitly at the win-ad decision ([onLevelWin]/[onDailyComplete]).
+  static int _levelGen = 0;
+
+  /// Per-attempt latches: each format is requested ONCE per attempt from its
+  /// in-level trigger. Both triggers fire on every board change, and the load
+  /// guards only block while an ad is cached or in flight — so after a no-fill
+  /// every subsequent tap fired a fresh request, dozens per level on large
+  /// boards. The retry chain (above) still covers a transient no-fill.
+  static bool _winLoadRequested = false;
+  static bool _livesLoadRequested = false;
+
+  static void _newAttempt() {
+    _levelGen++;
+    _winLoadRequested = false;
+    _livesLoadRequested = false;
+  }
+
+  /// Logs a loaded ad thrown away without ever being shown, with why. AdMob
+  /// only reports matched-vs-shown; this splits the gap into known causes,
+  /// and whatever remains is ads still cached when the process ended.
+  static void _discarded(String unit, String reason) =>
+      AnalyticsService.adDiscarded(unit, reason);
 
   /// Preloads only what can actually be shown outside a level.
   ///
@@ -410,7 +461,11 @@ class AdService {
   /// but-never-shown pattern that pins interstitial show rate at ~48%.
   static void onLevelStart({required bool isDaily}) {
     _isPlaying = true;
+    _newAttempt();
   }
+
+  /// Call when a restart is carried out (the board resets to a fresh attempt).
+  static void onAttemptRestarted() => _newAttempt();
 
   /// Call as the board nears completion (~80% cleared).
   ///
@@ -432,6 +487,10 @@ class AdService {
       if (_winCount + 1 < _winsPerInterstitial) return;
       if (!_interstitialGapOkWithin(const Duration(seconds: 20))) return;
     }
+    // Latched only once the win qualifies, so a gap that clears a few taps
+    // later can still trigger the load.
+    if (_winLoadRequested) return;
+    _winLoadRequested = true;
     _loadInterstitialWin();
   }
 
@@ -542,6 +601,11 @@ class AdService {
   /// lifecycle handlers mistake our own ad for a real backgrounding.
   static void _markPresenting() => _showingFullScreenAd = true;
 
+  /// Whether a full-screen ad is presenting (from just before `show()` until
+  /// its dismiss/fail callback). Read by the app root to hold the system
+  /// insets steady underneath the ad — see `_StableInsets` in main.dart.
+  static bool get isShowingFullScreenAd => _showingFullScreenAd;
+
   /// Runs whatever the currently-presenting ad's onDismiss/onFailedToShow
   /// path would have run, for [recoverFromStuckFullScreenAd] to fall back on
   /// when those callbacks never arrive. Cleared the instant either callback
@@ -570,7 +634,10 @@ class AdService {
     recovery?.call();
   }
 
-  static void setPlaying(bool playing) => _isPlaying = playing;
+  static void setPlaying(bool playing) {
+    _isPlaying = playing;
+    if (!playing) _levelGen++; // ends the attempt's retry chains
+  }
 
   /// Call when the player's hearts change.
   ///
@@ -586,7 +653,9 @@ class AdService {
   /// cleanly almost never restart it, and they no longer generate a request
   /// for an ad they were never going to see.
   static void onHeartsChanged(int hearts) {
-    if (hearts == 1) _loadRewarded(RewardedPlacement.extraLives);
+    if (hearts != 1 || _livesLoadRequested) return;
+    _livesLoadRequested = true;
+    _loadRewarded(RewardedPlacement.extraLives);
   }
 
   /// Call the moment the player taps Restart — before the confirm dialog is
@@ -602,7 +671,13 @@ class AdService {
   /// Self-guarded: [_loadInterstitialRestart] no-ops while one is cached or
   /// in flight, so cancelling the dialog and tapping Restart again does not
   /// fire a second request — the cached ad simply waits for the next restart.
-  static void onRestartOffered() => _loadInterstitialRestart();
+  ///
+  /// Skipped inside the 45s inter-ad gap (with 5s of lookahead for the dialog):
+  /// [onRestart] would refuse to show it, so the request bought nothing.
+  static void onRestartOffered() {
+    if (!_interstitialGapOkWithin(const Duration(seconds: 5))) return;
+    _loadInterstitialRestart();
+  }
 
   /// Call after any hint is consumed. Once the free allowance is spent, every
   /// hint from here needs an ad, so fetch the NEXT one now rather than at the
@@ -658,6 +733,7 @@ class AdService {
     // See _loadInterstitialWin — same ~1h staleness replacement.
     if (_rewardedAds[placement] != null &&
         _staleSince(_rewardedLoadedAt[placement])) {
+      _discarded('rewarded_${placement.name}', 'stale');
       _rewardedAds[placement]!.dispose();
       _rewardedAds[placement] = null;
       _rewardedLoadedAt[placement] = null;
@@ -788,6 +864,7 @@ class AdService {
     if (ad != null && _staleSince(_rewardedLoadedAt[placement])) {
       // Outlived AdMob's ~1h validity — show() would fail at display time.
       // Fall through to the live load instead of a doomed show.
+      _discarded('rewarded_${placement.name}', 'stale');
       ad.dispose();
       ad = null;
     }
@@ -813,6 +890,7 @@ class AdService {
               _rewardedAds[placement] = lateAd;
               _rewardedLoadedAt[placement] = DateTime.now();
             } else {
+              _discarded('rewarded_${placement.name}', 'superseded');
               lateAd.dispose();
             }
           });
@@ -854,18 +932,27 @@ class AdService {
       _reportUnavailable(onUnavailable);
     };
     _markPresenting();
-    readyAd.show(onUserEarnedReward: (_, __) => onRewarded());
+    readyAd.show(onUserEarnedReward: (_, __) {
+      // Refilled lives can drop back to one heart in the same attempt, and
+      // the ad that would cover that was just consumed — allow one more load.
+      if (placement == RewardedPlacement.extraLives) {
+        _livesLoadRequested = false;
+      }
+      onRewarded();
+    });
   }
 
   // ═══════════════════════════════════════════════════════════════════
   // INTERSTITIAL AD — after every 2nd win, restart, daily complete
   // ═══════════════════════════════════════════════════════════════════
 
-  static void _loadInterstitialWin([int attempt = 0]) {
+  static void _loadInterstitialWin([int attempt = 0, int? chainGen]) {
     if (_adsRemoved || !_canRequestAds) return;
+    final gen = chainGen ?? _levelGen;
     // A cached ad past its ~1h validity would fail at show — replace it now,
     // while there's still runway, rather than discovering that at the win.
     if (_interstitialWinAd != null && _staleSince(_interstitialWinLoadedAt)) {
+      _discarded('interstitial_win', 'stale');
       _interstitialWinAd!.dispose();
       _interstitialWinAd = null;
       _interstitialWinLoadedAt = null;
@@ -888,17 +975,19 @@ class AdService {
           // Retry with backoff. Without this a single no-fill left the slot
           // empty until the NEXT win triggered a reload — and that win's
           // opportunity was already spent, so one miss could cost several.
-          _retryLoad(attempt, () => _loadInterstitialWin(attempt + 1));
+          _retryLoad(attempt, gen, () => _loadInterstitialWin(attempt + 1, gen));
         },
       ),
     );
   }
 
-  static void _loadInterstitialRestart([int attempt = 0]) {
+  static void _loadInterstitialRestart([int attempt = 0, int? chainGen]) {
     if (_adsRemoved || !_canRequestAds) return;
+    final gen = chainGen ?? _levelGen;
     // See _loadInterstitialWin — same ~1h staleness replacement.
     if (_interstitialRestartAd != null &&
         _staleSince(_interstitialRestartLoadedAt)) {
+      _discarded('interstitial_restart', 'stale');
       _interstitialRestartAd!.dispose();
       _interstitialRestartAd = null;
       _interstitialRestartLoadedAt = null;
@@ -922,7 +1011,8 @@ class AdService {
           // Retry with backoff. Without this a single no-fill left the slot
           // empty until the NEXT win triggered a reload — and that win's
           // opportunity was already spent, so one miss could cost several.
-          _retryLoad(attempt, () => _loadInterstitialRestart(attempt + 1));
+          _retryLoad(attempt, gen,
+              () => _loadInterstitialRestart(attempt + 1, gen));
         },
       ),
     );
@@ -942,6 +1032,7 @@ class AdService {
   /// [onDone] always runs exactly once — callers sequence the streak/rate
   /// celebration off it so nothing stacks on top of the ad.
   static void onLevelWin({void Function(bool adShown)? onDone}) {
+    _levelGen++; // the attempt is decided — no more retries for it
     if (_adsRemoved) {
       onDone?.call(false);
       return;
@@ -984,12 +1075,15 @@ class AdService {
     // reload below then fetches a fresh one for the next restart).
     if (_interstitialRestartAd != null &&
         _staleSince(_interstitialRestartLoadedAt)) {
+      _discarded('interstitial_restart', 'stale');
       _interstitialRestartAd!.dispose();
       _interstitialRestartAd = null;
       _interstitialRestartLoadedAt = null;
     }
     if (_adsRemoved || _interstitialRestartAd == null || !_interstitialGapOk) {
-      _loadInterstitialRestart();
+      // Not reloaded here: [onRestartOffered] fetches on the next Restart tap,
+      // with the confirm dialog as runway. A reload from this path also fired
+      // for <3-arrow restarts, which have no dialog and so no time to load.
       onDone?.call();
       return;
     }
@@ -1037,6 +1131,7 @@ class AdService {
   /// Call after daily challenge completion. Calls [onDone] after the ad is
   /// dismissed (or immediately if none shows).
   static void onDailyComplete({void Function(bool adShown)? onDone}) {
+    _levelGen++; // the attempt is decided — no more retries for it
     if (_adsRemoved) {
       onDone?.call(false);
       return;
@@ -1052,12 +1147,15 @@ class AdService {
     // An expired cache would fail at display anyway — treat it as not loaded
     // so this win is skipped cleanly and a fresh ad is fetched for the next.
     if (_interstitialWinAd != null && _staleSince(_interstitialWinLoadedAt)) {
+      _discarded('interstitial_win', 'stale');
       _interstitialWinAd!.dispose();
       _interstitialWinAd = null;
       _interstitialWinLoadedAt = null;
     }
     if (_interstitialWinAd == null) {
-      _loadInterstitialWin();
+      // One attempt, no retry chain: the win decision has already been made,
+      // and the ad (if it fills) waits in the cache for the next win.
+      _loadInterstitialWin(_maxLoadRetries);
       onDone?.call(false); // not loaded — skip, don't block user
       return;
     }
@@ -1204,9 +1302,13 @@ class AdService {
       listener: BannerAdListener(
         onPaidEvent: _paidEventFor('banner_${placement.name}', 'banner'),
         onAdLoaded: (ad) {
-          AnalyticsService.adShown('banner_${placement.name}');
           if (!completer.isCompleted) completer.complete(ad as BannerAd);
         },
+        // Logged on the real impression, not the load: a loaded banner that
+        // is parked or disposed unseen was being counted as shown, so GA4's
+        // banner numbers ran well ahead of AdMob's.
+        onAdImpression: (ad) =>
+            AnalyticsService.adShown('banner_${placement.name}'),
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
           if (!completer.isCompleted) completer.complete(null);
@@ -1392,6 +1494,7 @@ class AdService {
       _appOpenAds[AppOpenPlacement.resume] = late;
       _appOpenLoadedAt[AppOpenPlacement.resume] = DateTime.now();
     } else {
+      _discarded('app_open_coldStart', 'superseded');
       late.dispose();
     }
   }
@@ -1403,20 +1506,28 @@ class AdService {
   /// also sidesteps the 4h expiry above for the common case, and avoids
   /// spending a request at launch on an ad that may never be needed.
   static void onAppBackgrounded() {
-    // `inactive` also fires while one of our own full-screen ads is on
-    // screen; that is not a real backgrounding and must not trigger a fetch.
+    // Our own full-screen ad covering the app also pauses it; that is not a
+    // real backgrounding and must not trigger a fetch.
     if (_showingFullScreenAd) return;
+    _backgroundedSinceResume = true;
     final cached = _appOpenAds[AppOpenPlacement.resume];
     if (cached != null && !_appOpenExpired(AppOpenPlacement.resume)) {
       return; // a still-valid ad is already waiting
     }
     if (cached != null) {
+      _discarded('app_open_resume', 'stale');
       cached.dispose();
       _appOpenAds[AppOpenPlacement.resume] = null;
       _appOpenLoadedAt[AppOpenPlacement.resume] = null;
     }
     _loadAppOpen(AppOpenPlacement.resume);
   }
+
+  /// Set by a real backgrounding ([onAppBackgrounded]), consumed by the next
+  /// resume show attempt. Without it, ANY `resumed` could show a resume ad —
+  /// including a return from the notification shade, Control Center, the Play
+  /// billing sheet or the in-app review card, none of which left the app.
+  static bool _backgroundedSinceResume = false;
 
   /// Call on app resume (or, for [AppOpenPlacement.coldStart], once the
   /// launch ad loads). Skipped if the user is actively playing, or if a
@@ -1437,6 +1548,10 @@ class AdService {
     // Cold start keeps the gate: it can only fire inside the launch grace
     // window, and a level cannot be in progress then.
     if (_isPlaying && placement != AppOpenPlacement.resume) return;
+    if (placement == AppOpenPlacement.resume) {
+      if (!_backgroundedSinceResume) return; // the player never left
+      _backgroundedSinceResume = false;
+    }
     if (_showingFullScreenAd || _inFullScreenAdCooldown) return;
     final lastShown = _lastAppOpenShownAt;
     if (lastShown != null && DateTime.now().difference(lastShown) < _appOpenMinGap) {
@@ -1450,6 +1565,7 @@ class AdService {
     if (_appOpenExpired(placement)) {
       // Past the 4h validity window: showing it would fail and waste the
       // impression. Drop it and fetch a fresh one.
+      _discarded('app_open_${placement.name}', 'stale');
       ad.dispose();
       _appOpenAds[placement] = null;
       _appOpenLoadedAt[placement] = null;

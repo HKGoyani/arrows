@@ -80,6 +80,7 @@ class _SplashApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme:
           ThemeData(scaffoldBackgroundColor: AppColors.bg, useMaterial3: true),
+      builder: (context, child) => _StableInsets(child: child!),
       home: Scaffold(
         body: SafeArea(
           child: Center(
@@ -123,7 +124,45 @@ class _ArrowsAppState extends State<ArrowsApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(scaffoldBackgroundColor: AppColors.bg, useMaterial3: true),
       navigatorObservers: [routeObserver],
+      builder: (context, child) => _StableInsets(child: child!),
       home: MainShell(),
+    );
+  }
+}
+
+/// Holds the system insets steady while a full-screen ad is up.
+///
+/// AdMob's ad activity hides the status bar, and Android then reports a zero
+/// top inset to this window as well — which stays visible behind the app-open
+/// ad's translucent header. Every SafeArea dropped its top padding, so the UI
+/// visibly jumped up by the status-bar height under the ad and back down when
+/// it closed. The app never hides system bars itself, so while an ad is
+/// presenting, the insets from just before it are the correct ones.
+class _StableInsets extends StatefulWidget {
+  const _StableInsets({required this.child});
+  final Widget child;
+  @override
+  State<_StableInsets> createState() => _StableInsetsState();
+}
+
+class _StableInsetsState extends State<_StableInsets> {
+  // Static, shared by the splash and the real app: the cold-start ad shows
+  // over the splash, so the app's FIRST build can already be under an ad.
+  // The splash renders before any ad loads and records the real values.
+  static EdgeInsets? _padding;
+  static EdgeInsets? _viewPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    if (!AdService.isShowingFullScreenAd || _padding == null) {
+      _padding = mq.padding;
+      _viewPadding = mq.viewPadding;
+      return widget.child;
+    }
+    return MediaQuery(
+      data: mq.copyWith(padding: _padding, viewPadding: _viewPadding),
+      child: widget.child,
     );
   }
 }
@@ -162,6 +201,17 @@ class _MainShellState extends State<MainShell>
   int _bannerWidth = 0; // remembered so the banner can be re-acquired on return
   int _bannerRetries = 0;
   Timer? _bannerReacquireTimer; // debounces the re-request on returning Home
+  bool _bannerInFlight = false; // a _requestBanner burst is still resolving
+
+  /// A banner that finished loading after Home was covered, held unattached
+  /// until the player returns. Disposing it there (the old behaviour) threw
+  /// away a matched ad on every fast "land on Home, tap Play" — most often
+  /// the very first request of a launch, which has no debounce — and then
+  /// requested a fresh one on return. Home's show rate was 26% on Android.
+  BannerAd? _parkedBanner;
+  DateTime? _parkedAt;
+  int _parkedEpoch = 0;
+  static const _parkedMaxAge = Duration(minutes: 15);
 
   /// See [_requestBanner] — the retry loop is bounded, not endless.
   ///
@@ -190,8 +240,15 @@ class _MainShellState extends State<MainShell>
     final route = ModalRoute.of(context);
     if (route is PageRoute) routeObserver.subscribe(this, route);
     if (!_bannerRequested) {
+      final width = MediaQuery.of(context).size.width.truncate();
+      // Launched with the screen off (behind the lock screen), the window can
+      // report zero size. Storing that width sent zero-width banner requests
+      // (all no-fill) and left didPopNext's `_bannerWidth <= 0` guard
+      // blocking every re-acquire for the rest of the session. MediaQuery
+      // re-runs this when the real size arrives.
+      if (width <= 0) return;
       _bannerRequested = true;
-      _bannerWidth = MediaQuery.of(context).size.width.truncate();
+      _bannerWidth = width;
       // Reserve the banner's exact space as soon as the size is known (fast,
       // local — no ad request) so the nav bar settles into its final
       // position immediately, instead of jumping once the ad itself finishes
@@ -244,6 +301,17 @@ class _MainShellState extends State<MainShell>
   @override
   void didPopNext() {
     if (_bannerAd != null || _bannerWidth <= 0) return;
+    final parked = _takeParkedBanner();
+    if (parked != null) {
+      setState(() => _bannerAd = parked); // shown at once — no new request
+      return;
+    }
+    // A burst still resolving will attach (or park) its own result; fresh
+    // retry budget in case it resolves empty now that Home is visible again.
+    if (_bannerInFlight) {
+      _bannerRetries = 0;
+      return;
+    }
     _bannerReacquireTimer?.cancel();
     _bannerReacquireTimer = Timer(_bannerReacquireDelay, () {
       // Still here, and still the visible route.
@@ -251,6 +319,29 @@ class _MainShellState extends State<MainShell>
       _bannerRetries = 0;
       _requestBanner(_bannerWidth);
     });
+  }
+
+  /// The parked banner if it is still fit to show, else null (dropping it).
+  /// Too old, bought Remove Ads since, or fetched under a consent choice the
+  /// player has since changed — any of these and it must not be shown.
+  BannerAd? _takeParkedBanner() {
+    final ad = _parkedBanner;
+    if (ad == null) return null;
+    _parkedBanner = null;
+    final String? reason;
+    if (Prefs.removeAds) {
+      reason = 'ads_removed';
+    } else if (_parkedEpoch != AdService.consentEpoch) {
+      reason = 'consent';
+    } else if (DateTime.now().difference(_parkedAt!) > _parkedMaxAge) {
+      reason = 'parked_expired';
+    } else {
+      reason = null;
+    }
+    if (reason == null) return ad;
+    AnalyticsService.adDiscarded('banner_home', reason);
+    ad.dispose();
+    return null;
   }
 
   void _releaseBanner() {
@@ -271,6 +362,7 @@ class _MainShellState extends State<MainShell>
   /// forever, so a player in a low-fill region emitted a 4-attempt burst every
   /// ~74 seconds for the entire session and never received an impression.
   void _requestBanner(int width) {
+    _bannerInFlight = true;
     AdService.createBanner(
       width: width,
       placement: BannerPlacement.home,
@@ -286,11 +378,25 @@ class _MainShellState extends State<MainShell>
       keepTrying: () =>
           mounted && (ModalRoute.of(context)?.isCurrent ?? false),
     ).then((ad) {
-      // The load (with retries) can take several seconds; if this shell is
-      // gone — or a route has since covered it — by the time it resolves,
-      // dispose the ad so it doesn't leak or refresh out of sight.
-      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) {
+      _bannerInFlight = false;
+      // The load (with retries) can take several seconds. Shell gone:
+      // dispose. Covered by a route: park it, never attached, until the
+      // player comes back (see didPopNext) instead of throwing it away.
+      if (!mounted) {
         ad?.dispose();
+        return;
+      }
+      if (!(ModalRoute.of(context)?.isCurrent ?? false)) {
+        if (ad != null) {
+          _parkedBanner?.dispose();
+          _parkedBanner = ad;
+          _parkedAt = DateTime.now();
+          _parkedEpoch = AdService.consentEpoch;
+        }
+        return;
+      }
+      if (ad != null && _bannerAd != null) {
+        ad.dispose(); // defensive: the slot was filled meanwhile
         return;
       }
       if (ad == null) {
@@ -312,6 +418,7 @@ class _MainShellState extends State<MainShell>
     _bannerRetryTimer?.cancel();
     _bannerReacquireTimer?.cancel();
     _bannerAd?.dispose();
+    _parkedBanner?.dispose();
     _navSlideCtrl.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -337,8 +444,14 @@ class _MainShellState extends State<MainShell>
       AudioService.onAppPause();
       // Fetch the resume app-open ad now, while backgrounded, so it's fresh
       // when the player returns. Self-guards against the duplicate calls
-      // these three states produce for a single backgrounding.
-      AdService.onAppBackgrounded();
+      // `hidden` + `paused` produce for a single backgrounding.
+      //
+      // NOT on `inactive`: that alone is a focus loss, not leaving the app —
+      // notification shade, Control Center, the Play billing sheet, the
+      // in-app review card, the ATT prompt. Treating it as backgrounding
+      // fetched an app-open ad there and could show it on the way back. A
+      // real backgrounding always passes through `hidden`/`paused`.
+      if (state != AppLifecycleState.inactive) AdService.onAppBackgrounded();
     }
   }
 
