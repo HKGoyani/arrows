@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Store Listing — All Languages — Arrows – Escape Puzzle v1.0.8</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F9FD;
+      --card: #FFFFFF;
+      --blue: #667CFF;
+      --red: #F23A5C;
+      --ink: #2B2E4F;
+      --muted: #8C90A6;
+      --border: #E7E8F3;
+      --green: #1AAB67;
+      --orange: #FF8A3D;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 0 16px 60px;
+    }
+    header {
+      text-align: center;
+      padding: 52px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    header .arrow {
+      width: 0; height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid var(--blue);
+      margin: 0 auto 14px;
+    }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; color: var(--ink); }
+    .subtitle { color: var(--muted); font-size: 13px; letter-spacing: 1px; margin-top: 8px; }
+    .updated {
+      display: inline-block; margin-top: 12px; padding: 4px 12px;
+      border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--muted);
+    }
+    .container { max-width: 880px; margin: 0 auto; }
+    nav.toc {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px 28px; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+    }
+    nav.toc h2 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+    nav.toc li { margin-bottom: 6px; break-inside: avoid; }
+    nav.toc a { color: var(--blue); text-decoration: none; font-size: 14px; }
+    nav.toc a:hover { text-decoration: underline; }
+
+    .alert {
+      background: rgba(242,58,92,0.06);
+      border: 1px solid rgba(242,58,92,0.25);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+    }
+    .alert h2 { color: var(--red); font-size: 15px; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .alert h2::before { content: '⚠'; font-size: 18px; }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+      scroll-margin-top: 20px;
+    }
+    h2 {
+      font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    h2::before { content: ''; display: block; width: 3px; height: 16px; background: var(--blue); border-radius: 2px; }
+    h3 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 18px 0 8px; }
+    p { color: #555977; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol.steps { margin-bottom: 12px; padding-left: 0; list-style: none; }
+    ul li {
+      padding: 6px 0 6px 20px; color: #555977; position: relative;
+    }
+    ul li::before { content: '›'; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+    ol.steps { counter-reset: step; }
+    ol.steps li {
+      padding: 6px 0 6px 28px; color: #555977; position: relative; counter-increment: step;
+    }
+    ol.steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 6px;
+      width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    td strong { color: var(--ink); }
+    tr.checklist td:first-child { width: 24px; }
+    code, .code {
+      background: #F1F2F8; border: 1px solid var(--border); border-radius: 6px;
+      padding: 1px 6px; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; color: var(--red);
+    }
+    pre {
+      background: #1F2236; color: #E0E4F0; border-radius: 12px; padding: 18px 20px;
+      overflow-x: auto; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; line-height: 1.6;
+      margin: 12px 0;
+    }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      padding: 2px 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle;
+    }
+    .tag-block { background: rgba(242,58,92,0.12); color: var(--red); border: 1px solid rgba(242,58,92,0.3); }
+    .tag-ok { background: rgba(26,171,103,0.12); color: var(--green); border: 1px solid rgba(26,171,103,0.3); }
+    .tag-warn { background: rgba(255,138,61,0.12); color: var(--orange); border: 1px solid rgba(255,138,61,0.3); }
+    .contact-box {
+      background: rgba(102,124,255,0.05); border: 1px solid rgba(102,124,255,0.18);
+      border-radius: 10px; padding: 16px 20px;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+  
+    pre.copy { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .cnt { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
+    .field-h { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 16px 0 4px; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="arrow"></div>
+    <h1>App Store Listing — All Languages</h1>
+    <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.8</p>
+    <span class="updated">App name, subtitle, keywords and description for each language</span>
+  </header>
+
+  <div class="container">
+
+    <nav class="toc">
+      <h2>Languages</h2>
+      <ol>
+        <li><a href="#enus">English (U.S.) — primary</a></li>
+        <li><a href="#dede">German — Deutsch</a></li>
+        <li><a href="#frfr">French — français</a></li>
+        <li><a href="#it">Italian — italiano</a></li>
+        <li><a href="#ja">Japanese — 日本語</a></li>
+        <li><a href="#ko">Korean — 한국어</a></li>
+        <li><a href="#ptbr">Portuguese (Brazil) — português</a></li>
+        <li><a href="#ru">Russian — русский</a></li>
+        <li><a href="#esesesmx">Spanish — español</a></li>
+        <li><a href="#tr">Turkish — Türkçe</a></li>
+      </ol>
+    </nav>
+
+    <div class="alert" style="border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+      <h2 style="color:var(--orange);">Before you paste</h2>
+      <p><strong>The translations are not native-reviewed.</strong> They were written by an AI using the app's own in-game wording. Have a native reader check at least Japanese, Korean and Turkish before submitting. The non-English <strong>keyword lists are suggestions</strong> — real words in each language, but not tested for ranking.</p>
+      <p><strong>Where each field goes:</strong> <em>App name</em> and <em>Subtitle</em> are under <strong>App Information</strong>; <em>Keywords</em> and <em>Description</em> are on the <strong>version page</strong>, per localization. Each new language also needs a Support URL (reuse the English one). What's New, Promotional Text and App Review Notes are in <code>docs/Arrows-AppStore-Update-v1.0.8-2026-10-01.html</code>.</p>
+      <p><strong>Keep the app name identical</strong> in every language. English is the primary locale and its text is the live listing, unchanged.</p>
+    </div>
+
+    <section id="enus">
+      <h2>English (U.S.) — primary <span class="cnt">en-US</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">25/30</span></p>
+      <pre class="copy">Grid Logic &amp; Mind Puzzles</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">93/100</span></p>
+      <pre class="copy">maze,relax,mind,offline,streak,levels,casual,think,tap,classic,calm,zen,slide,board,clear,fun</pre>
+      <p class="field-h">Description <span class="tag tag-ok">1038/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle is a calm, satisfying logic puzzle: tap an arrow,
+watch it slide free if the path is clear, or turn red if it's blocked.
+Clear the whole board to win — no timers, no pressure, just you and
+the puzzle.
+
+HOW TO PLAY
+• Tap any arrow to fire it off the board
+• A clear path means it flies free
+• A blocked path costs you a life — you have 3
+• Clear every arrow to win the level
+
+FEATURES
+• Hundreds of procedurally generated levels that scale in difficulty
+• Four difficulty tiers: Normal, Hard, Super Hard, and Nightmare
+• Daily Challenges with their own streak and trophy calendar
+• Track your longest streak, best win streak, and most wins in a day
+• Unlock Level Legend, Perfect Play, and Unstoppable badges
+• Specially shaped boards (circle, heart, star, and more) at milestone levels
+• Free hints, with extra hints available any time
+• Full dark mode support
+• Available in 10 languages
+
+Arrows – Escape Puzzle is free to play, with optional ads and a
+one-time Remove Ads purchase for an uninterrupted experience.</pre>
+    </section>
+
+    <section id="dede">
+      <h2>German — Deutsch <span class="cnt">de-DE</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">25/30</span></p>
+      <pre class="copy">Raster-Logik &amp; Denkrätsel</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">98/100</span></p>
+      <pre class="copy">Labyrinth,Entspannung,Denkspiel,offline,Serie,Level,Casual,Knobeln,Tippen,Klassiker,Ruhe,Zen,Brett</pre>
+      <p class="field-h">Description <span class="tag tag-ok">1257/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle ist ein ruhiges, befriedigendes Logikrätsel: Tippe auf einen Pfeil und sieh zu, wie er davongleitet, wenn der Weg frei ist – oder rot wird, wenn er blockiert ist. Räume das ganze Spielfeld ab, um zu gewinnen – ohne Zeitlimit, ohne Druck, nur du und das Rätsel.
+
+SO WIRD GESPIELT
+• Tippe auf einen Pfeil, um ihn vom Spielfeld zu schießen
+• Ist der Weg frei, fliegt er davon
+• Ein blockierter Weg kostet ein Leben – du hast 3
+• Entferne alle Pfeile, um das Level zu gewinnen
+
+FUNKTIONEN
+• Hunderte prozedural generierte Level mit steigendem Schwierigkeitsgrad
+• Vier Schwierigkeitsstufen: Normal, Schwer, Sehr schwer und Albtraum
+• Tägliche Herausforderungen mit eigener Serie und Trophäenkalender
+• Verfolge deine längste Serie, deine beste Siegesserie und die meisten Siege an einem Tag
+• Schalte die Abzeichen Level-Legende, Perfektes Spiel und Unaufhaltsam frei
+• Spezielle Spielfeldformen (Kreis, Herz, Stern und mehr) bei Meilenstein-Leveln
+• Kostenlose Hinweise, weitere Hinweise jederzeit verfügbar
+• Vollständige Unterstützung des dunklen Modus
+• In 10 Sprachen verfügbar
+
+Arrows – Escape Puzzle ist kostenlos spielbar, mit optionaler Werbung und einem einmaligen Kauf von „Werbung entfernen“ für ein ungestörtes Spielerlebnis.</pre>
+    </section>
+
+    <section id="frfr">
+      <h2>French — français <span class="cnt">fr-FR</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">30/30</span></p>
+      <pre class="copy">Logique de grille et réflexion</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">91/100</span></p>
+      <pre class="copy">labyrinthe,détente,réflexion,offline,série,niveaux,casual,calme,zen,toucher,glisser,plateau</pre>
+      <p class="field-h">Description <span class="tag tag-ok">1307/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle est un puzzle de logique apaisant et satisfaisant : touche une flèche et regarde-la glisser librement si le chemin est dégagé, ou devenir rouge s'il est bloqué. Élimine toutes les flèches du plateau pour gagner — sans chrono, sans pression, juste toi et le puzzle.
+
+COMMENT JOUER
+• Touche une flèche pour la lancer hors du plateau
+• Si le chemin est dégagé, elle s'envole
+• Un chemin bloqué te coûte une vie — tu en as 3
+• Élimine toutes les flèches pour gagner le niveau
+
+FONCTIONNALITÉS
+• Des centaines de niveaux générés de façon procédurale, de plus en plus difficiles
+• Quatre niveaux de difficulté : Normal, Difficile, Très difficile et Cauchemar
+• Des défis quotidiens avec leur propre série et leur calendrier de trophées
+• Suis ta plus longue série, ta meilleure série de victoires et ton record de victoires en un jour
+• Débloque les badges Légende de niveau, Jeu parfait et Inarrêtable
+• Des plateaux aux formes spéciales (cercle, cœur, étoile et plus encore) aux niveaux clés
+• Des indices gratuits, avec des indices supplémentaires disponibles à tout moment
+• Prise en charge complète du mode sombre
+• Disponible en 10 langues
+
+Arrows – Escape Puzzle est gratuit, avec des pubs facultatives et un achat unique « Supprimer les pubs » pour une expérience sans interruption.</pre>
+    </section>
+
+    <section id="it">
+      <h2>Italian — italiano <span class="cnt">it</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">28/30</span></p>
+      <pre class="copy">Logica a griglia e rompicapi</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">99/100</span></p>
+      <pre class="copy">labirinto,relax,mente,offline,serie,livelli,casual,riflettere,tocca,classico,calma,zen,scorri,sfida</pre>
+      <p class="field-h">Description <span class="tag tag-ok">1310/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle è un rompicapo di logica rilassante e appagante: tocca una freccia e guardala scivolare via se il percorso è libero, oppure diventare rossa se è bloccato. Elimina tutte le frecce dal tabellone per vincere — senza timer, senza pressione, solo tu e il puzzle.
+
+COME SI GIOCA
+• Tocca una freccia per lanciarla fuori dal tabellone
+• Se il percorso è libero, la freccia vola via
+• Un percorso bloccato ti costa una vita — ne hai 3
+• Elimina tutte le frecce per vincere il livello
+
+CARATTERISTICHE
+• Centinaia di livelli generati proceduralmente con difficoltà crescente
+• Quattro livelli di difficoltà: Normale, Difficile, Super difficile e Incubo
+• Sfide giornaliere con una propria serie e un calendario dei trofei
+• Tieni traccia della tua serie più lunga, della migliore serie di vittorie e del maggior numero di vittorie in un giorno
+• Sblocca i badge Leggenda di livello, Gioco perfetto e Inarrestabile
+• Tabelloni dalle forme speciali (cerchio, cuore, stella e altro) ai livelli traguardo
+• Suggerimenti gratuiti, con altri suggerimenti disponibili in qualsiasi momento
+• Supporto completo per la modalità scura
+• Disponibile in 10 lingue
+
+Arrows – Escape Puzzle è gratuito, con pubblicità facoltativa e un acquisto una tantum "Rimuovi pubblicità" per un'esperienza senza interruzioni.</pre>
+    </section>
+
+    <section id="ja">
+      <h2>Japanese — 日本語 <span class="cnt">ja</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">15/30</span></p>
+      <pre class="copy">グリッドロジック＆脳トレパズル</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">68/100</span></p>
+      <pre class="copy">迷路,リラックス,脳トレ,オフライン,連続記録,レベル,カジュアル,考える,タップ,クラシック,癒し,禅,スライド,盤面,暇つぶし,無料</pre>
+      <p class="field-h">Description <span class="tag tag-ok">579/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle は、心地よく遊べる落ち着いたロジックパズルです。矢印をタップして、道が空いていればスーッと飛び出し、ふさがっていれば赤くなります。ボード上のすべての矢印をクリアすれば勝利。タイマーもプレッシャーもなく、あなたとパズルだけの時間を楽しめます。
+
+遊び方
+• 矢印をタップすると、ボードの外へ飛び出します
+• 道が空いていれば、矢印は飛んでいきます
+• ふさがっているとライフが1つ減ります（ライフは3つ）
+• すべての矢印をクリアしてレベルをクリアしよう
+
+特徴
+• 難易度が少しずつ上がる、自動生成の数百レベル
+• 4つの難易度：ノーマル、ハード、スーパーハード、ナイトメア
+• 専用の連続記録とトロフィーカレンダー付きのデイリーチャレンジ
+• 最長連続記録、最高連勝記録、1日の最多勝利数を記録
+• レベルレジェンド、パーフェクトプレイ、アンストッパブルのバッジを獲得
+• マイルストーンレベルに登場する特別な形のボード（円、ハート、星など）
+• 無料のヒントに加え、いつでも追加ヒントを利用可能
+• ダークモードに完全対応
+• 10言語に対応
+
+Arrows – Escape Puzzle は無料でプレイできます。広告は任意で表示され、1回限りの「広告を削除」購入で、中断のない体験をお楽しみいただけます。</pre>
+    </section>
+
+    <section id="ko">
+      <h2>Korean — 한국어 <span class="cnt">ko</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">14/30</span></p>
+      <pre class="copy">그리드 로직 &amp; 두뇌 퍼즐</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">55/100</span></p>
+      <pre class="copy">미로,힐링,두뇌,오프라인,연속기록,레벨,캐주얼,생각,탭,클래식,차분,젠,슬라이드,보드,심심풀이,무료</pre>
+      <p class="field-h">Description <span class="tag tag-ok">615/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle은 차분하고 만족스러운 논리 퍼즐입니다. 화살표를 탭하면 길이 비어 있을 때는 미끄러지듯 날아가고, 막혀 있으면 빨갛게 변합니다. 보드의 모든 화살표를 제거하면 승리합니다. 타이머도, 부담도 없이 오직 당신과 퍼즐만 있습니다.
+
+플레이 방법
+• 화살표를 탭해 보드 밖으로 날려 보내세요
+• 길이 비어 있으면 화살표가 날아갑니다
+• 길이 막혀 있으면 생명이 하나 줄어듭니다 — 생명은 3개입니다
+• 모든 화살표를 제거하면 레벨을 클리어합니다
+
+주요 기능
+• 점점 어려워지는 자동 생성 레벨 수백 개
+• 4가지 난이도: 보통, 어려움, 매우 어려움, 나이트메어
+• 자체 연속 기록과 트로피 캘린더가 있는 일일 챌린지
+• 최장 연속 기록, 최고 연승 기록, 하루 최다 승리 기록 확인
+• 레벨 레전드, 퍼펙트 플레이, 언스토퍼블 배지 획득
+• 마일스톤 레벨마다 등장하는 특별한 모양의 보드(원, 하트, 별 등)
+• 무료 힌트 제공, 추가 힌트는 언제든 이용 가능
+• 다크 모드 완벽 지원
+• 10개 언어 지원
+
+Arrows – Escape Puzzle은 무료로 플레이할 수 있으며, 선택형 광고와 한 번만 결제하는 '광고 제거' 구매로 방해 없이 즐길 수 있습니다.</pre>
+    </section>
+
+    <section id="ptbr">
+      <h2>Portuguese (Brazil) — português <span class="cnt">pt-BR</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">26/30</span></p>
+      <pre class="copy">Lógica de grade e desafios</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">96/100</span></p>
+      <pre class="copy">labirinto,relaxar,mente,offline,sequência,níveis,casual,pensar,toque,clássico,calma,zen,deslizar</pre>
+      <p class="field-h">Description <span class="tag tag-ok">1247/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle é um quebra-cabeça de lógica calmo e satisfatório: toque em uma seta e veja-a deslizar livremente se o caminho estiver livre, ou ficar vermelha se estiver bloqueado. Elimine todas as setas do tabuleiro para vencer — sem cronômetro, sem pressão, só você e o quebra-cabeça.
+
+COMO JOGAR
+• Toque em uma seta para lançá-la para fora do tabuleiro
+• Se o caminho estiver livre, ela voa
+• Um caminho bloqueado custa uma vida — você tem 3
+• Elimine todas as setas para vencer o nível
+
+RECURSOS
+• Centenas de níveis gerados proceduralmente, com dificuldade crescente
+• Quatro níveis de dificuldade: Normal, Difícil, Super difícil e Pesadelo
+• Desafios diários com sequência e calendário de troféus próprios
+• Acompanhe sua maior sequência, sua melhor sequência de vitórias e o recorde de vitórias em um dia
+• Desbloqueie os selos Lenda de Nível, Jogo Perfeito e Imparável
+• Tabuleiros com formatos especiais (círculo, coração, estrela e mais) nos níveis marcantes
+• Dicas grátis, com mais dicas disponíveis a qualquer momento
+• Suporte completo ao modo escuro
+• Disponível em 10 idiomas
+
+Arrows – Escape Puzzle é grátis para jogar, com anúncios opcionais e uma compra única de "Remover anúncios" para uma experiência sem interrupções.</pre>
+    </section>
+
+    <section id="ru">
+      <h2>Russian — русский <span class="cnt">ru</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">26/30</span></p>
+      <pre class="copy">Логика сетки и головоломки</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">89/100</span></p>
+      <pre class="copy">лабиринт,релакс,логика,офлайн,серия,уровни,казуальная,думать,классика,дзен,поле,бесплатно</pre>
+      <p class="field-h">Description <span class="tag tag-ok">1138/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle — спокойная и увлекательная логическая головоломка: нажми на стрелку и смотри, как она вылетает, если путь свободен, или краснеет, если он заблокирован. Убери все стрелки с поля, чтобы победить — без таймеров и спешки, только ты и головоломка.
+
+КАК ИГРАТЬ
+• Нажми на стрелку, чтобы отправить её за пределы поля
+• Если путь свободен, стрелка улетает
+• Заблокированный путь стоит одной жизни — их у тебя 3
+• Убери все стрелки, чтобы пройти уровень
+
+ОСОБЕННОСТИ
+• Сотни процедурно генерируемых уровней с нарастающей сложностью
+• Четыре уровня сложности: Обычный, Сложный, Очень сложный и Кошмар
+• Ежедневные испытания с отдельной серией и календарём трофеев
+• Следи за самой длинной серией, лучшей серией побед и рекордом побед за день
+• Открывай значки «Легенда уровней», «Идеальная игра» и «Неудержимый»
+• Поля особой формы (круг, сердце, звезда и другие) на знаковых уровнях
+• Бесплатные подсказки, а дополнительные доступны в любой момент
+• Полная поддержка тёмной темы
+• Доступна на 10 языках
+
+Arrows – Escape Puzzle бесплатна, с необязательной рекламой и разовой покупкой «Убрать рекламу» для игры без перерывов.</pre>
+    </section>
+
+    <section id="esesesmx">
+      <h2>Spanish — español <span class="cnt">es-ES / es-MX</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">28/30</span></p>
+      <pre class="copy">Lógica de cuadrícula y mente</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">93/100</span></p>
+      <pre class="copy">laberinto,relajante,mente,offline,racha,niveles,casual,pensar,toca,clásico,calma,zen,deslizar</pre>
+      <p class="field-h">Description <span class="tag tag-ok">1267/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle es un rompecabezas de lógica tranquilo y satisfactorio: toca una flecha y mira cómo se desliza libremente si el camino está despejado, o se pone roja si está bloqueado. Elimina todas las flechas del tablero para ganar: sin temporizadores, sin presión, solo tú y el rompecabezas.
+
+CÓMO JUGAR
+• Toca una flecha para lanzarla fuera del tablero
+• Si el camino está despejado, la flecha sale volando
+• Un camino bloqueado te cuesta una vida: tienes 3
+• Elimina todas las flechas para ganar el nivel
+
+CARACTERÍSTICAS
+• Cientos de niveles generados proceduralmente con dificultad creciente
+• Cuatro niveles de dificultad: Normal, Difícil, Muy difícil y Pesadilla
+• Desafíos diarios con su propia racha y calendario de trofeos
+• Sigue tu racha más larga, tu mejor racha de victorias y tu récord de victorias en un día
+• Desbloquea las insignias Leyenda de nivel, Juego perfecto e Imparable
+• Tableros con formas especiales (círculo, corazón, estrella y más) en los niveles clave
+• Pistas gratis, con más pistas disponibles en cualquier momento
+• Compatibilidad total con el modo oscuro
+• Disponible en 10 idiomas
+
+Arrows – Escape Puzzle es gratis, con anuncios opcionales y una compra única de «Quitar anuncios» para una experiencia sin interrupciones.</pre>
+    </section>
+
+    <section id="tr">
+      <h2>Turkish — Türkçe <span class="cnt">tr</span></h2>
+      <p class="field-h">App name <span class="tag tag-ok">22/30</span></p>
+      <pre class="copy">Arrows – Escape Puzzle</pre>
+      <p class="field-h">Subtitle <span class="tag tag-ok">28/30</span></p>
+      <pre class="copy">Izgara Mantığı ve Zeka Oyunu</pre>
+      <p class="field-h">Keywords <span class="tag tag-ok">99/100</span></p>
+      <pre class="copy">labirent,rahatlatıcı,zeka,çevrimdışı,seri,seviye,casual,düşünme,dokun,klasik,sakin,zen,kaydır,tahta</pre>
+      <p class="field-h">Description <span class="tag tag-ok">1116/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle sakin ve tatmin edici bir mantık bulmacasıdır: bir oka dokun, yol açıksa özgürce kaydığını, kapalıysa kırmızıya döndüğünü izle. Kazanmak için tahtadaki tüm okları temizle — zamanlayıcı yok, baskı yok, sadece sen ve bulmaca.
+
+NASIL OYNANIR
+• Bir oka dokunarak onu tahtadan dışarı fırlat
+• Yol açıksa ok uçup gider
+• Kapalı bir yol sana bir can kaybettirir — 3 canın var
+• Seviyeyi kazanmak için tüm okları temizle
+
+ÖZELLİKLER
+• Zorluğu giderek artan, prosedürel olarak üretilmiş yüzlerce seviye
+• Dört zorluk düzeyi: Normal, Zor, Çok zor ve Kabus
+• Kendi serisi ve kupa takvimi olan Günlük Meydan Okumalar
+• En uzun serini, en iyi galibiyet serini ve bir günde en çok galibiyetini takip et
+• Seviye Efsanesi, Mükemmel Oyun ve Durdurulamaz rozetlerini aç
+• Kilometre taşı seviyelerinde özel şekilli tahtalar (daire, kalp, yıldız ve daha fazlası)
+• Ücretsiz ipuçları, ek ipuçları da her zaman mevcut
+• Tam karanlık mod desteği
+• 10 dilde mevcut
+
+Arrows – Escape Puzzle oynaması ücretsizdir; isteğe bağlı reklamlar ve kesintisiz bir deneyim için tek seferlik "Reklamları kaldır" satın alımı sunar.</pre>
+    </section>
+
+  </div>
+
+  <footer>
+    &copy; 2026 Shayona. Internal submission guide &mdash; not for distribution. Verify every field in App Store Connect before submitting.
+  </footer>
+</body>
+</html>

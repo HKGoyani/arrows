@@ -1,117 +1,579 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arrows – Escape Puzzle — Version Update Guide</title>
-<style>
-  /* Reuse the exact same design system/tokens as template.html so both modes look
-     like one product. Only the section set differs. */
-  :root{
-    --bg:#f5f5f7;--card:#ffffff;--text:#1d1d1f;--muted:#6e6e73;--border:#e3e3e6;
-    --accent:#0071e3;--accent-light:#eaf3fe;--green:#1eae59;--green-light:#e7f8ee;
-    --amber:#c77700;--amber-light:#fff4e0;--red:#d70015;--red-light:#ffe9e8;
-    --purple:#6e4ff6;--purple-light:#efeaff;--radius:14px;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;}
-  a{color:var(--accent);text-decoration:none;}
-  .hero{background:linear-gradient(135deg,#1eae59 0%,#0071e3 55%,#6e4ff6 100%);color:#fff;padding:36px 32px 28px;}
-  .hero-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
-  .app-icon{width:76px;height:76px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;border:1px solid rgba(255,255,255,.35);flex-shrink:0;}
-  .hero-text{flex:1;min-width:220px;}
-  .hero-text h1{margin:0 0 4px;font-size:26px;font-weight:700;letter-spacing:-.02em;}
-  .hero-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;opacity:.92;}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);font-weight:600;}
-  .btn{background:rgba(255,255,255,.95);color:var(--accent);border:none;padding:10px 18px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;}
-  .layout{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:22px;padding:28px 32px 80px;}
-  section.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 26px;scroll-margin-top:20px;}
-  section.card h2{margin:0 0 4px;font-size:19px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em;}
-  section.card .icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);color:var(--accent);font-size:15px;flex-shrink:0;}
-  section.card p.sub{margin:2px 0 16px;color:var(--muted);font-size:13.5px;}
-  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;}
-  .badge.required{background:var(--red-light);color:var(--red);}
-  .badge.recommended{background:var(--accent-light);color:var(--accent);}
-  .badge.optional{background:#eee;color:var(--muted);}
-  .badge.done{background:var(--green-light);color:var(--green);}
-  .badge.attention{background:var(--amber-light);color:var(--amber);}
-  .field{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-bottom:1px solid var(--border);}
-  .field:last-child{border-bottom:none;}
-  .field-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);}
-  .field-value{font-size:14.5px;white-space:pre-line;}
-  .charcount{font-size:11.5px;color:var(--muted);}
-  ul.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
-  ul.checklist li{display:flex;align-items:flex-start;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);font-size:14px;}
-  ul.checklist li:last-child{border-bottom:none;}
-  .chk{width:19px;height:19px;border-radius:6px;border:2px solid var(--green);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--green);font-size:12px;font-weight:800;}
-  .chk.todo{background:#fff;border-color:var(--border);color:transparent;}
-  .callout{display:flex;gap:10px;padding:12px 14px;border-radius:10px;font-size:13px;margin-top:14px;}
-  .callout.info{background:var(--accent-light);color:#0b4a8a;}
-  .callout.warn{background:var(--amber-light);color:#7a4a00;}
-  footer{max-width:900px;margin:0 auto;padding:0 32px 40px;color:var(--muted);font-size:12px;text-align:center;}
-  @media print{.hero-actions{display:none;}section.card{break-inside:avoid;border:1px solid #ccc;}.hero{background:#1eae59 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-  code{background:#f0f0f3;padding:1px 5px;border-radius:5px;font-size:12.5px;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Store Submission Guide — Arrows – Escape Puzzle v1.0.8</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F9FD;
+      --card: #FFFFFF;
+      --blue: #667CFF;
+      --red: #F23A5C;
+      --ink: #2B2E4F;
+      --muted: #8C90A6;
+      --border: #E7E8F3;
+      --green: #1AAB67;
+      --orange: #FF8A3D;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 0 16px 60px;
+    }
+    header {
+      text-align: center;
+      padding: 52px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    header .arrow {
+      width: 0; height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid var(--blue);
+      margin: 0 auto 14px;
+    }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; color: var(--ink); }
+    .subtitle { color: var(--muted); font-size: 13px; letter-spacing: 1px; margin-top: 8px; }
+    .updated {
+      display: inline-block; margin-top: 12px; padding: 4px 12px;
+      border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--muted);
+    }
+    .container { max-width: 880px; margin: 0 auto; }
+    nav.toc {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px 28px; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+    }
+    nav.toc h2 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+    nav.toc li { margin-bottom: 6px; break-inside: avoid; }
+    nav.toc a { color: var(--blue); text-decoration: none; font-size: 14px; }
+    nav.toc a:hover { text-decoration: underline; }
+
+    .alert {
+      background: rgba(242,58,92,0.06);
+      border: 1px solid rgba(242,58,92,0.25);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+    }
+    .alert h2 { color: var(--red); font-size: 15px; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .alert h2::before { content: '⚠'; font-size: 18px; }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+      scroll-margin-top: 20px;
+    }
+    h2 {
+      font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    h2::before { content: ''; display: block; width: 3px; height: 16px; background: var(--blue); border-radius: 2px; }
+    h3 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 18px 0 8px; }
+    p { color: #555977; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol.steps { margin-bottom: 12px; padding-left: 0; list-style: none; }
+    ul li {
+      padding: 6px 0 6px 20px; color: #555977; position: relative;
+    }
+    ul li::before { content: '›'; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+    ol.steps { counter-reset: step; }
+    ol.steps li {
+      padding: 6px 0 6px 28px; color: #555977; position: relative; counter-increment: step;
+    }
+    ol.steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 6px;
+      width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    td strong { color: var(--ink); }
+    tr.checklist td:first-child { width: 24px; }
+    code, .code {
+      background: #F1F2F8; border: 1px solid var(--border); border-radius: 6px;
+      padding: 1px 6px; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; color: var(--red);
+    }
+    pre {
+      background: #1F2236; color: #E0E4F0; border-radius: 12px; padding: 18px 20px;
+      overflow-x: auto; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; line-height: 1.6;
+      margin: 12px 0;
+    }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      padding: 2px 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle;
+    }
+    .tag-block { background: rgba(242,58,92,0.12); color: var(--red); border: 1px solid rgba(242,58,92,0.3); }
+    .tag-ok { background: rgba(26,171,103,0.12); color: var(--green); border: 1px solid rgba(26,171,103,0.3); }
+    .tag-warn { background: rgba(255,138,61,0.12); color: var(--orange); border: 1px solid rgba(255,138,61,0.3); }
+    .contact-box {
+      background: rgba(102,124,255,0.05); border: 1px solid rgba(102,124,255,0.18);
+      border-radius: 10px; padding: 16px 20px;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+  
+    pre.copy { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .cnt { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
 </style>
 </head>
 <body>
-<div class="hero">
-  <div class="hero-inner">
-    <div class="app-icon">AR</div>
-    <div class="hero-text">
-      <h1>Arrows – Escape Puzzle — Version Update Guide</h1>
-      <div class="hero-meta">
-        <span class="pill">🔄 Version Update</span>
-        <span class="pill">v1.0.8 (Build 12) ← from v1.0.7 (Build 11)</span>
-        <span class="pill">Generated Oct 1, 2026 · commit 4774285</span>
-      </div>
+  <header>
+    <div class="arrow"></div>
+    <h1>App Store Submission Guide</h1>
+    <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.8</p>
+    <span class="updated">Last reviewed against codebase: October 1, 2026 (commit 4774285)</span>
+  </header>
+
+  <div class="container">
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#critical">What's Changed Since v1.0.7</a></li>
+        <li><a href="#info">1. App Information</a></li>
+        <li><a href="#whatsnew">2. What's New (all languages)</a></li>
+        <li><a href="#promo">3. Promotional Text</a></li>
+        <li><a href="#keywords">4. Keywords</a></li>
+        <li><a href="#description">5. Description, Subtitle &amp; New Languages</a></li>
+        <li><a href="#review">6. App Review Notes</a></li>
+        <li><a href="#privacy">7. Privacy &amp; Data Collection</a></li>
+        <li><a href="#nochange">8. Age Rating, IAP &amp; Screenshots</a></li>
+        <li><a href="#notios">9. Android-Only Changes</a></li>
+        <li><a href="#checklist">10. Build &amp; Archive Checklist</a></li>
+        <li><a href="#links">11. Reference Links</a></li>
+      </ol>
+    </nav>
+
+    <div class="alert" style="border-color: rgba(242,58,92,0.35);">
+      <h2>Read this first — no iOS build of 1.0.8 has been verified</h2>
+      <p>The ad changes in this release were developed and tested on <strong>Android</strong> (debug and release, on real devices). They are Dart-level, so they apply to iOS too, but <strong>none has run on an iPhone</strong>. This is also the <strong>first iOS release on Flutter 3.47.5</strong> (1.0.7 shipped on 3.41.6). Treat the device test in Section 10 as mandatory.</p>
+      <p>The "no app-open ad after Control Center" claim in What's New is <strong>reasoned from how Flutter reports <code>inactive</code> on iOS</strong>, and reproduced only for the Android notification shade. Soften or drop that bullet if the iPhone test doesn't confirm it.</p>
     </div>
-    <div class="hero-actions"><button class="btn" onclick="window.print()">Print / Save PDF</button></div>
-  </div>
-</div>
 
-<div class="layout">
+    <div class="alert" id="critical" style="border-color: rgba(26,171,103,0.3); background: rgba(26,171,103,0.05);">
+      <h2 style="color: var(--green);">What's changed since v1.0.7 (build 11)</h2>
+      <p>Version 1.0.7 &rarr; <strong>1.0.8</strong>, build 11 &rarr; <strong>12</strong>. Two code commits (ad behaviour, then the toolchain). Almost nothing a player can see; mostly ad-delivery tuning.</p>
 
-  <section class="card" id="read-first">
-    <h2><span class="icon">⚠️</span> Read this first <span class="badge attention">Before you archive</span></h2>
-    <p class="sub">What is and is not verified for the iOS build of 1.0.8.</p>
-    <ul class="checklist">
-      <li><span class="chk">✓</span><span><b>Code is pushed:</b> everything in this release is on <code>master</code> at <code>4774285</code>, and the Android build of the same code was device-tested (debug and release).</span></li>
-      <li><span class="chk todo"></span><span><b>No iOS build of 1.0.8 has been verified.</b> All testing was on Android. The ad changes are Dart-level and apply to iOS, but none has run on an iPhone. Do a device check (below) before submitting.</span></li>
-      <li><span class="chk todo"></span><span><b>Commit <code>ios/Podfile.lock</code> first.</b> It currently shows as modified (the <code>Flutter</code> pod checksum changed) from an iOS build done on the new Flutter 3.47.5 engine. Archive from a committed state so the build is reproducible.</span></li>
-      <li><span class="chk todo"></span><span><b>First iOS release on Flutter 3.47.5.</b> 1.0.7 shipped on 3.41.6, so this is a new engine for iOS too. Run <code>flutter build ipa</code> and confirm it archives cleanly.</span></li>
-      <li><span class="chk todo"></span><span><b>Device test:</b> pull down Control Center and Notification Center on an iPhone - no app-open ad should appear after dismissing them. Then background the app, wait, and return - an app-open ad may show (max once per 3 minutes). Inferred from Android behaviour, not reproduced on iOS.</span></li>
-    </ul>
-    <div class="callout warn"><span>⚠ The "no ad after Control Center" behaviour in What's New is reasoned from how Flutter reports <code>inactive</code> on iOS, and was reproduced only for the Android notification shade. Soften or drop that bullet if the device test doesn't confirm it.</span></div>
-  </section>
+      <h3 style="margin-top:20px;">Player-visible</h3>
+      <table>
+        <tr><th>Change</th><th>Status</th><th>Detail</th></tr>
+        <tr>
+          <td><strong>App-open ad only after really leaving the app</strong></td>
+          <td><span class="tag tag-ok">FIXED</span></td>
+          <td>The resume ad treated Flutter's <code>inactive</code> state as backgrounding. On Android that fires for the notification shade, the Play billing sheet and the review card; on iOS the equivalent is Control Center, Notification Center and system prompts. An ad could be fetched there and shown on the way back. Now it needs a real <code>hidden</code>/<code>paused</code> first. <span class="tag tag-warn">iOS BY ANALOGY</span> Reproduced on Android only</td>
+        </tr>
+      </table>
 
-  <section class="card" id="whats-new">
-    <h2><span class="icon">📝</span> What's New / Release Notes <span class="badge required">Required</span></h2>
-    <p class="sub">Shown to users on the update screen. 269 / 4000 chars. Honest and small: this release is mostly ad-delivery tuning.</p>
-    <div class="field-value">Smoother, calmer ads.
+      <h3 style="margin-top:20px;">Ad pipeline (not player-visible)</h3>
+      <table>
+        <tr><th>Change</th><th>Status</th><th>Detail</th></tr>
+        <tr><td><strong>Win and lives-refill ads: one request per level attempt</strong></td><td><span class="tag tag-ok">DONE</span></td><td>Both triggers fire on every board change; after a no-fill every tap re-requested. Verified on Android with forced no-fill. iOS fills at ~99.9%, so this rarely triggers there</td></tr>
+        <tr><td><strong>Ad retries stop when the level attempt ends</strong></td><td><span class="tag tag-ok">DONE</span></td><td>Retries used to fire on Home or in the next level</td></tr>
+        <tr><td><strong>Restart ad requested only when it can show</strong></td><td><span class="tag tag-ok">DONE</span></td><td>Skipped for restarts under 3 arrows (no confirm dialog) and inside the 45s inter-ad gap</td></tr>
+        <tr><td><strong>Home banner kept instead of discarded</strong></td><td><span class="tag tag-ok">DONE</span></td><td>A banner that finished loading after a level covered Home is now held and shown on return (15 min, Remove Ads and consent guards). iOS Home banner show rate was 44%</td></tr>
+        <tr><td><strong>Banner analytics on real impression</strong></td><td><span class="tag tag-ok">DONE</span></td><td><code>ad_shown</code> for banners logs on impression, not on load</td></tr>
+        <tr><td><strong>New <code>ad_discarded</code> event</strong></td><td><span class="tag tag-ok">NEW</span></td><td>Firebase event with ad unit name and reason, to explain loaded-but-never-shown ads. No personal data — see Section 7</td></tr>
+      </table>
+    </div>
+
+    <section id="info">
+      <h2>1. App Information</h2>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>App Name</td><td><strong>Arrows – Escape Puzzle</strong> — unchanged</td></tr>
+        <tr><td>Subtitle (30 char max)</td><td>Grid Logic &amp; Mind Puzzles <span class="tag tag-ok">25/30</span> — unchanged</td></tr>
+        <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>Primary Language</td><td>English (U.S.)</td></tr>
+        <tr><td>Apple ID (App Store Connect)</td><td><strong>6785821757</strong></td></tr>
+        <tr><td>Version</td><td><strong>1.0.8</strong> <span class="tag tag-ok">bumped from 1.0.7</span></td></tr>
+        <tr><td>Build number</td><td><strong>12</strong> <span class="tag tag-ok">bumped from 11</span> — from <code>pubspec.yaml</code> <code>version: 1.0.8+12</code></td></tr>
+        <tr><td>Category (Primary)</td><td>Games &rarr; Puzzle</td></tr>
+        <tr><td>Age Rating</td><td>4+ (unchanged)</td></tr>
+        <tr><td>Device family / minimum iOS</td><td>iPhone only · iOS 15.0 — unchanged</td></tr>
+        <tr><td>Previous version status</td><td>v1.0.7 (build 11) — <strong>LIVE</strong></td></tr>
+      </table>
+      <p><span class="tag tag-warn">NOTE</span> Build 12 is shared with the Android release (also 1.0.8+12, currently in Play internal testing). It is above the last iOS build (11), so it is a valid increment.</p>
+    </section>
+
+    <section id="whatsnew">
+      <h2>2. What's New (all languages)</h2>
+      <p><span class="tag tag-block">REQUIRED</span> Shown on the update screen. App Store Connect expects it for <strong>every localization on the version</strong> — fill all the locales you have, or submission is blocked. English (U.S.) is the primary locale; the other nine are the app's own in-game languages. Paste each block into the matching localization.</p>
+      <div class="alert" style="margin:16px 0; border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+        <h2 style="color:var(--orange);">Translations are not native-reviewed</h2>
+        <p>They follow the wording and informal tone the app already uses in-game (du / tu / ты …) but were written by an AI, not a native speaker. Have a native reader check at least Japanese, Korean and Turkish before submitting. Only paste into locales that <strong>exist</strong> in your App Store listing — if it is English-only today, you only need the English block.</p>
+      </div>
+      <h3>English (U.S.) — primary <span class="cnt">en-US · 269/4000</span></h3>
+      <pre class="copy">Smoother, calmer ads.
 • Ads now appear only when you actually come back to the app — not when you just pull down Control Center or your notifications
 • Fewer unnecessary ad loads in the background
 • Behind-the-scenes polish for a smoother experience
-Thanks for playing!</div>
-  </section>
+Thanks for playing!</pre>
+      <h3>German — Deutsch <span class="cnt">de-DE · 319/4000</span></h3>
+      <pre class="copy">Flüssigere, ruhigere Werbung.
+• Werbung erscheint jetzt nur noch, wenn du wirklich zur App zurückkehrst – nicht, wenn du nur das Kontrollzentrum oder die Mitteilungen herunterziehst
+• Weniger unnötige Werbeladevorgänge im Hintergrund
+• Verbesserungen im Hintergrund für ein flüssigeres Spielerlebnis
+Danke fürs Spielen!</pre>
+      <h3>French — français <span class="cnt">fr-FR · 333/4000</span></h3>
+      <pre class="copy">Des pubs plus fluides et plus discrètes.
+• Les pubs n'apparaissent plus que lorsque tu reviens vraiment dans l'app, pas quand tu fais simplement glisser le Centre de contrôle ou les notifications
+• Moins de chargements de pubs inutiles en arrière-plan
+• Des améliorations en coulisses pour une expérience plus fluide
+Merci de jouer !</pre>
+      <h3>Italian — italiano <span class="cnt">it · 307/4000</span></h3>
+      <pre class="copy">Pubblicità più fluida e meno invadente.
+• Gli annunci ora compaiono solo quando torni davvero nell'app, non quando apri soltanto il Centro di Controllo o le notifiche
+• Meno caricamenti pubblicitari inutili in background
+• Miglioramenti dietro le quinte per un'esperienza più fluida
+Grazie per aver giocato!</pre>
+      <h3>Japanese — 日本語 <span class="cnt">ja · 147/4000</span></h3>
+      <pre class="copy">広告がよりスムーズで控えめになりました。
+• 広告は、アプリに実際に戻ったときだけ表示されます。コントロールセンターや通知を下に引いただけでは表示されません
+• バックグラウンドでの不要な広告読み込みを削減
+• より快適に遊べるよう、内部の改善を行いました
+遊んでいただきありがとうございます！</pre>
+      <h3>Korean — 한국어 <span class="cnt">ko · 146/4000</span></h3>
+      <pre class="copy">광고가 더 매끄럽고 차분해졌어요.
+• 이제 광고는 앱으로 실제로 돌아왔을 때만 표시됩니다. 제어 센터나 알림 센터를 내리기만 할 때는 나타나지 않아요
+• 백그라운드에서 불필요한 광고 로딩 감소
+• 더 부드러운 플레이를 위한 내부 개선
+플레이해 주셔서 감사합니다!</pre>
+      <h3>Portuguese (Brazil) — português <span class="cnt">pt-BR · 313/4000</span></h3>
+      <pre class="copy">Anúncios mais suaves e discretos.
+• Os anúncios agora aparecem só quando você realmente volta ao app, e não quando apenas abre a Central de Controle ou as notificações
+• Menos carregamentos de anúncios desnecessários em segundo plano
+• Melhorias nos bastidores para uma experiência mais fluida
+Obrigado por jogar!</pre>
+      <h3>Russian — русский <span class="cnt">ru · 295/4000</span></h3>
+      <pre class="copy">Реклама стала плавнее и ненавязчивее.
+• Теперь реклама появляется только когда ты действительно возвращаешься в приложение, а не когда просто опускаешь Пункт управления или уведомления
+• Меньше лишних загрузок рекламы в фоне
+• Улучшения «под капотом» для более плавной игры
+Спасибо, что играешь!</pre>
+      <h3>Spanish — español <span class="cnt">es-ES / es-MX · 305/4000</span></h3>
+      <pre class="copy">Anuncios más fluidos y discretos.
+• Los anuncios ahora solo aparecen cuando realmente vuelves a la app, no cuando solo deslizas el Centro de control o las notificaciones
+• Menos cargas de anuncios innecesarias en segundo plano
+• Mejoras entre bastidores para una experiencia más fluida
+¡Gracias por jugar!</pre>
+      <h3>Turkish — Türkçe <span class="cnt">tr · 309/4000</span></h3>
+      <pre class="copy">Daha akıcı ve daha sakin reklamlar.
+• Reklamlar artık yalnızca uygulamaya gerçekten geri döndüğünde görünür; Denetim Merkezi'ni veya bildirimleri aşağı çekmen reklam göstermez
+• Arka planda gereksiz reklam yüklemeleri azaldı
+• Daha akıcı bir deneyim için arka planda iyileştirmeler
+Oynadığın için teşekkürler!</pre>
+    </section>
 
-  <section class="card" id="promo-text">
-    <h2><span class="icon">📣</span> Promotional Text <span class="badge recommended">Always update — free, no review needed</span></h2>
-    <p class="sub">User-facing, shown at the top of the product page. 170 char max.</p>
-    <div class="field">
-      <div class="field-label">Suggested <span class="charcount">162/170</span></div>
-      <div class="field-value">Tap, slide, and clear every arrow — no timers, no pressure. A new daily challenge and streak every day, hundreds of levels, dark mode, and fewer ad interruptions.</div>
-    </div>
-    <div class="field">
-      <div class="field-label">Current (live since 1.0.4) <span class="charcount">148/170</span></div>
-      <div class="field-value">No timers, no ads to start — just tap, slide, and clear. New daily challenge and streak every day. Hundreds of levels, dark mode, and zero pressure.</div>
-    </div>
-    <div class="callout warn"><span>⚠ The current text says "no ads to start", but the app shows an app-open ad on cold start after a player's first session. It was approved as-is, but it reads as a claim the app doesn't fully keep, which is why the suggestion drops it. Your call - it's free to change at any time.</span></div>
-  </section>
+    <section id="promo">
+      <h2>3. Promotional Text</h2>
+      <p><span class="tag tag-ok">OPTIONAL</span> 170 characters max, shown at the top of the product page. <strong>Editable at any time without a new review</strong>, so it can also be changed after release. The first block in each language is the suggested text.</p>
+      <div class="alert" style="margin:16px 0; border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+        <h2 style="color:var(--orange);">The current English text makes a claim the app doesn't fully keep</h2>
+        <p>It says "no ads to start", but the app shows an app-open ad on cold start after a player's first session. It was approved as-is, but the suggestion drops that claim. Your call; keeping the old text is fine.</p>
+      </div>
+      <h3>Current English (live since 1.0.4) <span class="cnt">148/170</span></h3>
+      <pre class="copy">No timers, no ads to start — just tap, slide, and clear. New daily challenge and streak every day. Hundreds of levels, dark mode, and zero pressure.</pre>
+      <h3>English (U.S.) — primary <span class="cnt">en-US · 162/170</span></h3>
+      <pre class="copy">Tap, slide, and clear every arrow — no timers, no pressure. A new daily challenge and streak every day, hundreds of levels, dark mode, and fewer ad interruptions.</pre>
+      <h3>German — Deutsch <span class="cnt">de-DE · 155/170</span></h3>
+      <pre class="copy">Tippen, schieben, jeden Pfeil entfernen – ohne Zeitdruck. Jeden Tag eine neue Herausforderung und Serie, hunderte Level, dunkler Modus und weniger Werbung.</pre>
+      <h3>French — français <span class="cnt">fr-FR · 165/170</span></h3>
+      <pre class="copy">Touche, glisse et élimine chaque flèche, sans chrono ni pression. Un défi quotidien et une série chaque jour, des centaines de niveaux, mode sombre et moins de pubs.</pre>
+      <h3>Italian — italiano <span class="cnt">it · 162/170</span></h3>
+      <pre class="copy">Tocca, scorri ed elimina ogni freccia, senza timer né pressione. Ogni giorno sfida e serie nuove, centinaia di livelli, modalità scura e meno pubblicità invasiva.</pre>
+      <h3>Japanese — 日本語 <span class="cnt">ja · 89/170</span></h3>
+      <pre class="copy">タップしてスライドし、すべての矢印をクリア。タイマーもプレッシャーもありません。毎日のデイリーチャレンジと連続記録、数百のレベル、ダークモード、そして広告の割り込みも減りました。</pre>
+      <h3>Korean — 한국어 <span class="cnt">ko · 93/170</span></h3>
+      <pre class="copy">탭하고 밀어서 모든 화살표를 제거하세요. 타이머도 부담도 없어요. 매일 새로운 일일 챌린지와 연속 기록, 수백 개의 레벨, 다크 모드, 그리고 더 적은 광고 방해까지.</pre>
+      <h3>Portuguese (Brazil) — português <span class="cnt">pt-BR · 164/170</span></h3>
+      <pre class="copy">Toque, deslize e elimine todas as setas, sem cronômetro nem pressão. Desafio e sequência novos por dia, centenas de níveis, modo escuro e menos anúncios intrusivos.</pre>
+      <h3>Russian — русский <span class="cnt">ru · 144/170</span></h3>
+      <pre class="copy">Нажимай, сдвигай и убирай все стрелки — без таймеров и спешки. Каждый день новое испытание и серия, сотни уровней, тёмная тема и меньше рекламы.</pre>
+      <h3>Spanish — español <span class="cnt">es-ES / es-MX · 163/170</span></h3>
+      <pre class="copy">Toca, desliza y elimina todas las flechas, sin temporizadores ni presión. Cada día un desafío y una racha nuevos, cientos de niveles, modo oscuro y menos anuncios.</pre>
+      <h3>Turkish — Türkçe <span class="cnt">tr · 156/170</span></h3>
+      <pre class="copy">Dokun, kaydır ve tüm okları temizle; zamanlayıcı da baskı da yok. Her gün yeni günlük meydan okuma ve seri, yüzlerce seviye, karanlık mod ve daha az reklam.</pre>
+    </section>
 
-  <section class="card" id="review-notes">
-    <h2><span class="icon">🕵️</span> Review Notes <span class="badge required">Required — for Apple's reviewer, not users</span></h2>
-    <p class="sub">Paste into App Review Information → Notes. 1963 chars. Different audience from What's New: what changed under the hood and how to verify it.</p>
-    <div class="field-value">Arrows - Escape Puzzle is a single-player offline puzzle game. No login or account is required to play.
+    <section id="keywords">
+      <h2>4. Keywords</h2>
+      <p>100 characters per locale, comma-separated, <strong>no spaces after commas</strong> (a space inside a term wastes characters). Apple indexes each locale separately and already indexes the app name and subtitle, so don't repeat those words. <strong>Keywords can only be changed with a new version</strong> — this submission is the chance to add them.</p>
+      <table>
+        <tr><th>Locale</th><th>Keywords</th></tr>
+        <tr><td><strong>English (U.S.)</strong><br><span class="cnt" style="margin-left:0">en-US</span></td><td><code>maze,relax,mind,offline,streak,levels,casual,think,tap,classic,calm,zen,slide,board,clear,fun</code> <span class="tag tag-ok">93/100</span></td></tr>
+        <tr><td><strong>German</strong><br><span class="cnt" style="margin-left:0">de-DE</span></td><td><code>Labyrinth,Entspannung,Denkspiel,offline,Serie,Level,Casual,Knobeln,Tippen,Klassiker,Ruhe,Zen,Brett</code> <span class="tag tag-ok">98/100</span></td></tr>
+        <tr><td><strong>French</strong><br><span class="cnt" style="margin-left:0">fr-FR</span></td><td><code>labyrinthe,détente,réflexion,offline,série,niveaux,casual,calme,zen,toucher,glisser,plateau</code> <span class="tag tag-ok">91/100</span></td></tr>
+        <tr><td><strong>Italian</strong><br><span class="cnt" style="margin-left:0">it</span></td><td><code>labirinto,relax,mente,offline,serie,livelli,casual,riflettere,tocca,classico,calma,zen,scorri,sfida</code> <span class="tag tag-ok">99/100</span></td></tr>
+        <tr><td><strong>Japanese</strong><br><span class="cnt" style="margin-left:0">ja</span></td><td><code>迷路,リラックス,脳トレ,オフライン,連続記録,レベル,カジュアル,考える,タップ,クラシック,癒し,禅,スライド,盤面,暇つぶし,無料</code> <span class="tag tag-ok">68/100</span></td></tr>
+        <tr><td><strong>Korean</strong><br><span class="cnt" style="margin-left:0">ko</span></td><td><code>미로,힐링,두뇌,오프라인,연속기록,레벨,캐주얼,생각,탭,클래식,차분,젠,슬라이드,보드,심심풀이,무료</code> <span class="tag tag-ok">55/100</span></td></tr>
+        <tr><td><strong>Portuguese (Brazil)</strong><br><span class="cnt" style="margin-left:0">pt-BR</span></td><td><code>labirinto,relaxar,mente,offline,sequência,níveis,casual,pensar,toque,clássico,calma,zen,deslizar</code> <span class="tag tag-ok">96/100</span></td></tr>
+        <tr><td><strong>Russian</strong><br><span class="cnt" style="margin-left:0">ru</span></td><td><code>лабиринт,релакс,логика,офлайн,серия,уровни,казуальная,думать,классика,дзен,поле,бесплатно</code> <span class="tag tag-ok">89/100</span></td></tr>
+        <tr><td><strong>Spanish</strong><br><span class="cnt" style="margin-left:0">es-ES / es-MX</span></td><td><code>laberinto,relajante,mente,offline,racha,niveles,casual,pensar,toca,clásico,calma,zen,deslizar</code> <span class="tag tag-ok">93/100</span></td></tr>
+        <tr><td><strong>Turkish</strong><br><span class="cnt" style="margin-left:0">tr</span></td><td><code>labirent,rahatlatıcı,zeka,çevrimdışı,seri,seviye,casual,düşünme,dokun,klasik,sakin,zen,kaydır,tahta</code> <span class="tag tag-ok">99/100</span></td></tr>
+      </table>
+      <p><span class="tag tag-warn">SUGGESTIONS</span> The non-English lists are real words in each language, not literal translations of the English list, but <strong>nobody has tested how they rank</strong>. Treat them as a starting point and let a native speaker swap any that feel wrong. In a few languages the last terms were dropped to fit 100 characters.</p>
+      <p><span class="tag tag-warn">NOTE</span> The English list is unchanged, but its <code>mind</code> repeats the subtitle ("Grid Logic &amp; Mind Puzzles") and could be swapped for a fresh term.</p>
+    </section>
+
+    <section id="description">
+      <h2>5. Description, Subtitle &amp; New Languages</h2>
+      <p><span class="tag tag-ok">NO CHANGE</span> <strong>Leave the description and subtitle untouched in English for 1.0.8.</strong> No feature was added or removed, so every statement in the existing description is still true (including "Available in 10 languages"). The English description and subtitle carry over automatically.</p>
+      <p>Update the description only when you add or remove a player-facing feature, change the Remove Ads offer, or add a language.</p>
+
+      <h3>If you are adding a language for the first time</h3>
+      <p>Each new localization needs its own fields. They are filled <strong>once</strong> and then carry over to every future version; only What's New changes each release.</p>
+      <table>
+        <tr><th>Field</th><th>Required per language?</th><th>Where / suggestion</th></tr>
+        <tr><td><strong>Name</strong></td><td><span class="tag tag-block">YES</span></td><td>App Information. Keep <strong>"Arrows – Escape Puzzle"</strong> identical in every language — it doesn't need translating, and it avoids any new naming questions after the 4.3(a) history</td></tr>
+        <tr><td><strong>Subtitle</strong></td><td><span class="tag tag-ok">OPTIONAL</span></td><td>App Information. 30 characters max. This is where a translation helps search the most</td></tr>
+        <tr><td><strong>Description</strong></td><td><span class="tag tag-block">YES</span></td><td>Version page. Translate the current English description</td></tr>
+        <tr><td><strong>Keywords</strong></td><td><span class="tag tag-block">YES</span></td><td>Version page. Section 4</td></tr>
+        <tr><td><strong>Support URL</strong></td><td><span class="tag tag-block">YES</span></td><td>Version page. Reuse the English URL</td></tr>
+        <tr><td><strong>Promotional Text</strong></td><td><span class="tag tag-ok">OPTIONAL</span></td><td>Section 3</td></tr>
+        <tr><td><strong>What's New</strong></td><td><span class="tag tag-block">YES (this version)</span></td><td>Section 2</td></tr>
+        <tr><td><strong>Screenshots</strong></td><td><span class="tag tag-ok">OPTIONAL</span></td><td>If you upload none, App Store Connect uses the primary language's screenshots</td></tr>
+      </table>
+      <h3 id="desc-translations">Translated Subtitle &amp; Description</h3>
+      <p>Paste these into the new localizations. They translate the <strong>current live English text</strong> (description from the 1.0.4 listing, subtitle "Grid Logic &amp; Mind Puzzles"), keep the same structure, and use the app's own in-game terms for the difficulty tiers, badges, hints and lives.</p>
+      <div class="alert" style="margin:16px 0; border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+        <h2 style="color:var(--orange);">Not native-reviewed</h2>
+        <p>Written by an AI, not a native speaker — have someone read them before submitting, especially Japanese, Korean and Turkish. The description makes no new claims beyond the English one. Keep the <strong>app name identical</strong> in every language.</p>
+      </div>
+      <h3>German — Deutsch <span class="cnt">de-DE</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">25/30</span></p>
+      <pre class="copy">Raster-Logik &amp; Denkrätsel</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">1257/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle ist ein ruhiges, befriedigendes Logikrätsel: Tippe auf einen Pfeil und sieh zu, wie er davongleitet, wenn der Weg frei ist – oder rot wird, wenn er blockiert ist. Räume das ganze Spielfeld ab, um zu gewinnen – ohne Zeitlimit, ohne Druck, nur du und das Rätsel.
+
+SO WIRD GESPIELT
+• Tippe auf einen Pfeil, um ihn vom Spielfeld zu schießen
+• Ist der Weg frei, fliegt er davon
+• Ein blockierter Weg kostet ein Leben – du hast 3
+• Entferne alle Pfeile, um das Level zu gewinnen
+
+FUNKTIONEN
+• Hunderte prozedural generierte Level mit steigendem Schwierigkeitsgrad
+• Vier Schwierigkeitsstufen: Normal, Schwer, Sehr schwer und Albtraum
+• Tägliche Herausforderungen mit eigener Serie und Trophäenkalender
+• Verfolge deine längste Serie, deine beste Siegesserie und die meisten Siege an einem Tag
+• Schalte die Abzeichen Level-Legende, Perfektes Spiel und Unaufhaltsam frei
+• Spezielle Spielfeldformen (Kreis, Herz, Stern und mehr) bei Meilenstein-Leveln
+• Kostenlose Hinweise, weitere Hinweise jederzeit verfügbar
+• Vollständige Unterstützung des dunklen Modus
+• In 10 Sprachen verfügbar
+
+Arrows – Escape Puzzle ist kostenlos spielbar, mit optionaler Werbung und einem einmaligen Kauf von „Werbung entfernen“ für ein ungestörtes Spielerlebnis.</pre>
+      <h3>French — français <span class="cnt">fr-FR</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">30/30</span></p>
+      <pre class="copy">Logique de grille et réflexion</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">1307/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle est un puzzle de logique apaisant et satisfaisant : touche une flèche et regarde-la glisser librement si le chemin est dégagé, ou devenir rouge s'il est bloqué. Élimine toutes les flèches du plateau pour gagner — sans chrono, sans pression, juste toi et le puzzle.
+
+COMMENT JOUER
+• Touche une flèche pour la lancer hors du plateau
+• Si le chemin est dégagé, elle s'envole
+• Un chemin bloqué te coûte une vie — tu en as 3
+• Élimine toutes les flèches pour gagner le niveau
+
+FONCTIONNALITÉS
+• Des centaines de niveaux générés de façon procédurale, de plus en plus difficiles
+• Quatre niveaux de difficulté : Normal, Difficile, Très difficile et Cauchemar
+• Des défis quotidiens avec leur propre série et leur calendrier de trophées
+• Suis ta plus longue série, ta meilleure série de victoires et ton record de victoires en un jour
+• Débloque les badges Légende de niveau, Jeu parfait et Inarrêtable
+• Des plateaux aux formes spéciales (cercle, cœur, étoile et plus encore) aux niveaux clés
+• Des indices gratuits, avec des indices supplémentaires disponibles à tout moment
+• Prise en charge complète du mode sombre
+• Disponible en 10 langues
+
+Arrows – Escape Puzzle est gratuit, avec des pubs facultatives et un achat unique « Supprimer les pubs » pour une expérience sans interruption.</pre>
+      <h3>Italian — italiano <span class="cnt">it</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">28/30</span></p>
+      <pre class="copy">Logica a griglia e rompicapi</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">1310/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle è un rompicapo di logica rilassante e appagante: tocca una freccia e guardala scivolare via se il percorso è libero, oppure diventare rossa se è bloccato. Elimina tutte le frecce dal tabellone per vincere — senza timer, senza pressione, solo tu e il puzzle.
+
+COME SI GIOCA
+• Tocca una freccia per lanciarla fuori dal tabellone
+• Se il percorso è libero, la freccia vola via
+• Un percorso bloccato ti costa una vita — ne hai 3
+• Elimina tutte le frecce per vincere il livello
+
+CARATTERISTICHE
+• Centinaia di livelli generati proceduralmente con difficoltà crescente
+• Quattro livelli di difficoltà: Normale, Difficile, Super difficile e Incubo
+• Sfide giornaliere con una propria serie e un calendario dei trofei
+• Tieni traccia della tua serie più lunga, della migliore serie di vittorie e del maggior numero di vittorie in un giorno
+• Sblocca i badge Leggenda di livello, Gioco perfetto e Inarrestabile
+• Tabelloni dalle forme speciali (cerchio, cuore, stella e altro) ai livelli traguardo
+• Suggerimenti gratuiti, con altri suggerimenti disponibili in qualsiasi momento
+• Supporto completo per la modalità scura
+• Disponibile in 10 lingue
+
+Arrows – Escape Puzzle è gratuito, con pubblicità facoltativa e un acquisto una tantum "Rimuovi pubblicità" per un'esperienza senza interruzioni.</pre>
+      <h3>Japanese — 日本語 <span class="cnt">ja</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">15/30</span></p>
+      <pre class="copy">グリッドロジック＆脳トレパズル</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">579/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle は、心地よく遊べる落ち着いたロジックパズルです。矢印をタップして、道が空いていればスーッと飛び出し、ふさがっていれば赤くなります。ボード上のすべての矢印をクリアすれば勝利。タイマーもプレッシャーもなく、あなたとパズルだけの時間を楽しめます。
+
+遊び方
+• 矢印をタップすると、ボードの外へ飛び出します
+• 道が空いていれば、矢印は飛んでいきます
+• ふさがっているとライフが1つ減ります（ライフは3つ）
+• すべての矢印をクリアしてレベルをクリアしよう
+
+特徴
+• 難易度が少しずつ上がる、自動生成の数百レベル
+• 4つの難易度：ノーマル、ハード、スーパーハード、ナイトメア
+• 専用の連続記録とトロフィーカレンダー付きのデイリーチャレンジ
+• 最長連続記録、最高連勝記録、1日の最多勝利数を記録
+• レベルレジェンド、パーフェクトプレイ、アンストッパブルのバッジを獲得
+• マイルストーンレベルに登場する特別な形のボード（円、ハート、星など）
+• 無料のヒントに加え、いつでも追加ヒントを利用可能
+• ダークモードに完全対応
+• 10言語に対応
+
+Arrows – Escape Puzzle は無料でプレイできます。広告は任意で表示され、1回限りの「広告を削除」購入で、中断のない体験をお楽しみいただけます。</pre>
+      <h3>Korean — 한국어 <span class="cnt">ko</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">14/30</span></p>
+      <pre class="copy">그리드 로직 &amp; 두뇌 퍼즐</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">615/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle은 차분하고 만족스러운 논리 퍼즐입니다. 화살표를 탭하면 길이 비어 있을 때는 미끄러지듯 날아가고, 막혀 있으면 빨갛게 변합니다. 보드의 모든 화살표를 제거하면 승리합니다. 타이머도, 부담도 없이 오직 당신과 퍼즐만 있습니다.
+
+플레이 방법
+• 화살표를 탭해 보드 밖으로 날려 보내세요
+• 길이 비어 있으면 화살표가 날아갑니다
+• 길이 막혀 있으면 생명이 하나 줄어듭니다 — 생명은 3개입니다
+• 모든 화살표를 제거하면 레벨을 클리어합니다
+
+주요 기능
+• 점점 어려워지는 자동 생성 레벨 수백 개
+• 4가지 난이도: 보통, 어려움, 매우 어려움, 나이트메어
+• 자체 연속 기록과 트로피 캘린더가 있는 일일 챌린지
+• 최장 연속 기록, 최고 연승 기록, 하루 최다 승리 기록 확인
+• 레벨 레전드, 퍼펙트 플레이, 언스토퍼블 배지 획득
+• 마일스톤 레벨마다 등장하는 특별한 모양의 보드(원, 하트, 별 등)
+• 무료 힌트 제공, 추가 힌트는 언제든 이용 가능
+• 다크 모드 완벽 지원
+• 10개 언어 지원
+
+Arrows – Escape Puzzle은 무료로 플레이할 수 있으며, 선택형 광고와 한 번만 결제하는 '광고 제거' 구매로 방해 없이 즐길 수 있습니다.</pre>
+      <h3>Portuguese (Brazil) — português <span class="cnt">pt-BR</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">26/30</span></p>
+      <pre class="copy">Lógica de grade e desafios</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">1247/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle é um quebra-cabeça de lógica calmo e satisfatório: toque em uma seta e veja-a deslizar livremente se o caminho estiver livre, ou ficar vermelha se estiver bloqueado. Elimine todas as setas do tabuleiro para vencer — sem cronômetro, sem pressão, só você e o quebra-cabeça.
+
+COMO JOGAR
+• Toque em uma seta para lançá-la para fora do tabuleiro
+• Se o caminho estiver livre, ela voa
+• Um caminho bloqueado custa uma vida — você tem 3
+• Elimine todas as setas para vencer o nível
+
+RECURSOS
+• Centenas de níveis gerados proceduralmente, com dificuldade crescente
+• Quatro níveis de dificuldade: Normal, Difícil, Super difícil e Pesadelo
+• Desafios diários com sequência e calendário de troféus próprios
+• Acompanhe sua maior sequência, sua melhor sequência de vitórias e o recorde de vitórias em um dia
+• Desbloqueie os selos Lenda de Nível, Jogo Perfeito e Imparável
+• Tabuleiros com formatos especiais (círculo, coração, estrela e mais) nos níveis marcantes
+• Dicas grátis, com mais dicas disponíveis a qualquer momento
+• Suporte completo ao modo escuro
+• Disponível em 10 idiomas
+
+Arrows – Escape Puzzle é grátis para jogar, com anúncios opcionais e uma compra única de "Remover anúncios" para uma experiência sem interrupções.</pre>
+      <h3>Russian — русский <span class="cnt">ru</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">26/30</span></p>
+      <pre class="copy">Логика сетки и головоломки</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">1138/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle — спокойная и увлекательная логическая головоломка: нажми на стрелку и смотри, как она вылетает, если путь свободен, или краснеет, если он заблокирован. Убери все стрелки с поля, чтобы победить — без таймеров и спешки, только ты и головоломка.
+
+КАК ИГРАТЬ
+• Нажми на стрелку, чтобы отправить её за пределы поля
+• Если путь свободен, стрелка улетает
+• Заблокированный путь стоит одной жизни — их у тебя 3
+• Убери все стрелки, чтобы пройти уровень
+
+ОСОБЕННОСТИ
+• Сотни процедурно генерируемых уровней с нарастающей сложностью
+• Четыре уровня сложности: Обычный, Сложный, Очень сложный и Кошмар
+• Ежедневные испытания с отдельной серией и календарём трофеев
+• Следи за самой длинной серией, лучшей серией побед и рекордом побед за день
+• Открывай значки «Легенда уровней», «Идеальная игра» и «Неудержимый»
+• Поля особой формы (круг, сердце, звезда и другие) на знаковых уровнях
+• Бесплатные подсказки, а дополнительные доступны в любой момент
+• Полная поддержка тёмной темы
+• Доступна на 10 языках
+
+Arrows – Escape Puzzle бесплатна, с необязательной рекламой и разовой покупкой «Убрать рекламу» для игры без перерывов.</pre>
+      <h3>Spanish — español <span class="cnt">es-ES / es-MX</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">28/30</span></p>
+      <pre class="copy">Lógica de cuadrícula y mente</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">1267/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle es un rompecabezas de lógica tranquilo y satisfactorio: toca una flecha y mira cómo se desliza libremente si el camino está despejado, o se pone roja si está bloqueado. Elimina todas las flechas del tablero para ganar: sin temporizadores, sin presión, solo tú y el rompecabezas.
+
+CÓMO JUGAR
+• Toca una flecha para lanzarla fuera del tablero
+• Si el camino está despejado, la flecha sale volando
+• Un camino bloqueado te cuesta una vida: tienes 3
+• Elimina todas las flechas para ganar el nivel
+
+CARACTERÍSTICAS
+• Cientos de niveles generados proceduralmente con dificultad creciente
+• Cuatro niveles de dificultad: Normal, Difícil, Muy difícil y Pesadilla
+• Desafíos diarios con su propia racha y calendario de trofeos
+• Sigue tu racha más larga, tu mejor racha de victorias y tu récord de victorias en un día
+• Desbloquea las insignias Leyenda de nivel, Juego perfecto e Imparable
+• Tableros con formas especiales (círculo, corazón, estrella y más) en los niveles clave
+• Pistas gratis, con más pistas disponibles en cualquier momento
+• Compatibilidad total con el modo oscuro
+• Disponible en 10 idiomas
+
+Arrows – Escape Puzzle es gratis, con anuncios opcionales y una compra única de «Quitar anuncios» para una experiencia sin interrupciones.</pre>
+      <h3>Turkish — Türkçe <span class="cnt">tr</span></h3>
+      <p style="margin-bottom:4px"><strong>Subtitle</strong> <span class="cnt">28/30</span></p>
+      <pre class="copy">Izgara Mantığı ve Zeka Oyunu</pre>
+      <p style="margin-bottom:4px"><strong>Description</strong> <span class="cnt">1116/4000</span></p>
+      <pre class="copy">Arrows – Escape Puzzle sakin ve tatmin edici bir mantık bulmacasıdır: bir oka dokun, yol açıksa özgürce kaydığını, kapalıysa kırmızıya döndüğünü izle. Kazanmak için tahtadaki tüm okları temizle — zamanlayıcı yok, baskı yok, sadece sen ve bulmaca.
+
+NASIL OYNANIR
+• Bir oka dokunarak onu tahtadan dışarı fırlat
+• Yol açıksa ok uçup gider
+• Kapalı bir yol sana bir can kaybettirir — 3 canın var
+• Seviyeyi kazanmak için tüm okları temizle
+
+ÖZELLİKLER
+• Zorluğu giderek artan, prosedürel olarak üretilmiş yüzlerce seviye
+• Dört zorluk düzeyi: Normal, Zor, Çok zor ve Kabus
+• Kendi serisi ve kupa takvimi olan Günlük Meydan Okumalar
+• En uzun serini, en iyi galibiyet serini ve bir günde en çok galibiyetini takip et
+• Seviye Efsanesi, Mükemmel Oyun ve Durdurulamaz rozetlerini aç
+• Kilometre taşı seviyelerinde özel şekilli tahtalar (daire, kalp, yıldız ve daha fazlası)
+• Ücretsiz ipuçları, ek ipuçları da her zaman mevcut
+• Tam karanlık mod desteği
+• 10 dilde mevcut
+
+Arrows – Escape Puzzle oynaması ücretsizdir; isteğe bağlı reklamlar ve kesintisiz bir deneyim için tek seferlik "Reklamları kaldır" satın alımı sunar.</pre>
+    </section>
+
+    <section id="review">
+      <h2>6. App Review Notes</h2>
+      <p><span class="tag tag-block">REQUIRED</span> Not shown to users — read only by Apple's reviewer. This is a <strong>different audience and purpose from What's New</strong>: what changed under the hood and how to verify it. Paste this into <strong>App Review Information &rarr; Notes</strong> on submission (1963 characters):</p>
+      <pre class="copy">Arrows - Escape Puzzle is a single-player offline puzzle game. No login or account is required to play.
 
 This build (1.0.7 -&gt; 1.0.8) changes ad-delivery behaviour only. No gameplay rules, purchases, permissions, or data collection changed:
 - The app-open ad (shown when the user returns to the app) now appears only after the app was actually sent to the background. Previously, briefly opening Control Center or Notification Center could also trigger it.
@@ -128,68 +590,88 @@ Unchanged from the previous submission:
 - Ad mediation is Google AdMob with Unity Ads only.
 - No account creation, no chat, no user-generated content, no web view with unrestricted browsing.
 
-Test path: tap Play on the Home screen to start the current level, or Level 1 (tutorial) on a fresh install.</div>
-  </section>
+Test path: tap Play on the Home screen to start the current level, or Level 1 (tutorial) on a fresh install.</pre>
+    </section>
 
-  <section class="card" id="privacy-changes">
-    <h2><span class="icon">🔒</span> App Privacy — Changes to Re-check <span class="badge attention">Review before submitting</span></h2>
-    <p class="sub">The data-collection picture is unchanged. One analytics detail to log, and three items carried forward from earlier guides.</p>
-    <ul class="checklist">
-      <li><span class="chk">✓</span><span>No new SDKs, permissions, or data types this release — existing privacy label still accurate</span></li>
-      <li><span class="chk">✓</span><span>Ad network / mediation stack unchanged (AdMob + Unity Ads)</span></li>
-      <li><span class="chk">✓</span><span>New Firebase event <code>ad_discarded</code> (ad unit name + reason string) falls under the already-declared Usage Data; the privacy label does not change. Add it to the event list in your records</span></li>
-      <li><span class="chk todo"></span><span><b>Carried over:</b> in App Store Connect → App Privacy, confirm Meta Platforms is no longer listed as a data-collecting third party (mediation has been Unity-only since 1.0.4; this was never confirmed done)</span></li>
-      <li><span class="chk todo"></span><span><b>Carried over:</b> remove the two Meta SKAdNetwork IDs from <code>ios/Runner/Info.plist</code> — <code>v9wttpbfk9.skadnetwork</code> and <code>n38lu8286q.skadnetwork</code> — still present; harmless but dead weight</span></li>
-      <li><span class="chk todo"></span><span><b>Carried over:</b> <code>UISupportedInterfaceOrientations</code> still lists both landscape values although the game is portrait-only. Decide whether to drop them (the Android equivalent was fixed in 1.0.7)</span></li>
-    </ul>
-  </section>
+    <section id="privacy">
+      <h2>7. Privacy &amp; Data Collection</h2>
+      <p><span class="tag tag-ok">UNCHANGED</span> No new SDK, permission or data type. The label stays as it was in 1.0.7.</p>
+      <table>
+        <tr><th>Data Type</th><th>Collected?</th><th>Linked to identity?</th><th>Tracking?</th><th>Notes</th></tr>
+        <tr><td>Identifiers (Device ID / IDFA)</td><td>Yes</td><td>No</td><td>Yes (advertising)</td><td>Via Google AdMob and Unity Ads — only if the user grants ATT</td></tr>
+        <tr><td>Usage Data</td><td>Yes</td><td>No</td><td>No</td><td>Via Firebase Analytics — level_start, level_win, level_lose, level_restart, hint_used, daily_challenge_complete, streak_extended, ad_shown, ad_impression, purchase_remove_ads, and <strong>new: <code>ad_discarded</code></strong> (ad unit + reason). Already-declared Usage Data; the label does not change</td></tr>
+        <tr><td>Purchases</td><td>Yes</td><td>No</td><td>No</td><td>Product ID only, processed by Apple</td></tr>
+        <tr><td>Diagnostics, Contact, Health, Financial, Location, Browsing, Photos, Contacts</td><td>No</td><td>—</td><td>—</td><td>Not collected</td></tr>
+      </table>
+      <h3>Carried over from earlier guides — still open</h3>
+      <ul>
+        <li><span class="tag tag-block">TODO</span> In App Store Connect &rarr; App Privacy, confirm <strong>Meta Platforms</strong> is no longer listed as a data-collecting third party (mediation has been Unity-only since 1.0.4; never confirmed done)</li>
+        <li><span class="tag tag-block">TODO</span> Remove the two Meta SKAdNetwork IDs from <code>ios/Runner/Info.plist</code>: <code>v9wttpbfk9.skadnetwork</code> and <code>n38lu8286q.skadnetwork</code> — still present; harmless dead weight</li>
+        <li><span class="tag tag-block">DECIDE</span> <code>UISupportedInterfaceOrientations</code> still lists both landscape values although the game is portrait-only (the Android equivalent was fixed in 1.0.7). A judgement call, never reproduced as a bug on iOS</li>
+      </ul>
+    </section>
 
-  <section class="card" id="age-rating-recheck">
-    <h2><span class="icon">🔞</span> Age Rating — Recheck <span class="badge optional">Only if content changed</span></h2>
-    <div class="callout info"><span>No new content, chat, gambling-like mechanics, or web access this release — the 4+ age rating does not change.</span></div>
-  </section>
+    <section id="nochange">
+      <h2>8. Age Rating, IAP &amp; Screenshots</h2>
+      <table>
+        <tr><th>Area</th><th>Status</th><th>Detail</th></tr>
+        <tr><td><strong>Age rating</strong></td><td><span class="tag tag-ok">NO CHANGE</span></td><td>No new content, chat, gambling-like mechanics or web access. Stays 4+</td></tr>
+        <tr><td><strong>In-App Purchases</strong></td><td><span class="tag tag-ok">NO CHANGE</span></td><td>One IAP: "Remove Ads" ($3.99, non-consumable, <code>remove_ads</code>). No new products, no Game Center leaderboards</td></tr>
+        <tr><td><strong>Screenshots</strong></td><td><span class="tag tag-ok">NO CHANGE</span></td><td>No visible UI changed in 1.0.8. Carried from 1.0.7: confirm no uploaded gameplay screenshot still shows a bottom banner</td></tr>
+        <tr><td><strong>Ads disclosure</strong></td><td><span class="tag tag-ok">NO CHANGE</span></td><td>AdMob + Unity Ads only. No ad network added or removed</td></tr>
+      </table>
+    </section>
 
-  <section class="card" id="new-commerce">
-    <h2><span class="icon">💳</span> New IAP / Leaderboards <span class="badge optional">Only if added this release</span></h2>
-    <div class="callout info"><span>No new in-app purchases or Game Center leaderboards. The one IAP ("Remove Ads", $3.99, <code>remove_ads</code>) is unchanged.</span></div>
-  </section>
+    <section id="notios">
+      <h2>9. Android-Only Changes</h2>
+      <p>Shipped in the same commits but fix Android-specific behaviour. <strong>Don't mention them to Apple.</strong></p>
+      <table>
+        <tr><th>Change</th><th>iOS status</th></tr>
+        <tr><td>App-open ad no longer shifts the screen up (AdMob's ad activity hides the status bar and zeroes the top inset)</td><td>The fix is a Dart-level inset hold that also runs on iOS but is not expected to change anything there</td></tr>
+        <tr><td>Home banner stored a zero width when launched behind the lock screen, blocking the banner for the session</td><td>Android-specific; the guard is harmless on iOS</td></tr>
+        <tr><td>Android build toolchain upgrade (Gradle 8.14, AGP 8.11.1)</td><td>No iOS effect</td></tr>
+      </table>
+    </section>
 
-  <section class="card" id="assets-recheck">
-    <h2><span class="icon">🖼️</span> Screenshots <span class="badge optional">No change needed</span></h2>
-    <p class="sub">No visible UI changed in 1.0.8.</p>
-    <ul class="checklist">
-      <li><span class="chk">✓</span><span>Home, gameplay, and settings screens are unchanged since 1.0.7 — existing screenshots still accurate</span></li>
-      <li><span class="chk todo"></span><span>Carried from 1.0.7: confirm no uploaded gameplay screenshot still shows a bottom banner (it was removed from gameplay in 1.0.7)</span></li>
-    </ul>
-  </section>
+    <section id="checklist">
+      <h2>10. Build &amp; Archive Checklist</h2>
+      <ul>
+        <li><span class="tag tag-ok">DONE</span> <code>pubspec.yaml</code> version is <code>1.0.8+12</code></li>
+        <li><span class="tag tag-ok">DONE</span> Dart suite passes 20/20; <code>flutter analyze</code> at 5 pre-existing warnings</li>
+        <li><span class="tag tag-ok">DONE</span> <code>ios/Podfile.lock</code> committed (<code>cf001b8</code>, Flutter pod checksum for 3.47.5)</li>
+        <li><span class="tag tag-block">TODO</span> <code>flutter pub get</code>, then <code>cd ios &amp;&amp; pod install</code></li>
+        <li><span class="tag tag-block">TODO</span> <code>flutter build ipa</code> (or archive <code>ios/Runner.xcworkspace</code> in Xcode) — confirm it archives cleanly on the new engine</li>
+        <li><span class="tag tag-block">TODO</span> Remove the 2 Meta SKAdNetwork IDs from <code>Info.plist</code> (Section 7)</li>
+        <li><span class="tag tag-block">TODO</span> If creating new localizations: fill Name, Description and Support URL (and Subtitle) for each one (Section 5)</li>
+        <li><span class="tag tag-block">TODO</span> Add What's New for <strong>every</strong> locale (Section 2); optionally update Promotional Text and Keywords (Sections 3–4)</li>
+        <li><span class="tag tag-block">TODO</span> Confirm the App Privacy questionnaire no longer lists Meta (Section 7)</li>
+        <li><span class="tag tag-block">TODO — MANDATORY</span> Test on a <strong>real iPhone</strong>. Verify: pulling down Control Center and Notification Center and dismissing them does <strong>not</strong> trigger an app-open ad; backgrounding the app, waiting, and returning <strong>can</strong> show one (at most once per 3 minutes); Home banner shows after finishing a level; win and restart ads still show; ATT and GDPR prompts still appear; the IAP flow works with a Sandbox tester</li>
+        <li>Upload via Xcode Organizer or Transporter</li>
+        <li>Submit for review with the notes from Section 6</li>
+      </ul>
+    </section>
 
-  <section class="card" id="android-only">
-    <h2><span class="icon">🤖</span> In this release but not iOS-relevant <span class="badge optional">For awareness</span></h2>
-    <p class="sub">Shipped in the same commits, but they fix Android-specific behaviour. Don't mention them to Apple.</p>
-    <ul class="checklist">
-      <li><span class="chk">✓</span><span>App-open ad no longer shifts the screen up on Android (AdMob's ad activity hides the status bar). The fix is a Dart-level inset hold that also runs on iOS but is not expected to change anything there</span></li>
-      <li><span class="chk">✓</span><span>Home banner stored a zero width when launched behind the lock screen, blocking the banner for the session — Android-specific; the guard is harmless on iOS</span></li>
-      <li><span class="chk">✓</span><span>Android build toolchain upgrade (Gradle 8.14, AGP 8.11.1) — no iOS effect</span></li>
-    </ul>
-  </section>
+    <section id="links">
+      <h2>11. Reference Links</h2>
+      <table>
+        <tr><th>Resource</th><th>Value</th></tr>
+        <tr><td>Privacy Policy</td><td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a></td></tr>
+        <tr><td>Terms &amp; Conditions</td><td><a href="https://xmtechnologies.in/Arrow/terms-and-conditions.html" target="_blank">xmtechnologies.in/Arrow/terms-and-conditions.html</a></td></tr>
+        <tr><td>Support page</td><td><a href="https://xmtechnologies.in/Arrow/support.html" target="_blank">xmtechnologies.in/Arrow/support.html</a></td></tr>
+        <tr><td>Marketing URL</td><td><a href="https://xmtechnologies.in/Arrow/index.html" target="_blank">xmtechnologies.in/Arrow/index.html</a></td></tr>
+        <tr><td>Support email</td><td><a href="mailto:akashmangukiya10@gmail.com">akashmangukiya10@gmail.com</a></td></tr>
+        <tr><td>App Store listing</td><td><a href="https://apps.apple.com/in/app/arrows-escape-puzzle/id6785821757" target="_blank">apps.apple.com/in/app/arrows-escape-puzzle/id6785821757</a> — <strong>1.0.7 LIVE</strong></td></tr>
+        <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>AdMob iOS App ID</td><td><code>ca-app-pub-4818503743858431~5166233161</code></td></tr>
+        <tr><td>Android listing (context)</td><td><a href="https://play.google.com/store/apps/details?id=com.shayona.arrows" target="_blank">play.google.com/store/apps/details?id=com.shayona.arrows</a> — 1.0.7+11 LIVE; 1.0.8+12 in internal testing</td></tr>
+        <tr><td>Previous iOS guide</td><td><code>docs/APP_STORE_GUIDE_v1.0.7.html</code></td></tr>
+      </table>
+    </section>
 
-  <section class="card" id="version">
-    <h2><span class="icon">🔢</span> Version &amp; Build <span class="badge required">Required</span></h2>
-    <div class="field">
-      <div class="field-label">Version Number</div>
-      <div class="field-value">1.0.8 <span class="charcount">(was 1.0.7)</span></div>
-    </div>
-    <div class="field">
-      <div class="field-label">Build Number</div>
-      <div class="field-value">12 <span class="charcount">(was 11) — from <code>pubspec.yaml</code> <code>version: 1.0.8+12</code>, shared with Android; above the last iOS build, so a valid increment</span></div>
-    </div>
-    <div class="field">
-      <div class="field-label">Other fields</div>
-      <div class="field-value">Name, subtitle, description, keywords, URLs, category, pricing, export compliance (<code>ITSAppUsesNonExemptEncryption = false</code>), device family (iPhone only), and minimum iOS 15.0 are unchanged from 1.0.7.</div>
-    </div>
-  </section>
+  </div>
 
-</div>
-<footer>Generated by the iOS App Store Guide skill · verify every field in App Store Connect before submitting</footer>
+  <footer>
+    &copy; 2026 Shayona. Internal submission guide &mdash; not for distribution. Verify every field in App Store Connect before submitting.
+  </footer>
 </body>
 </html>
