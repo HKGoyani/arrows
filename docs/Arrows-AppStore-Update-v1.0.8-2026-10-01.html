@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arrows – Escape Puzzle — Version Update Guide</title>
+<style>
+  /* Reuse the exact same design system/tokens as template.html so both modes look
+     like one product. Only the section set differs. */
+  :root{
+    --bg:#f5f5f7;--card:#ffffff;--text:#1d1d1f;--muted:#6e6e73;--border:#e3e3e6;
+    --accent:#0071e3;--accent-light:#eaf3fe;--green:#1eae59;--green-light:#e7f8ee;
+    --amber:#c77700;--amber-light:#fff4e0;--red:#d70015;--red-light:#ffe9e8;
+    --purple:#6e4ff6;--purple-light:#efeaff;--radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  a{color:var(--accent);text-decoration:none;}
+  .hero{background:linear-gradient(135deg,#1eae59 0%,#0071e3 55%,#6e4ff6 100%);color:#fff;padding:36px 32px 28px;}
+  .hero-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+  .app-icon{width:76px;height:76px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;border:1px solid rgba(255,255,255,.35);flex-shrink:0;}
+  .hero-text{flex:1;min-width:220px;}
+  .hero-text h1{margin:0 0 4px;font-size:26px;font-weight:700;letter-spacing:-.02em;}
+  .hero-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;opacity:.92;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);font-weight:600;}
+  .btn{background:rgba(255,255,255,.95);color:var(--accent);border:none;padding:10px 18px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;}
+  .layout{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:22px;padding:28px 32px 80px;}
+  section.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 26px;scroll-margin-top:20px;}
+  section.card h2{margin:0 0 4px;font-size:19px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em;}
+  section.card .icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);color:var(--accent);font-size:15px;flex-shrink:0;}
+  section.card p.sub{margin:2px 0 16px;color:var(--muted);font-size:13.5px;}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;}
+  .badge.required{background:var(--red-light);color:var(--red);}
+  .badge.recommended{background:var(--accent-light);color:var(--accent);}
+  .badge.optional{background:#eee;color:var(--muted);}
+  .badge.done{background:var(--green-light);color:var(--green);}
+  .badge.attention{background:var(--amber-light);color:var(--amber);}
+  .field{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .field:last-child{border-bottom:none;}
+  .field-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);}
+  .field-value{font-size:14.5px;white-space:pre-line;}
+  .charcount{font-size:11.5px;color:var(--muted);}
+  ul.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
+  ul.checklist li{display:flex;align-items:flex-start;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);font-size:14px;}
+  ul.checklist li:last-child{border-bottom:none;}
+  .chk{width:19px;height:19px;border-radius:6px;border:2px solid var(--green);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--green);font-size:12px;font-weight:800;}
+  .chk.todo{background:#fff;border-color:var(--border);color:transparent;}
+  .callout{display:flex;gap:10px;padding:12px 14px;border-radius:10px;font-size:13px;margin-top:14px;}
+  .callout.info{background:var(--accent-light);color:#0b4a8a;}
+  .callout.warn{background:var(--amber-light);color:#7a4a00;}
+  footer{max-width:900px;margin:0 auto;padding:0 32px 40px;color:var(--muted);font-size:12px;text-align:center;}
+  @media print{.hero-actions{display:none;}section.card{break-inside:avoid;border:1px solid #ccc;}.hero{background:#1eae59 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+  code{background:#f0f0f3;padding:1px 5px;border-radius:5px;font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-inner">
+    <div class="app-icon">AR</div>
+    <div class="hero-text">
+      <h1>Arrows – Escape Puzzle — Version Update Guide</h1>
+      <div class="hero-meta">
+        <span class="pill">🔄 Version Update</span>
+        <span class="pill">v1.0.8 (Build 12) ← from v1.0.7 (Build 11)</span>
+        <span class="pill">Generated Oct 1, 2026 · commit 4774285</span>
+      </div>
+    </div>
+    <div class="hero-actions"><button class="btn" onclick="window.print()">Print / Save PDF</button></div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <section class="card" id="read-first">
+    <h2><span class="icon">⚠️</span> Read this first <span class="badge attention">Before you archive</span></h2>
+    <p class="sub">What is and is not verified for the iOS build of 1.0.8.</p>
+    <ul class="checklist">
+      <li><span class="chk">✓</span><span><b>Code is pushed:</b> everything in this release is on <code>master</code> at <code>4774285</code>, and the Android build of the same code was device-tested (debug and release).</span></li>
+      <li><span class="chk todo"></span><span><b>No iOS build of 1.0.8 has been verified.</b> All testing was on Android. The ad changes are Dart-level and apply to iOS, but none has run on an iPhone. Do a device check (below) before submitting.</span></li>
+      <li><span class="chk todo"></span><span><b>Commit <code>ios/Podfile.lock</code> first.</b> It currently shows as modified (the <code>Flutter</code> pod checksum changed) from an iOS build done on the new Flutter 3.47.5 engine. Archive from a committed state so the build is reproducible.</span></li>
+      <li><span class="chk todo"></span><span><b>First iOS release on Flutter 3.47.5.</b> 1.0.7 shipped on 3.41.6, so this is a new engine for iOS too. Run <code>flutter build ipa</code> and confirm it archives cleanly.</span></li>
+      <li><span class="chk todo"></span><span><b>Device test:</b> pull down Control Center and Notification Center on an iPhone - no app-open ad should appear after dismissing them. Then background the app, wait, and return - an app-open ad may show (max once per 3 minutes). Inferred from Android behaviour, not reproduced on iOS.</span></li>
+    </ul>
+    <div class="callout warn"><span>⚠ The "no ad after Control Center" behaviour in What's New is reasoned from how Flutter reports <code>inactive</code> on iOS, and was reproduced only for the Android notification shade. Soften or drop that bullet if the device test doesn't confirm it.</span></div>
+  </section>
+
+  <section class="card" id="whats-new">
+    <h2><span class="icon">📝</span> What's New / Release Notes <span class="badge required">Required</span></h2>
+    <p class="sub">Shown to users on the update screen. 269 / 4000 chars. Honest and small: this release is mostly ad-delivery tuning.</p>
+    <div class="field-value">Smoother, calmer ads.
+• Ads now appear only when you actually come back to the app — not when you just pull down Control Center or your notifications
+• Fewer unnecessary ad loads in the background
+• Behind-the-scenes polish for a smoother experience
+Thanks for playing!</div>
+  </section>
+
+  <section class="card" id="promo-text">
+    <h2><span class="icon">📣</span> Promotional Text <span class="badge recommended">Always update — free, no review needed</span></h2>
+    <p class="sub">User-facing, shown at the top of the product page. 170 char max.</p>
+    <div class="field">
+      <div class="field-label">Suggested <span class="charcount">162/170</span></div>
+      <div class="field-value">Tap, slide, and clear every arrow — no timers, no pressure. A new daily challenge and streak every day, hundreds of levels, dark mode, and fewer ad interruptions.</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Current (live since 1.0.4) <span class="charcount">148/170</span></div>
+      <div class="field-value">No timers, no ads to start — just tap, slide, and clear. New daily challenge and streak every day. Hundreds of levels, dark mode, and zero pressure.</div>
+    </div>
+    <div class="callout warn"><span>⚠ The current text says "no ads to start", but the app shows an app-open ad on cold start after a player's first session. It was approved as-is, but it reads as a claim the app doesn't fully keep, which is why the suggestion drops it. Your call - it's free to change at any time.</span></div>
+  </section>
+
+  <section class="card" id="review-notes">
+    <h2><span class="icon">🕵️</span> Review Notes <span class="badge required">Required — for Apple's reviewer, not users</span></h2>
+    <p class="sub">Paste into App Review Information → Notes. 1963 chars. Different audience from What's New: what changed under the hood and how to verify it.</p>
+    <div class="field-value">Arrows - Escape Puzzle is a single-player offline puzzle game. No login or account is required to play.
+
+This build (1.0.7 -&gt; 1.0.8) changes ad-delivery behaviour only. No gameplay rules, purchases, permissions, or data collection changed:
+- The app-open ad (shown when the user returns to the app) now appears only after the app was actually sent to the background. Previously, briefly opening Control Center or Notification Center could also trigger it.
+- Ad requests were reduced: the post-win and lives-refill ads are requested once per level attempt, retries stop when a level attempt ends, and the Restart ad is requested only when the Restart confirmation is actually shown.
+- The Home banner, if it finishes loading just as the user starts a level, is now kept and shown on return to Home instead of being discarded.
+- Firebase Analytics (anonymous, aggregated, no PII): the banner ad_shown event now logs on a real impression rather than on load, and one new event, ad_discarded (ad unit name + reason), was added to the existing usage events.
+- Built with an updated Flutter SDK (3.47.5).
+
+To observe the app-open change: leave the app with the Home gesture, wait a moment, and return - an ad may show (at most once every 3 minutes). Pulling down Control Center and dismissing it does not trigger one.
+
+Unchanged from the previous submission:
+- All gameplay progress is stored locally on-device (no server backend).
+- One in-app purchase: "Remove Ads" ($3.99, non-consumable, product ID remove_ads) disables banner/interstitial/app-open ads. Rewarded ads (opt-in, for hints/extra lives) remain available even after purchase by design - disclosed in the purchase description shown in Settings.
+- Ad mediation is Google AdMob with Unity Ads only.
+- No account creation, no chat, no user-generated content, no web view with unrestricted browsing.
+
+Test path: tap Play on the Home screen to start the current level, or Level 1 (tutorial) on a fresh install.</div>
+  </section>
+
+  <section class="card" id="privacy-changes">
+    <h2><span class="icon">🔒</span> App Privacy — Changes to Re-check <span class="badge attention">Review before submitting</span></h2>
+    <p class="sub">The data-collection picture is unchanged. One analytics detail to log, and three items carried forward from earlier guides.</p>
+    <ul class="checklist">
+      <li><span class="chk">✓</span><span>No new SDKs, permissions, or data types this release — existing privacy label still accurate</span></li>
+      <li><span class="chk">✓</span><span>Ad network / mediation stack unchanged (AdMob + Unity Ads)</span></li>
+      <li><span class="chk">✓</span><span>New Firebase event <code>ad_discarded</code> (ad unit name + reason string) falls under the already-declared Usage Data; the privacy label does not change. Add it to the event list in your records</span></li>
+      <li><span class="chk todo"></span><span><b>Carried over:</b> in App Store Connect → App Privacy, confirm Meta Platforms is no longer listed as a data-collecting third party (mediation has been Unity-only since 1.0.4; this was never confirmed done)</span></li>
+      <li><span class="chk todo"></span><span><b>Carried over:</b> remove the two Meta SKAdNetwork IDs from <code>ios/Runner/Info.plist</code> — <code>v9wttpbfk9.skadnetwork</code> and <code>n38lu8286q.skadnetwork</code> — still present; harmless but dead weight</span></li>
+      <li><span class="chk todo"></span><span><b>Carried over:</b> <code>UISupportedInterfaceOrientations</code> still lists both landscape values although the game is portrait-only. Decide whether to drop them (the Android equivalent was fixed in 1.0.7)</span></li>
+    </ul>
+  </section>
+
+  <section class="card" id="age-rating-recheck">
+    <h2><span class="icon">🔞</span> Age Rating — Recheck <span class="badge optional">Only if content changed</span></h2>
+    <div class="callout info"><span>No new content, chat, gambling-like mechanics, or web access this release — the 4+ age rating does not change.</span></div>
+  </section>
+
+  <section class="card" id="new-commerce">
+    <h2><span class="icon">💳</span> New IAP / Leaderboards <span class="badge optional">Only if added this release</span></h2>
+    <div class="callout info"><span>No new in-app purchases or Game Center leaderboards. The one IAP ("Remove Ads", $3.99, <code>remove_ads</code>) is unchanged.</span></div>
+  </section>
+
+  <section class="card" id="assets-recheck">
+    <h2><span class="icon">🖼️</span> Screenshots <span class="badge optional">No change needed</span></h2>
+    <p class="sub">No visible UI changed in 1.0.8.</p>
+    <ul class="checklist">
+      <li><span class="chk">✓</span><span>Home, gameplay, and settings screens are unchanged since 1.0.7 — existing screenshots still accurate</span></li>
+      <li><span class="chk todo"></span><span>Carried from 1.0.7: confirm no uploaded gameplay screenshot still shows a bottom banner (it was removed from gameplay in 1.0.7)</span></li>
+    </ul>
+  </section>
+
+  <section class="card" id="android-only">
+    <h2><span class="icon">🤖</span> In this release but not iOS-relevant <span class="badge optional">For awareness</span></h2>
+    <p class="sub">Shipped in the same commits, but they fix Android-specific behaviour. Don't mention them to Apple.</p>
+    <ul class="checklist">
+      <li><span class="chk">✓</span><span>App-open ad no longer shifts the screen up on Android (AdMob's ad activity hides the status bar). The fix is a Dart-level inset hold that also runs on iOS but is not expected to change anything there</span></li>
+      <li><span class="chk">✓</span><span>Home banner stored a zero width when launched behind the lock screen, blocking the banner for the session — Android-specific; the guard is harmless on iOS</span></li>
+      <li><span class="chk">✓</span><span>Android build toolchain upgrade (Gradle 8.14, AGP 8.11.1) — no iOS effect</span></li>
+    </ul>
+  </section>
+
+  <section class="card" id="version">
+    <h2><span class="icon">🔢</span> Version &amp; Build <span class="badge required">Required</span></h2>
+    <div class="field">
+      <div class="field-label">Version Number</div>
+      <div class="field-value">1.0.8 <span class="charcount">(was 1.0.7)</span></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Build Number</div>
+      <div class="field-value">12 <span class="charcount">(was 11) — from <code>pubspec.yaml</code> <code>version: 1.0.8+12</code>, shared with Android; above the last iOS build, so a valid increment</span></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Other fields</div>
+      <div class="field-value">Name, subtitle, description, keywords, URLs, category, pricing, export compliance (<code>ITSAppUsesNonExemptEncryption = false</code>), device family (iPhone only), and minimum iOS 15.0 are unchanged from 1.0.7.</div>
+    </div>
+  </section>
+
+</div>
+<footer>Generated by the iOS App Store Guide skill · verify every field in App Store Connect before submitting</footer>
+</body>
+</html>
