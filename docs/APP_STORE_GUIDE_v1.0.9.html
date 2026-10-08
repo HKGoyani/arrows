@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Store Submission Guide — Arrows – Escape Puzzle v1.0.9</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F9FD;
+      --card: #FFFFFF;
+      --blue: #667CFF;
+      --red: #F23A5C;
+      --ink: #2B2E4F;
+      --muted: #8C90A6;
+      --border: #E7E8F3;
+      --green: #1AAB67;
+      --orange: #FF8A3D;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 0 16px 60px;
+    }
+    header {
+      text-align: center;
+      padding: 52px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    header .arrow {
+      width: 0; height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid var(--blue);
+      margin: 0 auto 14px;
+    }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; color: var(--ink); }
+    .subtitle { color: var(--muted); font-size: 13px; letter-spacing: 1px; margin-top: 8px; }
+    .updated {
+      display: inline-block; margin-top: 12px; padding: 4px 12px;
+      border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--muted);
+    }
+    .container { max-width: 880px; margin: 0 auto; }
+    nav.toc {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px 28px; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+    }
+    nav.toc h2 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+    nav.toc li { margin-bottom: 6px; break-inside: avoid; }
+    nav.toc a { color: var(--blue); text-decoration: none; font-size: 14px; }
+    nav.toc a:hover { text-decoration: underline; }
+
+    .alert {
+      background: rgba(242,58,92,0.06);
+      border: 1px solid rgba(242,58,92,0.25);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+    }
+    .alert h2 { color: var(--red); font-size: 15px; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .alert h2::before { content: '⚠'; font-size: 18px; }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(43,46,79,0.04);
+      scroll-margin-top: 20px;
+    }
+    h2 {
+      font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    h2::before { content: ''; display: block; width: 3px; height: 16px; background: var(--blue); border-radius: 2px; }
+    h3 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 18px 0 8px; }
+    p { color: #555977; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol.steps { margin-bottom: 12px; padding-left: 0; list-style: none; }
+    ul li {
+      padding: 6px 0 6px 20px; color: #555977; position: relative;
+    }
+    ul li::before { content: '›'; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+    ol.steps { counter-reset: step; }
+    ol.steps li {
+      padding: 6px 0 6px 28px; color: #555977; position: relative; counter-increment: step;
+    }
+    ol.steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 6px;
+      width: 18px; height: 18px; border-radius: 50%; background: var(--blue); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    td strong { color: var(--ink); }
+    tr.checklist td:first-child { width: 24px; }
+    code, .code {
+      background: #F1F2F8; border: 1px solid var(--border); border-radius: 6px;
+      padding: 1px 6px; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; color: var(--red);
+    }
+    pre {
+      background: #1F2236; color: #E0E4F0; border-radius: 12px; padding: 18px 20px;
+      overflow-x: auto; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; line-height: 1.6;
+      margin: 12px 0;
+    }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      padding: 2px 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle;
+    }
+    .tag-block { background: rgba(242,58,92,0.12); color: var(--red); border: 1px solid rgba(242,58,92,0.3); }
+    .tag-ok { background: rgba(26,171,103,0.12); color: var(--green); border: 1px solid rgba(26,171,103,0.3); }
+    .tag-warn { background: rgba(255,138,61,0.12); color: var(--orange); border: 1px solid rgba(255,138,61,0.3); }
+    .contact-box {
+      background: rgba(102,124,255,0.05); border: 1px solid rgba(102,124,255,0.18);
+      border-radius: 10px; padding: 16px 20px;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); }
+  
+    pre.copy { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .cnt { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="arrow"></div>
+    <h1>App Store Submission Guide</h1>
+    <p class="subtitle">Arrows – Escape Puzzle &mdash; v1.0.9</p>
+    <span class="updated">Last reviewed against codebase: October 8, 2026 (commit 8c19f6f)</span>
+  </header>
+
+  <div class="container">
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#critical">What's Changed Since v1.0.8</a></li>
+        <li><a href="#info">1. App Information</a></li>
+        <li><a href="#whatsnew">2. What's New (all languages)</a></li>
+        <li><a href="#listing">3. Listing Copy — unchanged</a></li>
+        <li><a href="#review">4. App Review Notes</a></li>
+        <li><a href="#privacy">5. Privacy &amp; Data Collection</a></li>
+        <li><a href="#nochange">6. Age Rating, IAP &amp; Screenshots</a></li>
+        <li><a href="#checklist">7. Build &amp; Archive Checklist</a></li>
+        <li><a href="#links">8. Reference Links</a></li>
+      </ol>
+    </nav>
+
+    <div class="alert" style="border-color: rgba(242,58,92,0.35);">
+      <h2>Read this first — verified on Android only</h2>
+      <p>This release is a <strong>one-behaviour ad fix</strong>, written in Dart, so it applies to iOS identically. It was tested on an <strong>Android</strong> device (debug build, test ads); <strong>it has not run on an iPhone</strong>. Treat the short device test in Section 7 as mandatory.</p>
+      <p>iOS is the platform hurt most by the bug this fixes: the restart ad nearly vanished there (<strong>707 &rarr; 4</strong> requests a week). Shipping 1.0.9 to iOS is what brings it back.</p>
+    </div>
+
+    <div class="alert" id="critical" style="border-color: rgba(26,171,103,0.3); background: rgba(26,171,103,0.05);">
+      <h2 style="color: var(--green);">What's changed since v1.0.8 (build 12)</h2>
+      <p>Version 1.0.8 &rarr; <strong>1.0.9</strong>, build 12 &rarr; <strong>13</strong>. One code commit (<code>8c19f6f</code>): the restart interstitial request, restored to its 1.0.7 behaviour. Nothing else changed.</p>
+      <h3 style="margin-top:20px;">Ad pipeline (not player-visible, but changes ad behaviour)</h3>
+      <table>
+        <tr><th>Change</th><th>Status</th><th>Detail</th></tr>
+        <tr>
+          <td><strong>Restart ad requested on every Restart tap</strong></td>
+          <td><span class="tag tag-ok">RESTORED</span></td>
+          <td>1.0.8 stopped requesting it for early restarts (<3 arrows) and inside the 45s inter-ad gap, and removed the reload on the skip path, assuming those requests could never be shown. They could: an early restart loads an ad into the cache and the <em>next</em> restart shows it, and almost all restarts are early ones. The 1.0.8-only AdMob data showed restart requests falling <strong>96&ndash;99%</strong> (iOS 707 &rarr; 4, Android 21,628 &rarr; 316) and about <strong>5% of ad revenue</strong> going with them</td>
+        </tr>
+        <tr>
+          <td><strong>What a player sees</strong></td>
+          <td><span class="tag tag-warn">SAME AS 1.0.7</span></td>
+          <td>Restart interstitials show at the 1.0.7 rate again (at most one every 45 seconds, shared with win ads). Players on 1.0.8 saw almost none. No new ad type, placement or frequency</td>
+        </tr>
+        <tr>
+          <td><strong>Everything else from 1.0.8</strong></td>
+          <td><span class="tag tag-ok">KEPT</span></td>
+          <td>App-open only after a real background, once-per-attempt win/lives requests, retries tied to the level attempt, Home banner parking, banner analytics on impression, <code>ad_discarded</code> event, Flutter 3.47.5 toolchain</td>
+        </tr>
+      </table>
+      <h3 style="margin-top:20px;">Evidence (internal — not for Apple)</h3>
+      <p>1.0.8-only AdMob data, Oct 1&ndash;7, iOS: restart interstitial <strong>4 requests, 3 impressions</strong> (1.0.7 week: 707 requests, 556 impressions, $1.19). Overall 1.0.8 is a clear win on iOS (show rate 61.8% &rarr; 80.7%, Home banner 44% &rarr; 91%), so this release keeps all of that and restores only the restart ad.</p>
+    </div>
+
+    <section id="info">
+      <h2>1. App Information</h2>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>App Name</td><td><strong>Arrows – Escape Puzzle</strong> — unchanged</td></tr>
+        <tr><td>Subtitle (30 char max)</td><td>Grid Logic &amp; Mind Puzzles <span class="tag tag-ok">25/30</span> — unchanged</td></tr>
+        <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>Primary Language</td><td>English (U.S.) — 10 localizations added with 1.0.8</td></tr>
+        <tr><td>Apple ID (App Store Connect)</td><td><strong>6785821757</strong></td></tr>
+        <tr><td>Version</td><td><strong>1.0.9</strong> <span class="tag tag-ok">bumped from 1.0.8</span></td></tr>
+        <tr><td>Build number</td><td><strong>13</strong> <span class="tag tag-ok">bumped from 12</span> — from <code>pubspec.yaml</code> <code>version: 1.0.9+13</code></td></tr>
+        <tr><td>Category (Primary)</td><td>Games &rarr; Puzzle</td></tr>
+        <tr><td>Age Rating</td><td>4+ (unchanged)</td></tr>
+        <tr><td>Device family / minimum iOS</td><td>iPhone only · iOS 15.0 — unchanged</td></tr>
+        <tr><td>Previous version status</td><td>v1.0.8 (build 12) — <strong>LIVE</strong> (AdMob shows ~99% of iOS traffic on it since Oct 4)</td></tr>
+      </table>
+      <p><span class="tag tag-warn">NOTE</span> Build 13 is shared with the Android release (also 1.0.9+13). It is above the last iOS build (12), so it is a valid increment.</p>
+    </section>
+
+    <section id="whatsnew">
+      <h2>2. What's New (all languages)</h2>
+      <p><span class="tag tag-block">REQUIRED</span> Shown on the update screen, and App Store Connect needs it for <strong>every localization on the version</strong>. This release changes nothing a player would notice, so the text is deliberately short and makes no claims. Paste each block into the matching localization.</p>
+      <div class="alert" style="margin:16px 0; border-color: rgba(255,138,61,0.35); background: rgba(255,138,61,0.06);">
+        <h2 style="color:var(--orange);">Translations are not native-reviewed</h2>
+        <p>Written by an AI using the app's own in-game tone, not by a native speaker. Have someone read at least Japanese, Korean and Turkish before submitting. Only paste into locales that exist in your App Store listing.</p>
+      </div>
+      <h3>English (U.S.) — primary <span class="cnt">en-US · 94/4000</span></h3>
+      <pre class="copy">Behind-the-scenes improvements to how ads load, for a smoother experience.
+Thanks for playing!</pre>
+      <h3>German — Deutsch <span class="cnt">de-DE · 107/4000</span></h3>
+      <pre class="copy">Verbesserungen im Hintergrund beim Laden von Werbung für ein flüssigeres Spielerlebnis.
+Danke fürs Spielen!</pre>
+      <h3>French — français <span class="cnt">fr-FR · 99/4000</span></h3>
+      <pre class="copy">Améliorations en coulisses du chargement des pubs pour une expérience plus fluide.
+Merci de jouer !</pre>
+      <h3>Italian — italiano <span class="cnt">it · 118/4000</span></h3>
+      <pre class="copy">Miglioramenti dietro le quinte nel caricamento della pubblicità per un'esperienza più fluida.
+Grazie per aver giocato!</pre>
+      <h3>Japanese — 日本語 <span class="cnt">ja · 50/4000</span></h3>
+      <pre class="copy">広告の読み込みを内部で改善し、より快適に遊べるようにしました。
+遊んでいただきありがとうございます！</pre>
+      <h3>Korean — 한국어 <span class="cnt">ko · 52/4000</span></h3>
+      <pre class="copy">광고 로딩 방식을 내부적으로 개선해 더 부드럽게 즐길 수 있어요.
+플레이해 주셔서 감사합니다!</pre>
+      <h3>Portuguese (Brazil) — português <span class="cnt">pt-BR · 106/4000</span></h3>
+      <pre class="copy">Melhorias nos bastidores no carregamento de anúncios para uma experiência mais fluida.
+Obrigado por jogar!</pre>
+      <h3>Russian — русский <span class="cnt">ru · 88/4000</span></h3>
+      <pre class="copy">Улучшения «под капотом» в загрузке рекламы для более плавной игры.
+Спасибо, что играешь!</pre>
+      <h3>Spanish — español <span class="cnt">es-ES / es-MX · 101/4000</span></h3>
+      <pre class="copy">Mejoras entre bastidores en la carga de anuncios para una experiencia más fluida.
+¡Gracias por jugar!</pre>
+      <h3>Turkish — Türkçe <span class="cnt">tr · 109/4000</span></h3>
+      <pre class="copy">Daha akıcı bir deneyim için reklamların yüklenmesinde arka planda iyileştirmeler.
+Oynadığın için teşekkürler!</pre>
+    </section>
+
+    <section id="listing">
+      <h2>3. Listing Copy — unchanged</h2>
+      <p><span class="tag tag-ok">NO CHANGE</span> The <strong>description, subtitle, keywords and promotional text</strong> stay as submitted with 1.0.8, in every language. No feature was added or removed. The full per-language text is in <code>docs/APP_STORE_LISTING_LANGUAGES_v1.0.8.html</code>.</p>
+      <p>Promotional text is editable at any time without a new review, so you can still change it independently of this release.</p>
+    </section>
+
+    <section id="review">
+      <h2>4. App Review Notes</h2>
+      <p><span class="tag tag-block">REQUIRED</span> Not shown to users — read only by Apple's reviewer. Different audience and purpose from What's New: what changed under the hood and how to verify it. Paste into <strong>App Review Information &rarr; Notes</strong> (1805 characters):</p>
+      <pre class="copy">Arrows - Escape Puzzle is a single-player offline puzzle game. No login or account is required to play.
+
+This build (1.0.8 -&gt; 1.0.9) changes one ad-delivery behaviour only. No gameplay rules, purchases, permissions, SDKs or data collection changed:
+- The interstitial ad that can appear after the Restart button is requested on every Restart tap again. Version 1.0.8 had stopped requesting it for early restarts (fewer than 3 arrows fired) and for restarts shortly after another interstitial, which unintentionally almost removed that ad. This restores the behaviour of version 1.0.7, which was previously approved.
+- Ad frequency is unchanged: interstitials are limited to at most one every 45 seconds, and nothing is shown to users who purchased "Remove Ads" (rewarded ads remain opt-in only).
+
+To observe it: start a level, tap the restart icon in the top bar (it restarts at once when fewer than 3 arrows have been fired), then restart again. An interstitial ad may appear on a later restart. Ads depend on ad availability, so one will not show every time.
+
+Unchanged from the previous submission:
+- All gameplay progress is stored locally on-device (no server backend).
+- One in-app purchase: "Remove Ads" ($3.99, non-consumable, product ID remove_ads) disables banner/interstitial/app-open ads. Rewarded ads (opt-in, for hints/extra lives) remain available even after purchase by design - disclosed in the purchase description shown in Settings.
+- Ad mediation is Google AdMob with Unity Ads only.
+- Firebase Analytics is used for anonymous, aggregated usage events only (no PII collected).
+- No account creation, no chat, no user-generated content, no web view with unrestricted browsing.
+
+Test path: tap Play on the Home screen to start the current level, or Level 1 (tutorial) on a fresh install.</pre>
+    </section>
+
+    <section id="privacy">
+      <h2>5. Privacy &amp; Data Collection</h2>
+      <p><span class="tag tag-ok">UNCHANGED</span> No new SDK, permission, data type or analytics event. The label stays as it was in 1.0.8.</p>
+      <h3>Carried over from earlier guides — still open</h3>
+      <ul>
+        <li><span class="tag tag-block">TODO</span> In App Store Connect &rarr; App Privacy, confirm <strong>Meta Platforms</strong> is no longer listed as a data-collecting third party (mediation has been Unity-only since 1.0.4; never confirmed done)</li>
+        <li><span class="tag tag-block">TODO</span> Remove the two Meta SKAdNetwork IDs from <code>ios/Runner/Info.plist</code>: <code>v9wttpbfk9.skadnetwork</code> and <code>n38lu8286q.skadnetwork</code> — checked today, still present; harmless dead weight</li>
+        <li><span class="tag tag-block">DECIDE</span> <code>UISupportedInterfaceOrientations</code> still lists both landscape values although the game is portrait-only. A judgement call, never reproduced as a bug on iOS</li>
+      </ul>
+    </section>
+
+    <section id="nochange">
+      <h2>6. Age Rating, IAP &amp; Screenshots</h2>
+      <table>
+        <tr><th>Area</th><th>Status</th><th>Detail</th></tr>
+        <tr><td><strong>Age rating</strong></td><td><span class="tag tag-ok">NO CHANGE</span></td><td>No new content, chat, gambling-like mechanics or web access. Stays 4+</td></tr>
+        <tr><td><strong>In-App Purchases</strong></td><td><span class="tag tag-ok">NO CHANGE</span></td><td>One IAP: "Remove Ads" ($3.99, non-consumable, <code>remove_ads</code>). No new products</td></tr>
+        <tr><td><strong>Screenshots</strong></td><td><span class="tag tag-ok">NO CHANGE</span></td><td>No visible UI changed. Carried from 1.0.7: confirm no uploaded gameplay screenshot still shows a bottom banner</td></tr>
+        <tr><td><strong>Ads disclosure</strong></td><td><span class="tag tag-ok">NO CHANGE</span></td><td>AdMob + Unity Ads only. No ad network added or removed</td></tr>
+      </table>
+    </section>
+
+    <section id="checklist">
+      <h2>7. Build &amp; Archive Checklist</h2>
+      <ul>
+        <li><span class="tag tag-ok">DONE</span> <code>pubspec.yaml</code> version is <code>1.0.9+13</code>; code on <code>master</code> at <code>8c19f6f</code></li>
+        <li><span class="tag tag-ok">DONE</span> Dart suite passes 20/20; <code>flutter analyze</code> at 5 pre-existing warnings</li>
+        <li><span class="tag tag-ok">DONE</span> Restart behaviour verified on an Android device: an early restart requests and caches the ad, the next restart shows it, and a restart inside the 45s gap still requests</li>
+        <li><span class="tag tag-block">TODO</span> <code>flutter pub get</code>, then <code>cd ios &amp;&amp; pod install</code></li>
+        <li><span class="tag tag-block">TODO</span> <code>flutter build ipa</code> (or archive <code>ios/Runner.xcworkspace</code> in Xcode); confirm it archives cleanly</li>
+        <li><span class="tag tag-block">TODO</span> Remove the 2 Meta SKAdNetwork IDs from <code>Info.plist</code> (Section 5)</li>
+        <li><span class="tag tag-block">TODO</span> Add What's New for <strong>every</strong> locale (Section 2)</li>
+        <li><span class="tag tag-block">TODO</span> Confirm the App Privacy questionnaire no longer lists Meta (Section 5)</li>
+        <li><span class="tag tag-block">TODO — MANDATORY</span> Test on a <strong>real iPhone</strong>: start a level and tap the restart icon with fewer than 3 arrows fired &mdash; it restarts at once; restart again and an interstitial may show (not every time, at most once per 45 seconds). Also confirm Home banner, win ad, ATT and GDPR prompts and the Sandbox IAP flow still work</li>
+        <li>Upload via Xcode Organizer or Transporter</li>
+        <li>Submit for review with the notes from Section 4</li>
+      </ul>
+      <p><span class="tag tag-warn">AFTER RELEASE</span> Re-read AdMob with the <strong>App version = 1.0.9</strong> filter after a week. iOS restart requests should be about 9% of requests again (1.0.7: 707 of 7,918), not 4 in a week.</p>
+    </section>
+
+    <section id="links">
+      <h2>8. Reference Links</h2>
+      <table>
+        <tr><th>Resource</th><th>Value</th></tr>
+        <tr><td>Privacy Policy</td><td><a href="https://xmtechnologies.in/Arrow/privacy-policy.html" target="_blank">xmtechnologies.in/Arrow/privacy-policy.html</a></td></tr>
+        <tr><td>Terms &amp; Conditions</td><td><a href="https://xmtechnologies.in/Arrow/terms-and-conditions.html" target="_blank">xmtechnologies.in/Arrow/terms-and-conditions.html</a></td></tr>
+        <tr><td>Support page</td><td><a href="https://xmtechnologies.in/Arrow/support.html" target="_blank">xmtechnologies.in/Arrow/support.html</a></td></tr>
+        <tr><td>Marketing URL</td><td><a href="https://xmtechnologies.in/Arrow/index.html" target="_blank">xmtechnologies.in/Arrow/index.html</a></td></tr>
+        <tr><td>Support email</td><td><a href="mailto:akashmangukiya10@gmail.com">akashmangukiya10@gmail.com</a></td></tr>
+        <tr><td>App Store listing</td><td><a href="https://apps.apple.com/in/app/arrows-escape-puzzle/id6785821757" target="_blank">apps.apple.com/in/app/arrows-escape-puzzle/id6785821757</a> — <strong>1.0.8 LIVE</strong></td></tr>
+        <tr><td>Bundle ID</td><td><code>com.shayona.arrows</code></td></tr>
+        <tr><td>AdMob iOS App ID</td><td><code>ca-app-pub-4818503743858431~5166233161</code></td></tr>
+        <tr><td>Android listing (context)</td><td><a href="https://play.google.com/store/apps/details?id=com.shayona.arrows" target="_blank">play.google.com/store/apps/details?id=com.shayona.arrows</a> — 1.0.8+12 LIVE; 1.0.9+13 built, upload pending</td></tr>
+        <tr><td>Previous iOS guides</td><td><code>docs/Arrows-AppStore-Update-v1.0.8-2026-10-01.html</code>, <code>docs/APP_STORE_LISTING_LANGUAGES_v1.0.8.html</code></td></tr>
+      </table>
+    </section>
+
+  </div>
+
+  <footer>
+    &copy; 2026 Shayona. Internal submission guide &mdash; not for distribution. Verify every field in App Store Connect before submitting.
+  </footer>
+</body>
+</html>
