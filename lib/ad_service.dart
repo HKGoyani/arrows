@@ -672,12 +672,15 @@ class AdService {
   /// in flight, so cancelling the dialog and tapping Restart again does not
   /// fire a second request — the cached ad simply waits for the next restart.
   ///
-  /// Skipped inside the 45s inter-ad gap (with 5s of lookahead for the dialog):
-  /// [onRestart] would refuse to show it, so the request bought nothing.
-  static void onRestartOffered() {
-    if (!_interstitialGapOkWithin(const Duration(seconds: 5))) return;
-    _loadInterstitialRestart();
-  }
+  /// Deliberately NOT gated on the 45s inter-ad gap, and fired for EVERY
+  /// Restart tap including the <3-arrow ones that skip the dialog. 1.0.8
+  /// skipped both on the theory that those requests could never be shown. The
+  /// 1.0.8-only AdMob data proved otherwise: restart requests fell 96-99%
+  /// (Android 21,628 -> 316, iOS 707 -> 4) and the unit's revenue went with
+  /// them (~5%). Almost all restarts are early ones, and the ad loaded by one
+  /// stays cached (~1h) and is shown at the NEXT restart, so one request
+  /// primes the following restart. Do not re-add a gap or progress guard here.
+  static void onRestartOffered() => _loadInterstitialRestart();
 
   /// Call after any hint is consumed. Once the free allowance is spent, every
   /// hint from here needs an ad, so fetch the NEXT one now rather than at the
@@ -1081,9 +1084,11 @@ class AdService {
       _interstitialRestartLoadedAt = null;
     }
     if (_adsRemoved || _interstitialRestartAd == null || !_interstitialGapOk) {
-      // Not reloaded here: [onRestartOffered] fetches on the next Restart tap,
-      // with the confirm dialog as runway. A reload from this path also fired
-      // for <3-arrow restarts, which have no dialog and so no time to load.
+      // Reloaded so the NEXT restart has an ad ready. The ad usually lands
+      // just after an early (<3-arrow) restart, which has no dialog runway —
+      // this cache refill is what produced most restart impressions. Removing
+      // it in 1.0.8 cut the unit's impressions by ~90%.
+      _loadInterstitialRestart();
       onDone?.call();
       return;
     }
